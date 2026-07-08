@@ -8,8 +8,8 @@
     mc:Ignorable="d"
     d:DataContext="{d:DesignInstance Type=vm:ParagonPlannerViewModel, IsDesignTimeCreatable=False}"
     Title="Paragon Planner — D4LootBench"
-    Height="780" Width="760"
-    MinHeight="500" MinWidth="640">
+    Height="780" Width="1080"
+    MinHeight="500" MinWidth="900">
 
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis" />
@@ -40,10 +40,12 @@
                     </Button>
                     <Button Command="{Binding ClearTargetsCommand}" Content="Clear Targets" Padding="10,3" Margin="0,0,16,0" />
 
-                    <Button Command="{Binding ImportMaxrollCodeCommand}" Content="Import Code" Padding="10,3" Margin="0,0,6,0"
-                            ToolTip="Import a Maxroll planner paragon variant code from the clipboard" />
-                    <Button Command="{Binding ImportMobalyticsCommand}" Content="Import Mobalytics" Padding="10,3" Margin="0,0,6,0"
-                            ToolTip="Import a Mobalytics build guide from the clipboard — copy the page URL (or the page's HTML if fetching is blocked)" />
+                    <Button Command="{Binding ImportBuildCommand}" Content="Import Build" Padding="10,3" Margin="0,0,6,0"
+                            ToolTip="Import a paragon build from the clipboard: a Maxroll variant code, a maxroll.gg planner or build-guide URL, a mobalytics.gg build URL, or the page's HTML if fetching is blocked" />
+                    <Button Command="{Binding CompareImportCommand}" Content="Compare Import" Padding="10,3" Margin="0,0,6,0"
+                            ToolTip="Compare the current build against a build on the clipboard (code, URL, or HTML) — points, stats, glyphs, and which is best" />
+                    <Button Command="{Binding CombineImportCommand}" Content="Combine Import" Padding="10,3" Margin="0,0,6,0"
+                            ToolTip="Merge a build on the clipboard into the current one, then re-solve the cheapest path covering both builds' rare and legendary nodes" />
                     <Button Command="{Binding ExportMaxrollCodeCommand}" Content="Export Code" Padding="10,3"
                             ToolTip="Copy the current allocation as a Maxroll planner variant code" />
                 </StackPanel>
@@ -62,7 +64,9 @@
                     <ComboBox ItemsSource="{Binding Rotations}" SelectedItem="{Binding SelectedRotation}"
                               Width="60" Margin="0,0,10,0" />
                     <Button Command="{Binding AddBoardCommand}" Content="Add Board" Padding="10,3" Margin="0,0,6,0" />
-                    <Button Command="{Binding RemoveLastBoardCommand}" Content="Remove Last" Padding="10,3" />
+                    <Button Command="{Binding RemoveLastBoardCommand}" Content="Remove Last" Padding="10,3" Margin="0,0,16,0" />
+                    <Button Command="{Binding PlanLayoutCommand}" Content="Plan Layout" Padding="10,3"
+                            ToolTip="Start from the goal: pick the boards you want (or a pool to choose from) and the glyphs to socket — the optimizer finds positions, rotations, and glyph placement, then solves the path" />
                 </StackPanel>
             </StackPanel>
         </Border>
@@ -93,6 +97,128 @@
                     </TextBlock.Style>
                 </TextBlock>
             </StackPanel>
+        </Border>
+
+        <!-- ── Glyphs & node rules ──────────────────────────────────── -->
+        <Border DockPanel.Dock="Right" Width="300" BorderThickness="1,0,0,0" BorderBrush="#DDD">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel Margin="10,8">
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <TextBlock Text="Sheet stats (level+gear):" VerticalAlignment="Center" FontSize="11" Margin="0,0,5,0" />
+                        <TextBox Text="{Binding SheetStats, UpdateSourceTrigger=PropertyChanged}" Width="44" FontSize="11"
+                                 ToolTip="Your character's core stat from everything except paragon. Rare-node threshold bonuses check the character TOTAL, and their requirement grows with each board's attachment order — this is added to the paragon-provided stat when checking them." />
+                    </StackPanel>
+                    <TextBlock Text="Glyphs" FontWeight="SemiBold" Margin="0,0,0,4" />
+                    <ItemsControl ItemsSource="{Binding GlyphSockets}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type vm:GlyphSocketViewModel}">
+                                <Border BorderBrush="#E3E3E3" BorderThickness="1" CornerRadius="3" Padding="6,4" Margin="0,0,0,6">
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Header}" FontSize="11" Foreground="#666" Margin="0,0,0,3" />
+                                        <ComboBox ItemsSource="{Binding Glyphs}" SelectedItem="{Binding SelectedGlyph}"
+                                                  DisplayMemberPath="Name" Margin="0,0,0,4"
+                                                  ToolTip="Glyph socketed on this board" />
+                                        <StackPanel Orientation="Horizontal" Margin="0,0,0,3">
+                                            <TextBlock Text="Level" VerticalAlignment="Center" FontSize="11" Margin="0,0,4,0" />
+                                            <TextBox Text="{Binding Level}" Width="36" FontSize="11"
+                                                     ToolTip="Glyph level — sets the radius (3 / 4 at 25 / 5 at 50)" />
+                                            <TextBlock Text="{Binding Radius, StringFormat='  radius {0}   needs'}" VerticalAlignment="Center" FontSize="11" />
+                                            <TextBox Text="{Binding RequiredStat}" Width="36" FontSize="11" Margin="4,0"
+                                                     ToolTip="Stat required in radius for the additional bonus (engine-side value — edit to match the in-game tooltip)" />
+                                            <TextBlock Text="{Binding StatName}" VerticalAlignment="Center" FontSize="11" />
+                                        </StackPanel>
+                                        <CheckBox IsChecked="{Binding EnsureActive}" FontSize="11"
+                                                  Content="Buy stat in radius to activate on Solve" />
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <Button Command="{Binding AnalyzePlacementCommand}" Content="Analyze Placement" Padding="10,3" Margin="0,2,0,8"
+                            ToolTip="Re-solves under every alternate rotation of each attached board and checks whether glyphs would see more of their stat in another socket" />
+
+                    <ItemsControl ItemsSource="{Binding Suggestions}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border BorderBrush="#E3E3E3" BorderThickness="1" CornerRadius="3" Padding="6,4" Margin="0,0,0,6">
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Description}" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,4" />
+                                        <Button Content="Apply"
+                                                Command="{Binding DataContext.ApplySuggestionCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                CommandParameter="{Binding}"
+                                                HorizontalAlignment="Left" Padding="10,2"
+                                                ToolTip="Apply this change to the board and re-solve, so you can see the difference" />
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <Button Command="{Binding RevertPlacementCommand}" Content="Revert Applied Change" Padding="10,3" Margin="0,0,0,8"
+                            ToolTip="Restore the layout, targets, and glyphs from before the last applied suggestion">
+                        <Button.Style>
+                            <Style TargetType="Button">
+                                <Style.Triggers>
+                                    <Trigger Property="IsEnabled" Value="False">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+
+                    <Separator Margin="0,0,0,6" />
+                    <TextBlock Text="Spend Remaining Points" FontWeight="SemiBold" />
+                    <TextBlock Text="After solving, spend the leftover of your point pool on focused stats and/or rare (yellow) nodes."
+                               FontSize="11" Foreground="#888" TextWrapping="Wrap" Margin="0,2,0,4" />
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                        <TextBlock Text="Point pool:" VerticalAlignment="Center" FontSize="11" Margin="0,0,5,0" />
+                        <TextBox Text="{Binding TotalPoints, UpdateSourceTrigger=PropertyChanged}" Width="44" FontSize="11"
+                                 ToolTip="Your total paragon points (300 from levels + seasonal rank rewards)" />
+                    </StackPanel>
+                    <Border BorderBrush="#E3E3E3" BorderThickness="1" CornerRadius="3" MaxHeight="110" Margin="0,0,0,4">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <ItemsControl ItemsSource="{Binding FocusStats}" Margin="4,2">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type vm:FocusStatViewModel}">
+                                        <CheckBox IsChecked="{Binding IsSelected}" Content="{Binding DisplayName}"
+                                                  FontSize="11" Margin="0,1" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Border>
+                    <CheckBox IsChecked="{Binding PreferRareNodes}" Content="Prefer rare (yellow) nodes first" FontSize="11" Margin="0,0,0,4"
+                              ToolTip="Buy reachable rare nodes cheapest-first before spending the rest on the focused stats" />
+                    <Button Command="{Binding MaximizePointsCommand}" Content="Spend Remaining Points" Padding="10,3" Margin="0,2,0,8"
+                            ToolTip="Grow the current path with the leftover points; no stats selected means the four core stats" />
+
+                    <Separator Margin="0,0,0,6" />
+                    <TextBlock Text="Node Rules" FontWeight="SemiBold" />
+                    <TextBlock Text="Right-click a node on the board to avoid (orange) or exclude (red) just that node."
+                               FontSize="11" Foreground="#888" TextWrapping="Wrap" Margin="0,2,0,6" />
+                    <ItemsControl ItemsSource="{Binding NodeRules}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type vm:NodeRuleViewModel}">
+                                <Grid Margin="0,0,0,3">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{Binding DisplayName}" VerticalAlignment="Center" FontSize="11"
+                                               TextTrimming="CharacterEllipsis" ToolTip="{Binding DisplayName}" />
+                                    <ComboBox Grid.Column="1" ItemsSource="{Binding Modes}" SelectedItem="{Binding Mode}"
+                                              Width="72" FontSize="11" Margin="4,0,0,0" />
+                                    <TextBox Grid.Column="2" Text="{Binding Limit}" Width="30" FontSize="11" Margin="4,0,0,0"
+                                             Visibility="{Binding IsLimit, Converter={StaticResource BoolToVis}}"
+                                             ToolTip="Take at most this many nodes of the group" />
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </ScrollViewer>
         </Border>
 
         <!-- ── Board canvas ─────────────────────────────────────────── -->
@@ -135,6 +261,7 @@
                         <Button Width="26" Height="26"
                                 Command="{Binding DataContext.ToggleTargetCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                 CommandParameter="{Binding}"
+                                MouseRightButtonUp="Cell_MouseRightButtonUp"
                                 Background="Transparent" BorderThickness="0" Cursor="Hand"
                                 ToolTip="{Binding ToolTipText}" ToolTipService.InitialShowDelay="150">
                             <Button.Template>
@@ -146,6 +273,13 @@
                                         <!-- Target ring -->
                                         <Ellipse Width="24" Height="24" StrokeThickness="2" Stroke="White"
                                                  Visibility="{Binding IsTarget, Converter={StaticResource BoolToVis}}" />
+                                        <!-- Avoid / exclude rings (right-click to cycle) -->
+                                        <Ellipse Width="24" Height="24" StrokeThickness="2" Stroke="#E8A33D" StrokeDashArray="1.6 1.6"
+                                                 Visibility="{Binding IsAvoided, Converter={StaticResource BoolToVis}}" />
+                                        <Grid Visibility="{Binding IsExcluded, Converter={StaticResource BoolToVis}}">
+                                            <Ellipse Width="24" Height="24" StrokeThickness="2" Stroke="#C0392B" />
+                                            <Path Stroke="#C0392B" StrokeThickness="2" Data="M 5,5 L 21,21 M 21,5 L 5,21" />
+                                        </Grid>
                                         <!-- Node shape -->
                                         <Border x:Name="Shape" Width="14" Height="14"
                                                 HorizontalAlignment="Center" VerticalAlignment="Center"

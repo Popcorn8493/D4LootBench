@@ -15,6 +15,6 @@
             <Button Content="Import" Width="80" Margin="0,0,8,0" IsDefault="True" Click="OnImport" />
             <Button Content="Cancel" Width="80" IsCancel="True" />
         </StackPanel>
-        <ListBox x:Name="VariantList" DisplayMemberPath="Label" MouseDoubleClick="OnImport" />
+        <ListBox x:Name="VariantList" MouseDoubleClick="OnImport" />
     </DockPanel>
 </Window>

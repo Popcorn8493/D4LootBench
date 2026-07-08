@@ -6,12 +6,15 @@ namespace D4LootBench.Paragon;
 /// <summary>Human-readable rendering of node data (values are fractions for percent attributes).</summary>
 public static class ParagonDisplay
 {
+    /// <summary>"Life_Percent_Bonus" → "Life Bonus", "Strength_Core" → "Strength".</summary>
+    public static string FormatAttributeName(string attribute) => attribute
+        .Replace("_Core", "")
+        .Replace("_Percent", "")
+        .Replace('_', ' ');
+
     public static string FormatAttribute(NodeAttribute attribute)
     {
-        string name = attribute.Attribute
-            .Replace("_Core", "")
-            .Replace("_Percent", "")
-            .Replace('_', ' ');
+        string name = FormatAttributeName(attribute.Attribute);
 
         if (attribute.Value is not double value)
             return name;

@@ -1,0 +1,82 @@
+<Window
+    x:Class="D4LootBench.App.Views.LayoutOptimizerWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Plan Layout"
+    Height="560" Width="560"
+    MinHeight="420" MinWidth="480"
+    WindowStartupLocation="CenterOwner"
+    ShowInTaskbar="False">
+
+    <DockPanel Margin="12">
+        <TextBlock DockPanel.Dock="Top" TextWrapping="Wrap" Margin="0,0,0,8"
+                   Text="Pick the boards and glyphs you want; the optimizer chooses positions, rotations, and which glyph goes on which board, then solves the cheapest path reaching every board's legendary node and activating every glyph." />
+
+        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+            <Button Content="Optimize" Width="90" Margin="0,0,8,0" IsDefault="True" Click="OnOptimize" />
+            <Button Content="Cancel" Width="80" IsCancel="True" />
+        </StackPanel>
+
+        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="0,8,0,0">
+            <TextBlock Text="Boards to use (incl. starter):" VerticalAlignment="Center" Margin="0,0,5,0" />
+            <ComboBox x:Name="MaxBoardsBox" Width="46" Margin="0,0,14,0" />
+            <TextBlock Text="Glyph level:" VerticalAlignment="Center" Margin="0,0,5,0" />
+            <TextBox x:Name="GlyphLevelBox" Width="40" Text="100" Margin="0,0,14,0"
+                     ToolTip="Sets the glyph radius: 3 below level 25, 4 to 49, 5 from 50" />
+            <TextBlock Text="Required stat:" VerticalAlignment="Center" Margin="0,0,5,0" />
+            <TextBox x:Name="RequiredStatBox" Width="40" Text="40"
+                     ToolTip="In-radius stat needed to activate a glyph (engine-side value)" />
+        </StackPanel>
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="10" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <TextBlock Grid.Row="0" Grid.Column="0" Text="Boards" FontWeight="SemiBold" Margin="0,0,0,4" />
+            <TextBlock Grid.Row="1" Grid.Column="0" Text="Must use is always included; Consider lets the optimizer pick the best."
+                       FontSize="11" Foreground="#888" TextWrapping="Wrap" Margin="0,0,0,4" />
+            <Border Grid.Row="2" Grid.Column="0" BorderBrush="#DDD" BorderThickness="1" CornerRadius="3">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <ItemsControl x:Name="BoardList" Margin="6,4">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,1">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{Binding Name}" VerticalAlignment="Center" FontSize="12" />
+                                    <ComboBox Grid.Column="1" Width="92" FontSize="11"
+                                              ItemsSource="{Binding Modes}" SelectedItem="{Binding Mode}" />
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Border>
+
+            <TextBlock Grid.Row="0" Grid.Column="2" Text="Glyphs" FontWeight="SemiBold" Margin="0,0,0,4" />
+            <TextBox Grid.Row="1" Grid.Column="2" x:Name="GlyphFilter" Margin="0,0,0,4" FontSize="11"
+                     TextChanged="OnGlyphFilterChanged" ToolTip="Type to filter glyphs" />
+            <Border Grid.Row="2" Grid.Column="2" BorderBrush="#DDD" BorderThickness="1" CornerRadius="3">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <ItemsControl x:Name="GlyphList" Margin="6,4">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <CheckBox Content="{Binding Name}" IsChecked="{Binding Selected}" FontSize="12" Margin="0,1" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Border>
+        </Grid>
+    </DockPanel>
+</Window>

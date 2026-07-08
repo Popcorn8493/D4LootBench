@@ -6,7 +6,8 @@ namespace D4LootBench.Paragon.Solver;
 /// Finds the cheapest connected set of paragon nodes containing the start node and all targets.
 /// Every node costs one point (the start node is free), so this is a node-weighted Steiner tree
 /// with unit weights: exact Dreyfus–Wagner dynamic programming up to <see cref="MaxExactTargets"/>
-/// targets, then a nearest-terminal-insertion heuristic with leaf pruning.
+/// targets, then a nearest-terminal-insertion heuristic with leaf pruning. Optional
+/// <see cref="SolverConstraints"/> raise per-cell weights (avoid) or block cells outright (exclude).
 /// </summary>
 public static class SteinerSolver
 {
@@ -15,13 +16,37 @@ public static class SteinerSolver
 
     private const int Infinity = int.MaxValue / 4;
 
-    public static SolverResult Solve(ComposedGraph graph, IReadOnlyCollection<CellRef> targets)
+    public static SolverResult Solve(ComposedGraph graph, IReadOnlyCollection<CellRef> targets) =>
+        Solve(graph, targets, SolverConstraints.None);
+
+    public static SolverResult Solve(ComposedGraph graph, IReadOnlyCollection<CellRef> targets, SolverConstraints constraints)
     {
+        int n = graph.Vertices.Count;
+        var weights = new int[n];
+        Array.Fill(weights, 1);
+        foreach (var (cell, weight) in constraints.CellWeights)
+        {
+            if (graph.TryGetVertex(cell, out int v))
+                weights[v] = Math.Max(1, weight);
+        }
+
+        var blocked = new bool[n];
+        foreach (var cell in constraints.BlockedCells)
+        {
+            if (graph.TryGetVertex(cell, out int v))
+                blocked[v] = true;
+        }
+        weights[graph.StartVertex] = 0;
+        blocked[graph.StartVertex] = false;
+
         var terminalVertices = new List<int>();
         foreach (var cell in targets.Distinct())
         {
             if (!graph.TryGetVertex(cell, out int vertex))
                 return SolverResult.Failed($"No node at board slot {cell.BoardSlot}, cell ({cell.X}, {cell.Y}).");
+            if (blocked[vertex])
+                return SolverResult.Failed(
+                    $"Target at board slot {cell.BoardSlot}, cell ({cell.X}, {cell.Y}) is excluded — remove the exclusion or the target.");
             if (vertex != graph.StartVertex)
                 terminalVertices.Add(vertex);
         }
@@ -30,10 +55,11 @@ public static class SteinerSolver
             return new SolverResult { Success = true, IsOptimal = true };
 
         var chosen = terminalVertices.Count <= MaxExactTargets
-            ? SolveExact(graph, terminalVertices)
-            : SolveHeuristic(graph, terminalVertices);
+            ? SolveExact(graph, terminalVertices, weights, blocked)
+            : SolveHeuristic(graph, terminalVertices, weights, blocked);
         if (chosen is null)
-            return SolverResult.Failed("Not all targets are reachable from the start node with the current board layout.");
+            return SolverResult.Failed(
+                "Not all targets are reachable from the start node with the current board layout and exclusions.");
 
         chosen.Remove(graph.StartVertex);
         return new SolverResult
@@ -44,14 +70,12 @@ public static class SteinerSolver
         };
     }
 
-    private static int Weight(ComposedGraph graph, int vertex) => vertex == graph.StartVertex ? 0 : 1;
-
     /// <summary>
     /// Dreyfus–Wagner over terminal subsets. dp[S][v] = min cost of a tree spanning S ∪ {v},
     /// counting the weight of every node in the tree except the root v's own weight is included
     /// too — we subtract the double-counted root on merges. The answer reads at the start vertex.
     /// </summary>
-    private static HashSet<int>? SolveExact(ComposedGraph graph, List<int> terminals)
+    private static HashSet<int>? SolveExact(ComposedGraph graph, List<int> terminals, int[] weights, bool[] blocked)
     {
         int n = graph.Vertices.Count;
         int k = terminals.Count;
@@ -69,7 +93,7 @@ public static class SteinerSolver
 
         for (int t = 0; t < k; t++)
         {
-            dp[1 << t][terminals[t]] = Weight(graph, terminals[t]);
+            dp[1 << t][terminals[t]] = weights[terminals[t]];
         }
 
         var queue = new PriorityQueue<int, int>();
@@ -86,7 +110,7 @@ public static class SteinerSolver
                 {
                     if (dpA[v] >= Infinity || dpB[v] >= Infinity)
                         continue;
-                    int cost = dpA[v] + dpB[v] - Weight(graph, v);
+                    int cost = dpA[v] + dpB[v] - weights[v];
                     if (cost < dpS[v])
                     {
                         dpS[v] = cost;
@@ -108,7 +132,9 @@ public static class SteinerSolver
                     continue;
                 foreach (int u in graph.Adjacency[v])
                 {
-                    int next = cost + Weight(graph, u);
+                    if (blocked[u])
+                        continue;
+                    int next = cost + weights[u];
                     if (next < dpS[u])
                     {
                         dpS[u] = next;
@@ -148,7 +174,7 @@ public static class SteinerSolver
     /// Repeatedly connects the nearest unreached terminal to the growing tree via a cheapest
     /// path (multi-source Dijkstra from every tree vertex), then prunes needless leaves.
     /// </summary>
-    private static HashSet<int>? SolveHeuristic(ComposedGraph graph, List<int> terminals)
+    private static HashSet<int>? SolveHeuristic(ComposedGraph graph, List<int> terminals, int[] weights, bool[] blocked)
     {
         int n = graph.Vertices.Count;
         var inTree = new HashSet<int> { graph.StartVertex };
@@ -182,7 +208,9 @@ public static class SteinerSolver
                 }
                 foreach (int u in graph.Adjacency[v])
                 {
-                    int next = cost + Weight(graph, u);
+                    if (blocked[u])
+                        continue;
+                    int next = cost + weights[u];
                     if (next < dist[u])
                     {
                         dist[u] = next;
