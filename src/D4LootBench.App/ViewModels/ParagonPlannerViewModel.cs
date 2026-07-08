@@ -1,7 +1,10 @@
 using System.Collections.ObjectModel;
+using System.IO;
+using System.Net.Http;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using D4LootBench.App.Views;
 using D4LootBench.Paragon.Data;
 using D4LootBench.Paragon.Import;
 using D4LootBench.Paragon.Models;
@@ -198,7 +201,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
         SetStatus("Click nodes to mark targets, then Solve.");
     }
 
-    // ── Maxroll variant code interop ─────────────────────────────────────
+    // ── Maxroll variant code / Mobalytics page interop ───────────────────
 
     [RelayCommand]
     private void ImportMaxrollCode()
@@ -223,6 +226,128 @@ public partial class ParagonPlannerViewModel : ObservableObject
             return;
         }
 
+        ApplyImportedBuild(build, "Maxroll");
+    }
+
+    [RelayCommand]
+    private async Task ImportMobalytics()
+    {
+        string text = Clipboard.ContainsText() ? Clipboard.GetText().Trim() : "";
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            SetStatus("Copy a Mobalytics build guide URL (or the page's HTML) to the clipboard first.", error: true);
+            return;
+        }
+
+        string html = text;
+        if (text.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+        {
+            if (!text.Contains("mobalytics.gg", StringComparison.OrdinalIgnoreCase))
+            {
+                SetStatus("The clipboard URL is not a mobalytics.gg build page.", error: true);
+                return;
+            }
+            SetStatus("Fetching the Mobalytics page…");
+            try
+            {
+                html = await FetchPageAsync(text.Split('#')[0]);
+            }
+            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or InvalidOperationException)
+            {
+                SetStatus($"Couldn't fetch the page ({ex.Message}). {ManualHtmlHint}", error: true);
+                return;
+            }
+        }
+
+        ConvertedMaxrollBuild build;
+        string title;
+        try
+        {
+            var variants = MobalyticsParagonImporter.ExtractVariants(html);
+            var variant = variants.Count == 1 ? variants[0] : PickVariant(variants);
+            if (variant is null)
+            {
+                SetStatus("Import cancelled.");
+                return;
+            }
+            build = MobalyticsParagonImporter.ToBuild(variant, ParagonDatabase.Data);
+            ComposedGraph.Build(build.Layout);
+            title = variant.Title;
+        }
+        catch (Exception ex) when (ex is FormatException or ArgumentException or InvalidOperationException)
+        {
+            SetStatus(html.Contains("cf_chl", StringComparison.Ordinal)
+                ? $"Cloudflare blocked the fetch. {ManualHtmlHint}"
+                : $"Import failed: {ex.Message}", error: true);
+            return;
+        }
+
+        ApplyImportedBuild(build, $"Mobalytics '{title}'");
+    }
+
+    private const string ManualHtmlHint =
+        "Open the build in a browser, view the page source (Ctrl+U), copy it all, " +
+        "then click Import Mobalytics again with the HTML in the clipboard.";
+
+    private const string BrowserUserAgent =
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36";
+
+    /// <summary>
+    /// Mobalytics sits behind Cloudflare, which 403s HttpClient by TLS fingerprint but lets the
+    /// in-box Windows curl.exe through — prefer it, and fall back to HttpClient without it.
+    /// </summary>
+    private static async Task<string> FetchPageAsync(string url)
+    {
+        string curl = Path.Combine(Environment.SystemDirectory, "curl.exe");
+        if (File.Exists(curl))
+        {
+            var psi = new System.Diagnostics.ProcessStartInfo(curl)
+            {
+                RedirectStandardOutput = true,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                StandardOutputEncoding = System.Text.Encoding.UTF8,
+            };
+            foreach (var arg in new[] { "-sL", "--compressed", "--max-time", "20", "-H", $"User-Agent: {BrowserUserAgent}", url })
+                psi.ArgumentList.Add(arg);
+            using var process = System.Diagnostics.Process.Start(psi)
+                ?? throw new InvalidOperationException("curl.exe failed to start.");
+            string output = await process.StandardOutput.ReadToEndAsync();
+            await process.WaitForExitAsync();
+            if (process.ExitCode == 0 && output.Length > 0)
+                return output;
+        }
+        return await Http.GetStringAsync(url);
+    }
+
+    private static readonly HttpClient Http = CreateHttpClient();
+
+    private static HttpClient CreateHttpClient()
+    {
+        var client = new HttpClient(new HttpClientHandler
+        {
+            AutomaticDecompression = System.Net.DecompressionMethods.All,
+        })
+        {
+            Timeout = TimeSpan.FromSeconds(20),
+            DefaultRequestVersion = System.Net.HttpVersion.Version20,
+            DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrHigher,
+        };
+        client.DefaultRequestHeaders.UserAgent.ParseAdd(BrowserUserAgent);
+        return client;
+    }
+
+    private static MobalyticsParagonVariant? PickVariant(IReadOnlyList<MobalyticsParagonVariant> variants)
+    {
+        var dialog = new MobalyticsVariantPickerWindow(variants)
+        {
+            Owner = Application.Current?.Windows.OfType<ParagonPlannerWindow>().FirstOrDefault(),
+        };
+        return dialog.ShowDialog() == true ? dialog.Selected : null;
+    }
+
+    private void ApplyImportedBuild(ConvertedMaxrollBuild build, string source)
+    {
         string? className = build.Layout.Boards[0].Board.ClassName;
         if (className is not null && className != SelectedClass)
             SelectedClass = className;
@@ -241,7 +366,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
         SolveDetails = _importedGlyphs.Count == 0
             ? ""
             : "Imported glyphs: " + string.Join(", ", _importedGlyphs.Select(DescribeGlyph));
-        SetStatus($"Imported Maxroll build: {_placedBoards.Count} board(s), {allocated.Count} allocated node(s).");
+        SetStatus($"Imported {source} build: {_placedBoards.Count} board(s), {allocated.Count} allocated node(s).");
     }
 
     [RelayCommand]

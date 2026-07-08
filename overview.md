@@ -38,9 +38,11 @@ D4LootBench.slnx
 │   ├── Converters/           # BoolToBrushConverter, ValidationSeverityConverter
 │   ├── Services/             # ServiceConfiguration, LlmSettingsService, LlmProviderFactory, SettingsAwareLlmProvider
 │   └── Utilities/            # ColorUtility (HSV/ABGR conversion, contrast helper)
-├── src/D4LootBench.Paragon/       # Pure class library — paragon board data + models (Phase 5, in progress)
+├── src/D4LootBench.Paragon/       # Pure class library — paragon board tool (Phase 5)
 │   ├── Models/               # ParagonData, ParagonBoardDef, ParagonNodeDef, ParagonGlyphDef, thresholds
-│   └── Data/                 # ParagonDatabase lazy singleton, embedded paragon-data.json (79 boards / 561 nodes / 160 glyphs)
+│   ├── Data/                 # ParagonDatabase lazy singleton, embedded paragon-data.json (79 boards / 561 nodes / 160 glyphs)
+│   ├── Solver/               # ParagonLayout, ComposedGraph, SteinerSolver, GlyphRadius
+│   └── Import/               # MaxrollParagonCodec (variant codes), MobalyticsParagonImporter (build-guide pages)
 ├── tests/D4LootBench.Core.Tests/
 │   ├── Codec/                # FilterCodecTests — round-trip, real Raxx filter, idempotency
 │   ├── Validation/           # FilterValidatorTests — 19 tests for limits, boundaries, indices

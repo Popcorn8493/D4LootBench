@@ -42,6 +42,8 @@
 
                     <Button Command="{Binding ImportMaxrollCodeCommand}" Content="Import Code" Padding="10,3" Margin="0,0,6,0"
                             ToolTip="Import a Maxroll planner paragon variant code from the clipboard" />
+                    <Button Command="{Binding ImportMobalyticsCommand}" Content="Import Mobalytics" Padding="10,3" Margin="0,0,6,0"
+                            ToolTip="Import a Mobalytics build guide from the clipboard — copy the page URL (or the page's HTML if fetching is blocked)" />
                     <Button Command="{Binding ExportMaxrollCodeCommand}" Content="Export Code" Padding="10,3"
                             ToolTip="Copy the current allocation as a Maxroll planner variant code" />
                 </StackPanel>

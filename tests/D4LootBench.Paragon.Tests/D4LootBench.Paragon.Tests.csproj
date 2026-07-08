@@ -25,4 +25,8 @@
     <ProjectReference Include="..\..\src\D4LootBench.Paragon\D4LootBench.Paragon.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="Fixtures\**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>
