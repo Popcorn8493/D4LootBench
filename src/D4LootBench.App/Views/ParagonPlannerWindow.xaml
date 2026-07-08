@@ -26,50 +26,97 @@
     <DockPanel>
         <!-- ── Controls ─────────────────────────────────────────────── -->
         <Border DockPanel.Dock="Top" Padding="10,8" BorderThickness="0,0,0,1" BorderBrush="#DDD">
-            <StackPanel Orientation="Horizontal">
-                <TextBlock Text="Class:" VerticalAlignment="Center" Margin="0,0,5,0" />
-                <ComboBox ItemsSource="{Binding Classes}" SelectedItem="{Binding SelectedClass}"
-                          Width="110" Margin="0,0,12,0" />
+            <StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                    <TextBlock Text="Class:" VerticalAlignment="Center" Margin="0,0,5,0" />
+                    <ComboBox ItemsSource="{Binding Classes}" SelectedItem="{Binding SelectedClass}"
+                              Width="110" Margin="0,0,16,0" />
 
-                <TextBlock Text="Attached board:" VerticalAlignment="Center" Margin="0,0,5,0" />
-                <ComboBox ItemsSource="{Binding BoardOptions}" SelectedItem="{Binding SelectedBoardOption}"
-                          Width="170" Margin="0,0,12,0" />
+                    <Button Command="{Binding SolveCommand}" Padding="10,3" Margin="0,0,6,0">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE9D2;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,5,0" />
+                            <TextBlock Text="Solve Path" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                    <Button Command="{Binding ClearTargetsCommand}" Content="Clear Targets" Padding="10,3" Margin="0,0,16,0" />
 
-                <TextBlock Text="Rotation:" VerticalAlignment="Center" Margin="0,0,5,0" />
-                <ComboBox ItemsSource="{Binding Rotations}" SelectedItem="{Binding SelectedRotation}"
-                          Width="60" Margin="0,0,16,0" />
+                    <Button Command="{Binding ImportMaxrollCodeCommand}" Content="Import Code" Padding="10,3" Margin="0,0,6,0"
+                            ToolTip="Import a Maxroll planner paragon variant code from the clipboard" />
+                    <Button Command="{Binding ExportMaxrollCodeCommand}" Content="Export Code" Padding="10,3"
+                            ToolTip="Copy the current allocation as a Maxroll planner variant code" />
+                </StackPanel>
 
-                <Button Command="{Binding SolveCommand}" Padding="10,3" Margin="0,0,6,0">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="&#xE9D2;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,5,0" />
-                        <TextBlock Text="Solve Path" VerticalAlignment="Center" />
-                    </StackPanel>
-                </Button>
-                <Button Command="{Binding ClearTargetsCommand}" Content="Clear Targets" Padding="10,3" />
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="Attach:" VerticalAlignment="Center" Margin="0,0,5,0" />
+                    <ComboBox ItemsSource="{Binding AttachableBoards}" SelectedItem="{Binding SelectedAttachBoard}"
+                              DisplayMemberPath="Name" Width="170" Margin="0,0,8,0" />
+                    <TextBlock Text="to slot" VerticalAlignment="Center" Margin="0,0,5,0" />
+                    <ComboBox ItemsSource="{Binding ParentSlots}" SelectedItem="{Binding SelectedParentSlot}"
+                              Width="46" Margin="0,0,8,0" />
+                    <TextBlock Text="edge" VerticalAlignment="Center" Margin="0,0,5,0" />
+                    <ComboBox ItemsSource="{Binding Edges}" SelectedItem="{Binding SelectedEdge}"
+                              Width="80" Margin="0,0,8,0" />
+                    <TextBlock Text="rotation" VerticalAlignment="Center" Margin="0,0,5,0" />
+                    <ComboBox ItemsSource="{Binding Rotations}" SelectedItem="{Binding SelectedRotation}"
+                              Width="60" Margin="0,0,10,0" />
+                    <Button Command="{Binding AddBoardCommand}" Content="Add Board" Padding="10,3" Margin="0,0,6,0" />
+                    <Button Command="{Binding RemoveLastBoardCommand}" Content="Remove Last" Padding="10,3" />
+                </StackPanel>
             </StackPanel>
         </Border>
 
         <!-- ── Status ───────────────────────────────────────────────── -->
         <Border DockPanel.Dock="Bottom" Padding="10,6" BorderThickness="0,1,0,0" BorderBrush="#DDD">
-            <TextBlock Text="{Binding StatusText}">
-                <TextBlock.Style>
-                    <Style TargetType="TextBlock">
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding StatusIsError}" Value="True">
-                                <Setter Property="Foreground" Value="#C0392B" />
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </TextBlock.Style>
-            </TextBlock>
+            <StackPanel>
+                <TextBlock Text="{Binding StatusText}" TextWrapping="Wrap">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding StatusIsError}" Value="True">
+                                    <Setter Property="Foreground" Value="#C0392B" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+                <TextBlock Text="{Binding SolveDetails}" TextWrapping="Wrap" Foreground="#666" Margin="0,3,0,0">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding SolveDetails}" Value="">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </StackPanel>
         </Border>
 
         <!-- ── Board canvas ─────────────────────────────────────────── -->
         <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
                       Background="{StaticResource BoardBackground}" Padding="20">
-            <ItemsControl ItemsSource="{Binding Cells}"
-                          Width="{Binding CanvasWidth}" Height="{Binding CanvasHeight}"
-                          HorizontalAlignment="Center" VerticalAlignment="Center">
+            <Grid Width="{Binding CanvasWidth}" Height="{Binding CanvasHeight}"
+                  HorizontalAlignment="Center" VerticalAlignment="Center">
+            <ItemsControl ItemsSource="{Binding BoardLabels}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <Canvas />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemContainerStyle>
+                    <Style TargetType="ContentPresenter">
+                        <Setter Property="Canvas.Left" Value="{Binding CanvasLeft}" />
+                        <Setter Property="Canvas.Top" Value="{Binding CanvasTop}" />
+                    </Style>
+                </ItemsControl.ItemContainerStyle>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type vm:BoardLabel}">
+                        <TextBlock Text="{Binding Text}" Foreground="#C9A45C" FontSize="12" FontWeight="SemiBold" />
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <ItemsControl ItemsSource="{Binding Cells}">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
                         <Canvas />
@@ -161,6 +208,7 @@
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
+            </Grid>
         </ScrollViewer>
     </DockPanel>
 </Window>

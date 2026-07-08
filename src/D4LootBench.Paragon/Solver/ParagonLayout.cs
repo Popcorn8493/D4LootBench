@@ -39,9 +39,17 @@ public sealed class ParagonLayout
     {
         Validate(boards);
         Boards = boards;
+        BoardPositions = ComputePositions(boards);
     }
 
     public IReadOnlyList<PlacedBoard> Boards { get; }
+
+    /// <summary>
+    /// Physical position of each board in board-sized grid units; slot 0 is at (0, 0), a board
+    /// attached at its parent's Top edge sits one unit up (Y − 1), and so on. No two boards
+    /// may occupy the same position.
+    /// </summary>
+    public IReadOnlyList<(int X, int Y)> BoardPositions { get; }
 
     /// <summary>Convenience: a layout consisting of just one board (typically the class starter).</summary>
     public static ParagonLayout Single(ParagonBoardDef board) =>
@@ -55,9 +63,14 @@ public sealed class ParagonLayout
             throw new ArgumentException($"A layout allows at most {MaxBoards} boards.", nameof(boards));
 
         var usedGates = new HashSet<(int Slot, BoardEdge Edge)>();
+        var usedBoards = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         for (int slot = 0; slot < boards.Count; slot++)
         {
             var placed = boards[slot];
+            if (!usedBoards.Add(placed.Board.SnoId))
+                throw new ArgumentException(
+                    $"Slot {slot}: board {placed.Board.InternalName} is already in the layout — each board can be used once.",
+                    nameof(boards));
             if (placed.RotationSteps is < 0 or > 3)
                 throw new ArgumentException($"Slot {slot}: rotation must be 0–3 quarter turns.", nameof(boards));
 
@@ -75,6 +88,29 @@ public sealed class ParagonLayout
             if (!usedGates.Add((parent, edge)))
                 throw new ArgumentException($"Slot {slot}: gate {edge} of slot {parent} is already occupied.", nameof(boards));
         }
+    }
+
+    private static (int X, int Y)[] ComputePositions(IReadOnlyList<PlacedBoard> boards)
+    {
+        var positions = new (int X, int Y)[boards.Count];
+        var occupied = new HashSet<(int, int)> { (0, 0) };
+        for (int slot = 1; slot < boards.Count; slot++)
+        {
+            var (px, py) = positions[boards[slot].ParentSlot!.Value];
+            var (dx, dy) = boards[slot].AttachEdge!.Value switch
+            {
+                BoardEdge.Top => (0, -1),
+                BoardEdge.Bottom => (0, 1),
+                BoardEdge.Left => (-1, 0),
+                _ => (1, 0),
+            };
+            positions[slot] = (px + dx, py + dy);
+            if (!occupied.Add(positions[slot]))
+                throw new ArgumentException(
+                    $"Slot {slot} ({boards[slot].Board.InternalName}) would overlap another board at position ({px + dx}, {py + dy}).",
+                    nameof(boards));
+        }
+        return positions;
     }
 
     /// <summary>Transforms stored board coordinates into display coordinates after rotation.</summary>

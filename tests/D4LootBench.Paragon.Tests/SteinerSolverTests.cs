@@ -192,25 +192,108 @@ public class SteinerSolverTests
     }
 
     [Fact]
-    public void Layout_rejects_double_booked_gates_and_oversized_layouts()
+    public void Layout_rejects_double_booked_gates_duplicates_and_oversized_layouts()
     {
         var starter = Board("Paragon_Sorc_00");
-        var other = Board("Paragon_Sorc_05");
 
         Should.Throw<ArgumentException>(() => new ParagonLayout(
         [
             new PlacedBoard { Board = starter },
-            new PlacedBoard { Board = other, ParentSlot = 0, AttachEdge = BoardEdge.Top },
-            new PlacedBoard { Board = other, ParentSlot = 0, AttachEdge = BoardEdge.Top },
-        ]));
+            new PlacedBoard { Board = Board("Paragon_Sorc_01"), ParentSlot = 0, AttachEdge = BoardEdge.Top },
+            new PlacedBoard { Board = Board("Paragon_Sorc_02"), ParentSlot = 0, AttachEdge = BoardEdge.Top },
+        ])).Message.ShouldContain("already occupied");
+
+        Should.Throw<ArgumentException>(() => new ParagonLayout(
+        [
+            new PlacedBoard { Board = starter },
+            new PlacedBoard { Board = Board("Paragon_Sorc_01"), ParentSlot = 0, AttachEdge = BoardEdge.Top },
+            new PlacedBoard { Board = Board("Paragon_Sorc_01"), ParentSlot = 1, AttachEdge = BoardEdge.Top },
+        ])).Message.ShouldContain("each board can be used once");
 
         var six = new List<PlacedBoard> { new() { Board = starter } };
-        var edges = new[] { BoardEdge.Top, BoardEdge.Left, BoardEdge.Right, BoardEdge.Bottom, BoardEdge.Top };
+        var edges = new[] { BoardEdge.Top, BoardEdge.Top, BoardEdge.Top, BoardEdge.Top, BoardEdge.Top };
         for (int i = 0; i < 5; i++)
         {
-            six.Add(new PlacedBoard { Board = other, ParentSlot = i, AttachEdge = edges[i] });
+            six.Add(new PlacedBoard { Board = Board($"Paragon_Sorc_0{i + 1}"), ParentSlot = i, AttachEdge = edges[i] });
         }
-        Should.Throw<ArgumentException>(() => new ParagonLayout(six));
+        Should.Throw<ArgumentException>(() => new ParagonLayout(six))
+            .Message.ShouldContain("at most");
+    }
+
+    [Fact]
+    public void Board_positions_follow_the_attachment_tree_and_overlaps_are_rejected()
+    {
+        var starter = Board("Paragon_Sorc_00");
+
+        var layout = new ParagonLayout(
+        [
+            new PlacedBoard { Board = starter },
+            new PlacedBoard { Board = Board("Paragon_Sorc_01"), ParentSlot = 0, AttachEdge = BoardEdge.Top },
+            new PlacedBoard { Board = Board("Paragon_Sorc_02"), ParentSlot = 1, AttachEdge = BoardEdge.Left },
+        ]);
+        layout.BoardPositions.ShouldBe([(0, 0), (0, -1), (-1, -1)]);
+
+        // Walking Top → Left → Bottom → Right returns to the starter's position.
+        var ex = Should.Throw<ArgumentException>(() => new ParagonLayout(
+        [
+            new PlacedBoard { Board = starter },
+            new PlacedBoard { Board = Board("Paragon_Sorc_01"), ParentSlot = 0, AttachEdge = BoardEdge.Top },
+            new PlacedBoard { Board = Board("Paragon_Sorc_02"), ParentSlot = 1, AttachEdge = BoardEdge.Left },
+            new PlacedBoard { Board = Board("Paragon_Sorc_03"), ParentSlot = 2, AttachEdge = BoardEdge.Bottom },
+            new PlacedBoard { Board = Board("Paragon_Sorc_04"), ParentSlot = 3, AttachEdge = BoardEdge.Right },
+        ]));
+        ex.Message.ShouldContain("overlap");
+    }
+
+    [Fact]
+    public void Physically_adjacent_sibling_boards_connect_through_their_facing_gates()
+    {
+        // Slots 1 and 2 both attach upward-left of the starter, ending side by side:
+        // positions (0,-1) and (-1,-1). Their Left/Right gates must connect even though
+        // neither is the other's attachment parent.
+        var layout = new ParagonLayout(
+        [
+            new PlacedBoard { Board = Board("Paragon_Sorc_00") },
+            new PlacedBoard { Board = Board("Paragon_Sorc_01"), ParentSlot = 0, AttachEdge = BoardEdge.Top },
+            new PlacedBoard { Board = Board("Paragon_Sorc_02"), ParentSlot = 1, AttachEdge = BoardEdge.Left },
+        ]);
+        var graph = ComposedGraph.Build(layout);
+
+        graph.TryGetVertex(new CellRef(1, 0, 10), out int leftGateOfSlot1).ShouldBeTrue();
+        graph.TryGetVertex(new CellRef(2, 20, 10), out int rightGateOfSlot2).ShouldBeTrue();
+        graph.Adjacency[leftGateOfSlot1].ShouldContain(rightGateOfSlot2);
+    }
+
+    [Fact]
+    public void Glyph_radius_level_breakpoints_match_season_14()
+    {
+        GlyphRadius.RadiusForLevel(1).ShouldBe(3);
+        GlyphRadius.RadiusForLevel(24).ShouldBe(3);
+        GlyphRadius.RadiusForLevel(25).ShouldBe(4);
+        GlyphRadius.RadiusForLevel(49).ShouldBe(4);
+        GlyphRadius.RadiusForLevel(50).ShouldBe(5);
+        GlyphRadius.RadiusForLevel(150).ShouldBe(5);
+    }
+
+    [Fact]
+    public void Glyph_radius_totals_respect_metric_board_boundary_and_purchase_set()
+    {
+        var graph = ComposedGraph.Build(ParagonLayout.Single(Board("Paragon_Sorc_00")));
+        var socket = graph.Vertices.First(v => v.Node.Kind == ParagonNodeKind.Rare).Cell;
+
+        // Purchase every stat-bearing cell on the board, then shrink the radius.
+        var all = graph.Vertices.Select(v => v.Cell).ToList();
+        var wide = GlyphRadius.AttributeTotalsInRange(graph, socket, all, 40, RadiusMetric.Chebyshev);
+        wide.Keys.ShouldContain("Intelligence_Core");
+
+        var manhattan1 = GlyphRadius.AttributeTotalsInRange(graph, socket, all, 1, RadiusMetric.Manhattan);
+        var chebyshev1 = GlyphRadius.AttributeTotalsInRange(graph, socket, all, 1, RadiusMetric.Chebyshev);
+        // Chebyshev radius 1 covers 8 neighbors, Manhattan only 4 — totals can't exceed.
+        manhattan1.Values.Sum().ShouldBeLessThanOrEqualTo(chebyshev1.Values.Sum());
+        chebyshev1.Values.Sum().ShouldBeLessThan(wide.Values.Sum());
+
+        // Nothing purchased → nothing counted.
+        GlyphRadius.AttributeTotalsInRange(graph, socket, [], 5, RadiusMetric.Chebyshev).ShouldBeEmpty();
     }
 
     [Fact]

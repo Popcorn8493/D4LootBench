@@ -69,26 +69,42 @@ public sealed class ComposedGraph
             Connect(cell with { Y = cell.Y + 1 }, index);
         }
 
+        // The attachment gate must exist — that is what attaching at an edge means.
         for (int slot = 1; slot < layout.Boards.Count; slot++)
         {
             var placed = layout.Boards[slot];
             int parentSlot = placed.ParentSlot!.Value;
             var edge = placed.AttachEdge!.Value;
 
-            var parentGate = ParagonLayout.GateCell(edge, layout.Boards[parentSlot].Board.Width);
-            var childGate = ParagonLayout.GateCell(ParagonLayout.Opposite(edge), placed.Board.Width);
-
-            if (!vertexByCell.TryGetValue(new CellRef(parentSlot, parentGate.X, parentGate.Y), out int parentVertex)
-                || Vertex(parentVertex).Node.Kind != ParagonNodeKind.Gate)
+            if (GateVertex(parentSlot, edge) is null)
                 throw new InvalidOperationException(
                     $"Slot {parentSlot} ({layout.Boards[parentSlot].Board.InternalName}) has no gate on its {edge} edge.");
-            if (!vertexByCell.TryGetValue(new CellRef(slot, childGate.X, childGate.Y), out int childVertex)
-                || Vertex(childVertex).Node.Kind != ParagonNodeKind.Gate)
+            if (GateVertex(slot, ParagonLayout.Opposite(edge)) is null)
                 throw new InvalidOperationException(
                     $"Slot {slot} ({placed.Board.InternalName}) has no gate facing the {edge} edge of its parent.");
+        }
 
-            adjacency[parentVertex].Add(childVertex);
-            adjacency[childVertex].Add(parentVertex);
+        // Every pair of physically adjacent boards connects through its facing gates —
+        // the game joins gates by adjacency, not by attachment order.
+        for (int a = 0; a < layout.Boards.Count; a++)
+        {
+            for (int b = a + 1; b < layout.Boards.Count; b++)
+            {
+                var (ax, ay) = layout.BoardPositions[a];
+                var (bx, by) = layout.BoardPositions[b];
+                BoardEdge edge;
+                if (ax == bx && ay - 1 == by) edge = BoardEdge.Top;
+                else if (ax == bx && ay + 1 == by) edge = BoardEdge.Bottom;
+                else if (ay == by && ax - 1 == bx) edge = BoardEdge.Left;
+                else if (ay == by && ax + 1 == bx) edge = BoardEdge.Right;
+                else continue;
+
+                if (GateVertex(a, edge) is int gateA && GateVertex(b, ParagonLayout.Opposite(edge)) is int gateB)
+                {
+                    adjacency[gateA].Add(gateB);
+                    adjacency[gateB].Add(gateA);
+                }
+            }
         }
 
         int startVertex = -1;
@@ -106,7 +122,14 @@ public sealed class ComposedGraph
 
         return new ComposedGraph(vertices, adjacency, vertexByCell, startVertex);
 
-        GraphVertex Vertex(int index) => vertices[index];
+        int? GateVertex(int slot, BoardEdge edge)
+        {
+            var (x, y) = ParagonLayout.GateCell(edge, layout.Boards[slot].Board.Width);
+            return vertexByCell.TryGetValue(new CellRef(slot, x, y), out int vertex)
+                   && vertices[vertex].Node.Kind == ParagonNodeKind.Gate
+                ? vertex
+                : null;
+        }
 
         void Connect(CellRef neighbor, int index)
         {

@@ -1,28 +1,35 @@
 using System.Collections.ObjectModel;
+using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using D4LootBench.Paragon.Data;
+using D4LootBench.Paragon.Import;
 using D4LootBench.Paragon.Models;
 using D4LootBench.Paragon.Solver;
 
 namespace D4LootBench.App.ViewModels;
 
-/// <summary>An attachable-board choice; a null Board means "starter board only".</summary>
-public sealed record BoardOption(string Label, ParagonBoardDef? Board)
-{
-    public override string ToString() => Label;
-}
+/// <summary>A floating text label positioned on the board canvas.</summary>
+public sealed record BoardLabel(string Text, double CanvasLeft, double CanvasTop);
 
 /// <summary>
-/// Paragon planner: class starter board plus optionally one board attached at the top gate.
-/// Click nodes to mark targets; Solve finds the cheapest connected path from the start node.
+/// Paragon planner: build a board layout (starter plus up to four attached boards with
+/// rotation), click nodes to mark targets, and Solve finds the cheapest connected path
+/// from the start node through every target.
 /// </summary>
 public partial class ParagonPlannerViewModel : ObservableObject
 {
     public const double CellSize = 26;
-    private const double BoardGap = 16;
+    private const double BoardGap = 30;
+    private const double TopPadding = 24;
 
+    /// <summary>300 from leveling plus 42 from seasonal rank rewards (Season 14).</summary>
+    private const int MaxParagonPoints = 342;
+
+    private readonly List<PlacedBoard> _placedBoards = [];
     private readonly HashSet<CellRef> _targets = [];
+    private readonly List<MaxrollGlyphAssignment> _importedGlyphs = [];
+    private ParagonLayout? _layout;
     private ComposedGraph? _graph;
 
     public ParagonPlannerViewModel()
@@ -33,17 +40,26 @@ public partial class ParagonPlannerViewModel : ObservableObject
     public IReadOnlyList<string> Classes { get; } =
         ["Barbarian", "Druid", "Necromancer", "Rogue", "Sorcerer", "Spiritborn", "Paladin", "Warlock"];
 
-    public ObservableCollection<BoardOption> BoardOptions { get; } = [];
-
+    public ObservableCollection<ParagonBoardDef> AttachableBoards { get; } = [];
+    public ObservableCollection<int> ParentSlots { get; } = [];
+    public IReadOnlyList<BoardEdge> Edges { get; } =
+        [BoardEdge.Top, BoardEdge.Left, BoardEdge.Right, BoardEdge.Bottom];
     public IReadOnlyList<int> Rotations { get; } = [0, 90, 180, 270];
 
     public ObservableCollection<ParagonCellViewModel> Cells { get; } = [];
+    public ObservableCollection<BoardLabel> BoardLabels { get; } = [];
 
     [ObservableProperty]
     private string _selectedClass = "Sorcerer";
 
     [ObservableProperty]
-    private BoardOption? _selectedBoardOption;
+    private ParagonBoardDef? _selectedAttachBoard;
+
+    [ObservableProperty]
+    private int _selectedParentSlot;
+
+    [ObservableProperty]
+    private BoardEdge _selectedEdge = BoardEdge.Top;
 
     [ObservableProperty]
     private int _selectedRotation;
@@ -54,6 +70,10 @@ public partial class ParagonPlannerViewModel : ObservableObject
     [ObservableProperty]
     private bool _statusIsError;
 
+    /// <summary>Multi-line solve breakdown: glyph socket radius totals, imported glyph info.</summary>
+    [ObservableProperty]
+    private string _solveDetails = "";
+
     [ObservableProperty]
     private double _canvasWidth;
 
@@ -62,57 +82,223 @@ public partial class ParagonPlannerViewModel : ObservableObject
 
     partial void OnSelectedClassChanged(string value)
     {
-        BoardOptions.Clear();
-        BoardOptions.Add(new BoardOption("(starter board only)", null));
+        AttachableBoards.Clear();
         foreach (var board in ParagonDatabase.BoardsForClass(value).Where(b => b.BoardIndex != 0))
-            BoardOptions.Add(new BoardOption(board.Name ?? board.InternalName, board));
-        SelectedBoardOption = BoardOptions[0];
+            AttachableBoards.Add(board);
+        SelectedAttachBoard = AttachableBoards.FirstOrDefault();
+
+        _placedBoards.Clear();
+        _placedBoards.Add(new PlacedBoard { Board = StarterBoard });
+        RebuildLayout();
     }
-
-    partial void OnSelectedBoardOptionChanged(BoardOption? value) => RebuildLayout();
-
-    partial void OnSelectedRotationChanged(int value) => RebuildLayout();
 
     private ParagonBoardDef StarterBoard =>
         ParagonDatabase.BoardsForClass(SelectedClass).Single(b => b.BoardIndex == 0);
+
+    private string BoardDisplayName(ParagonBoardDef board) => board.Name ?? board.InternalName;
+
+    [RelayCommand]
+    private void AddBoard()
+    {
+        if (SelectedAttachBoard is not ParagonBoardDef board)
+            return;
+        if (_placedBoards.Count >= ParagonLayout.MaxBoards)
+        {
+            SetStatus($"A layout allows at most {ParagonLayout.MaxBoards} boards.", error: true);
+            return;
+        }
+
+        int parentSlot = SelectedParentSlot;
+        var edge = SelectedEdge;
+        var candidate = new List<PlacedBoard>(_placedBoards)
+        {
+            new()
+            {
+                Board = board,
+                ParentSlot = parentSlot,
+                AttachEdge = edge,
+                RotationSteps = SelectedRotation / 90,
+            },
+        };
+
+        try
+        {
+            // Validate the whole layout (gate availability, overlap) before committing.
+            ComposedGraph.Build(new ParagonLayout(candidate));
+        }
+        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
+        {
+            SetStatus(ex.Message, error: true);
+            return;
+        }
+
+        _placedBoards.Add(candidate[^1]);
+        RebuildLayout();
+        SetStatus($"Attached {BoardDisplayName(board)} ({edge} of slot {parentSlot}).");
+    }
+
+    [RelayCommand(CanExecute = nameof(CanRemoveLastBoard))]
+    private void RemoveLastBoard()
+    {
+        // Only the newest board is removable — later slots may attach to earlier ones.
+        _placedBoards.RemoveAt(_placedBoards.Count - 1);
+        RebuildLayout();
+        SetStatus("Removed the last attached board.");
+    }
+
+    private bool CanRemoveLastBoard() => _placedBoards.Count > 1;
 
     private void RebuildLayout()
     {
         _targets.Clear();
         Cells.Clear();
+        BoardLabels.Clear();
 
-        var placed = new List<PlacedBoard> { new() { Board = StarterBoard } };
-        if (SelectedBoardOption?.Board is ParagonBoardDef attached)
-        {
-            placed.Add(new PlacedBoard
-            {
-                Board = attached,
-                ParentSlot = 0,
-                AttachEdge = BoardEdge.Top,
-                RotationSteps = SelectedRotation / 90,
-            });
-        }
+        _layout = new ParagonLayout(_placedBoards.ToList());
+        _graph = ComposedGraph.Build(_layout);
 
-        var layout = new ParagonLayout(placed);
-        _graph = ComposedGraph.Build(layout);
-
-        // The attached board (slot 1) sits above the starter, connected gate-to-gate.
         int width = StarterBoard.Width;
-        bool hasAttached = placed.Count > 1;
-        double starterTop = hasAttached ? width * CellSize + BoardGap : 0;
+        double boardSpan = width * CellSize;
+        int minX = _layout.BoardPositions.Min(p => p.X);
+        int minY = _layout.BoardPositions.Min(p => p.Y);
+
+        var origins = new (double Left, double Top)[_placedBoards.Count];
+        for (int slot = 0; slot < _placedBoards.Count; slot++)
+        {
+            var (bx, by) = _layout.BoardPositions[slot];
+            origins[slot] = ((bx - minX) * (boardSpan + BoardGap),
+                             TopPadding + (by - minY) * (boardSpan + BoardGap));
+            BoardLabels.Add(new BoardLabel(
+                $"{slot} · {BoardDisplayName(_placedBoards[slot].Board)}",
+                origins[slot].Left,
+                origins[slot].Top - TopPadding + 4));
+        }
 
         foreach (var vertex in _graph.Vertices)
         {
-            double left = vertex.Cell.X * CellSize;
-            double top = vertex.Cell.BoardSlot == 0
-                ? starterTop + vertex.Cell.Y * CellSize
-                : vertex.Cell.Y * CellSize;
-            Cells.Add(new ParagonCellViewModel(vertex.Cell, vertex.Node, left, top));
+            var origin = origins[vertex.Cell.BoardSlot];
+            Cells.Add(new ParagonCellViewModel(
+                vertex.Cell,
+                vertex.Node,
+                origin.Left + vertex.Cell.X * CellSize,
+                origin.Top + vertex.Cell.Y * CellSize));
         }
 
-        CanvasWidth = width * CellSize;
-        CanvasHeight = starterTop + width * CellSize;
+        CanvasWidth = (_layout.BoardPositions.Max(p => p.X) - minX + 1) * (boardSpan + BoardGap) - BoardGap;
+        CanvasHeight = TopPadding + (_layout.BoardPositions.Max(p => p.Y) - minY + 1) * (boardSpan + BoardGap) - BoardGap;
+
+        ParentSlots.Clear();
+        for (int slot = 0; slot < _placedBoards.Count; slot++)
+            ParentSlots.Add(slot);
+        SelectedParentSlot = _placedBoards.Count - 1;
+
+        RemoveLastBoardCommand.NotifyCanExecuteChanged();
+        _importedGlyphs.Clear();
+        SolveDetails = "";
         SetStatus("Click nodes to mark targets, then Solve.");
+    }
+
+    // ── Maxroll variant code interop ─────────────────────────────────────
+
+    [RelayCommand]
+    private void ImportMaxrollCode()
+    {
+        string code = Clipboard.ContainsText() ? Clipboard.GetText() : "";
+        if (string.IsNullOrWhiteSpace(code))
+        {
+            SetStatus("Copy a Maxroll paragon variant code to the clipboard first.", error: true);
+            return;
+        }
+
+        ConvertedMaxrollBuild build;
+        try
+        {
+            build = MaxrollParagonCodec.ToLayout(
+                MaxrollParagonCodec.Decode(code), ParagonDatabase.BoardsByInternalName);
+            ComposedGraph.Build(build.Layout);
+        }
+        catch (Exception ex) when (ex is FormatException or ArgumentException or InvalidOperationException)
+        {
+            SetStatus($"Import failed: {ex.Message}", error: true);
+            return;
+        }
+
+        string? className = build.Layout.Boards[0].Board.ClassName;
+        if (className is not null && className != SelectedClass)
+            SelectedClass = className;
+
+        _placedBoards.Clear();
+        _placedBoards.AddRange(build.Layout.Boards);
+        RebuildLayout();
+
+        _importedGlyphs.Clear();
+        _importedGlyphs.AddRange(build.Glyphs);
+
+        var allocated = build.AllocatedCells.ToHashSet();
+        foreach (var cell in Cells)
+            cell.IsPurchased = allocated.Contains(cell.Cell);
+
+        SolveDetails = _importedGlyphs.Count == 0
+            ? ""
+            : "Imported glyphs: " + string.Join(", ", _importedGlyphs.Select(DescribeGlyph));
+        SetStatus($"Imported Maxroll build: {_placedBoards.Count} board(s), {allocated.Count} allocated node(s).");
+    }
+
+    [RelayCommand]
+    private void ExportMaxrollCode()
+    {
+        if (_layout is null || _graph is null)
+            return;
+
+        var allocated = Cells.Where(c => c.IsPurchased).Select(c => c.Cell).ToList();
+        allocated.Add(_graph.Vertices[_graph.StartVertex].Cell);
+        if (allocated.Count <= 1)
+        {
+            SetStatus("Nothing to export — solve a path (or import a build) first.", error: true);
+            return;
+        }
+
+        string code = MaxrollParagonCodec.Encode(
+            MaxrollParagonCodec.FromLayout(_layout, allocated, _importedGlyphs));
+        Clipboard.SetText(code);
+        SetStatus($"Maxroll variant code copied to the clipboard ({allocated.Count} node(s)). " +
+                  "Paste it into the Maxroll planner's Import Variant box.");
+    }
+
+    /// <summary>Per purchased glyph socket: purchased core-stat totals inside the glyph's diamond radius.</summary>
+    private string BuildSocketReport(IReadOnlyList<CellRef> purchased)
+    {
+        if (_graph is null)
+            return "";
+
+        var lines = new List<string>();
+        foreach (var cell in purchased)
+        {
+            _graph.TryGetVertex(cell, out int vertex);
+            if (_graph.Vertices[vertex].Node.Kind != ParagonNodeKind.GlyphSocket)
+                continue;
+
+            var glyph = _importedGlyphs.FirstOrDefault(g => g.BoardSlot == cell.BoardSlot);
+            int radius = GlyphRadius.RadiusForLevel(glyph?.Level ?? 50);
+            var totals = GlyphRadius.AttributeTotalsInRange(_graph, cell, purchased, radius, GlyphRadius.GameMetric);
+
+            string stats = string.Join(", ", totals
+                .Where(kv => kv.Key.EndsWith("_Core", StringComparison.Ordinal))
+                .OrderByDescending(kv => kv.Value)
+                .Select(kv => $"{kv.Value:0} {kv.Key.Replace("_Core", "")}"));
+            string boardName = _placedBoards[cell.BoardSlot].Board.Name ?? _placedBoards[cell.BoardSlot].Board.InternalName;
+            lines.Add($"Glyph socket on {boardName}: {(stats.Length > 0 ? stats : "no stats")} purchased in radius {radius}" +
+                      (glyph is null ? " (assumes glyph level 50+)" : $" ({DescribeGlyph(glyph)})"));
+        }
+        return string.Join(Environment.NewLine, lines);
+    }
+
+    private static string DescribeGlyph(MaxrollGlyphAssignment glyph)
+    {
+        var known = ParagonDatabase.Data.Glyphs
+            .FirstOrDefault(g => string.Equals(g.InternalName, glyph.GlyphInternalName, StringComparison.OrdinalIgnoreCase));
+        string name = known?.Name ?? glyph.GlyphInternalName;
+        return glyph.Level is int level ? $"{name} (lvl {level}, slot {glyph.BoardSlot})" : $"{name} (slot {glyph.BoardSlot})";
     }
 
     [RelayCommand]
@@ -153,8 +339,18 @@ public partial class ParagonPlannerViewModel : ObservableObject
         foreach (var cell in Cells)
             cell.IsPurchased = purchased.Contains(cell.Cell);
 
+        SolveDetails = BuildSocketReport(result.PurchasedCells);
+
+        string perBoard = string.Join(", ", result.PurchasedCells
+            .GroupBy(c => c.BoardSlot)
+            .OrderBy(g => g.Key)
+            .Select(g => $"slot {g.Key}: {g.Count()}"));
         string quality = result.IsOptimal ? "optimal" : "heuristic";
-        SetStatus($"{result.PointsSpent} paragon points for {_targets.Count} target(s) ({quality}).");
+        string budget = result.PointsSpent > MaxParagonPoints
+            ? $" Exceeds the {MaxParagonPoints}-point cap!"
+            : "";
+        SetStatus($"{result.PointsSpent} paragon points for {_targets.Count} target(s) ({quality}) — {perBoard}.{budget}",
+            error: budget.Length > 0);
     }
 
     [RelayCommand]

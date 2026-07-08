@@ -15,12 +15,16 @@ public static class ParagonDatabase
         new(() => Data.Nodes.ToDictionary(n => n.SnoId, StringComparer.OrdinalIgnoreCase));
     private static readonly Lazy<IReadOnlyDictionary<string, ParagonThresholdDef>> _thresholdsBySnoId =
         new(() => Data.Thresholds.ToDictionary(t => t.SnoId, StringComparer.OrdinalIgnoreCase));
+    private static readonly Lazy<IReadOnlyDictionary<string, ParagonBoardDef>> _boardsByInternalName =
+        new(() => Data.Boards.ToDictionary(b => b.InternalName, StringComparer.OrdinalIgnoreCase));
 
     public static ParagonData Data => _data.Value;
 
     public static IReadOnlyDictionary<string, ParagonNodeDef> NodesBySnoId => _nodesBySnoId.Value;
 
     public static IReadOnlyDictionary<string, ParagonThresholdDef> ThresholdsBySnoId => _thresholdsBySnoId.Value;
+
+    public static IReadOnlyDictionary<string, ParagonBoardDef> BoardsByInternalName => _boardsByInternalName.Value;
 
     public static IEnumerable<ParagonBoardDef> BoardsForClass(string className) =>
         Data.Boards.Where(b => string.Equals(b.ClassName, className, StringComparison.OrdinalIgnoreCase));
