@@ -4,6 +4,10 @@ namespace D4LootBench.App.ViewModels.Conditions;
 
 internal static class ConditionViewModelHelpers
 {
+    /// <summary>True when an entry tagged with <paramref name="classes"/> is usable by any allowed class.</summary>
+    internal static bool MatchesClasses(IReadOnlyList<string> classes, IReadOnlySet<string> allowed) =>
+        classes.Contains("All") || classes.Any(allowed.Contains);
+
     internal static string FormatRarityFlags(RarityFlags flags)
     {
         if (flags == RarityFlags.All) return "All";

@@ -19,21 +19,27 @@ public sealed class ConditionViewModelFactory(IFilterDataService data) : ICondit
         [typeof(TalismanSetConditionViewModel)]    = ConditionType.TalismanSet,
     };
 
-    public ConditionViewModel FromModel(Condition c) => c switch
+    public ConditionViewModel FromModel(Condition c)
     {
-        ItemPowerCondition m       => new ItemPowerConditionViewModel(m),
-        RarityCondition m          => new RarityConditionViewModel(m),
-        ItemPropertiesCondition m  => new ItemPropertiesConditionViewModel(m),
-        GreaterAffixCondition m    => new GreaterAffixConditionViewModel(m),
-        CodexCondition             => new CodexConditionViewModel(),
-        ItemTypeCondition m        => new ItemTypeConditionViewModel(data, m),
-        AffixCondition m           => new AffixConditionViewModel(data, m),
-        OptionalAffixCondition m   => new OptionalAffixConditionViewModel(data, m),
-        SpecificUniqueCondition m  => new SpecificUniqueConditionViewModel(data, m),
-        TalismanSetCondition m     => new TalismanSetConditionViewModel(data, m),
-        UnknownCondition m         => new UnknownConditionViewModel(m),
-        _                          => throw new InvalidOperationException($"Unhandled condition type: {c.GetType().Name}")
-    };
+        ConditionViewModel vm = c switch
+        {
+            ItemPowerCondition m       => new ItemPowerConditionViewModel(m),
+            RarityCondition m          => new RarityConditionViewModel(m),
+            ItemPropertiesCondition m  => new ItemPropertiesConditionViewModel(m),
+            GreaterAffixCondition m    => new GreaterAffixConditionViewModel(m),
+            CodexCondition             => new CodexConditionViewModel(),
+            ItemTypeCondition m        => new ItemTypeConditionViewModel(data, m),
+            AffixCondition m           => new AffixConditionViewModel(data, m),
+            OptionalAffixCondition m   => new OptionalAffixConditionViewModel(data, m),
+            SpecificUniqueCondition m  => new SpecificUniqueConditionViewModel(data, m),
+            TalismanSetCondition m     => new TalismanSetConditionViewModel(data, m),
+            UnknownCondition m         => new UnknownConditionViewModel(m),
+            _                          => throw new InvalidOperationException($"Unhandled condition type: {c.GetType().Name}")
+        };
+        // Existing conditions open collapsed to a summary line; new ones (CreateNew) open expanded.
+        vm.IsExpanded = false;
+        return vm;
+    }
 
     public ConditionViewModel CreateNew(ConditionType type) => type switch
     {

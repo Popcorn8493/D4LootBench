@@ -22,7 +22,7 @@ public sealed record ItemPowerCondition(int Minimum, int Maximum) : Condition;
 
 public sealed record RarityCondition(RarityFlags Mask) : Condition;
 
-/// <summary>Type 2 — filters by item property (e.g. Ancestral). 1=None, 4=Ancestral.</summary>
+/// <summary>Type 2 — filters by item property. Bitmask: 1=None, 4=Ancestral, 32=Mythic (combinable, e.g. 36).</summary>
 public sealed record ItemPropertiesCondition(int PropertyMask) : Condition;
 
 /// <summary>Type 3 — items with at least <see cref="MinimumCount"/> Greater Affixes.</summary>

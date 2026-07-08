@@ -125,6 +125,16 @@ public sealed class FilterCodecTests
     }
 
     [Fact]
+    public void Encode_ThenDecode_PreservesItemPropertiesCombinedMask()
+    {
+        // Ancestral (4) | Mythic (32) — as exported by the in-game editor with both checked
+        var decoded = RoundTripRule(new FilterRule("Test", Visibility.Show, FilterColors.Blue,
+            [new ItemPropertiesCondition(36)]));
+
+        decoded.Conditions[0].ShouldBeOfType<ItemPropertiesCondition>().PropertyMask.ShouldBe(36);
+    }
+
+    [Fact]
     public void Encode_ThenDecode_PreservesOptionalAffixCondition()
     {
         uint[] affixIds = [AffixDatabase.ByName["+Critical Strike Chance"].Hash, AffixDatabase.ByName["Maximum Life"].Hash];

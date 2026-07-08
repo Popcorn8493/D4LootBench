@@ -37,6 +37,27 @@ public sealed partial class ItemTypeConditionViewModel : ConditionViewModel
         }
     }
 
+    /// <summary>
+    /// Classes implied by the selected item types (union), or null when unrestricted —
+    /// nothing selected, or any selected type is equippable by every class.
+    /// </summary>
+    public IReadOnlySet<string>? SelectedTypeClasses
+    {
+        get
+        {
+            if (Picker.Selected.Count == 0) return null;
+            var classes = new HashSet<string>();
+            foreach (var sel in Picker.Selected)
+            {
+                if (!_data.ItemTypes.ByHash.TryGetValue(sel.Hash, out var entry) ||
+                    entry.Classes.Contains("All"))
+                    return null;
+                classes.UnionWith(entry.Classes);
+            }
+            return classes;
+        }
+    }
+
     public override string TypeName => "Item Type";
     public override string Summary =>
         $"{Picker.Selected.Count} type{(Picker.Selected.Count == 1 ? "" : "s")}";

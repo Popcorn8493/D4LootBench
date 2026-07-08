@@ -108,7 +108,23 @@ public partial class FilterRuleViewModel : ObservableObject
         foreach (var condition in rule.Conditions)
             Conditions.Add(_conditionFactory.FromModel(condition));
 
-        Conditions.CollectionChanged += (_, _) => OnPropertyChanged(nameof(AvailableConditionTypes));
+        foreach (var itemType in Conditions.OfType<ItemTypeConditionViewModel>())
+            itemType.Picker.Selected.CollectionChanged += OnItemTypeSelectionChanged;
+
+        Conditions.CollectionChanged += (_, e) =>
+        {
+            OnPropertyChanged(nameof(AvailableConditionTypes));
+            ConvertAffixConditionCommand.NotifyCanExecuteChanged();
+
+            foreach (var itemType in (e.OldItems ?? Array.Empty<object>()).OfType<ItemTypeConditionViewModel>())
+                itemType.Picker.Selected.CollectionChanged -= OnItemTypeSelectionChanged;
+            foreach (var itemType in (e.NewItems ?? Array.Empty<object>()).OfType<ItemTypeConditionViewModel>())
+                itemType.Picker.Selected.CollectionChanged += OnItemTypeSelectionChanged;
+
+            RefreshAllowedClasses();
+        };
+
+        RefreshAllowedClasses();
     }
 
     public void ApplyClassFilter(PlayerClass playerClass)
@@ -116,6 +132,35 @@ public partial class FilterRuleViewModel : ObservableObject
         _classFilter = playerClass;
         foreach (var condition in Conditions)
             condition.ApplyClassFilter(playerClass);
+        RefreshAllowedClasses();
+    }
+
+    private void OnItemTypeSelectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e) =>
+        RefreshAllowedClasses();
+
+    private void RefreshAllowedClasses()
+    {
+        var allowed = ComputeAllowedClasses();
+        foreach (var condition in Conditions)
+            condition.ApplyAllowedClasses(allowed);
+    }
+
+    /// <summary>
+    /// The rule's effective class restriction: the global class filter intersected with the
+    /// classes implied by the rule's Item Type selection (e.g. Scythe → Necromancer only).
+    /// Null means unrestricted.
+    /// </summary>
+    private IReadOnlySet<string>? ComputeAllowedClasses()
+    {
+        var fromTypes = Conditions.OfType<ItemTypeConditionViewModel>()
+            .FirstOrDefault()?.SelectedTypeClasses;
+        IReadOnlySet<string>? fromGlobal = _classFilter == PlayerClass.All
+            ? null
+            : new HashSet<string> { _classFilter.ToString() };
+
+        if (fromTypes is null) return fromGlobal;
+        if (fromGlobal is null) return fromTypes;
+        return fromTypes.Intersect(fromGlobal).ToHashSet();
     }
 
     public FilterRule BuildRule() =>
@@ -154,6 +199,41 @@ public partial class FilterRuleViewModel : ObservableObject
     [RelayCommand]
     private void GenerateDistinctColor() =>
         Color = ColorUtility.GenerateDistinctColor(_getPeerColors(this));
+
+    /// <summary>
+    /// Swaps a Required Affixes condition to Optional Affixes (or back), keeping the
+    /// selected affixes, minimum count, and greater-affix flags. Blocked while the rule
+    /// already has a condition of the target type — each type can appear only once.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanConvertAffixCondition))]
+    private void ConvertAffixCondition(ConditionViewModel condition)
+    {
+        var idx = Conditions.IndexOf(condition);
+        if (idx < 0) return;
+
+        Condition? converted = condition.BuildModel() switch
+        {
+            AffixCondition m => new OptionalAffixCondition(m.AffixIds, m.MinimumCount)
+                { GreaterEntries = m.GreaterEntries, Field5 = m.Field5 },
+            // Required Affixes with a minimum of 0 would match everything; clamp to 1.
+            OptionalAffixCondition m => new AffixCondition(m.AffixIds, Math.Max(1, m.MinimumCount))
+                { GreaterEntries = m.GreaterEntries, Field5 = m.Field5 },
+            _ => null
+        };
+        if (converted is null) return;
+
+        var vm = _conditionFactory.FromModel(converted);
+        vm.ApplyClassFilter(_classFilter);
+        vm.IsExpanded = condition.IsExpanded;
+        Conditions[idx] = vm;
+    }
+
+    private bool CanConvertAffixCondition(ConditionViewModel? condition) => condition switch
+    {
+        AffixConditionViewModel         => !Conditions.OfType<OptionalAffixConditionViewModel>().Any(),
+        OptionalAffixConditionViewModel => !Conditions.OfType<AffixConditionViewModel>().Any(),
+        _ => false
+    };
 
     [RelayCommand]
     private void DeleteCondition(ConditionViewModel condition)

@@ -39,17 +39,21 @@ public sealed partial class SpecificUniqueConditionViewModel : ConditionViewMode
         }
     }
 
-    public override void ApplyClassFilter(PlayerClass playerClass)
+    // Filter by display name, not SNO ID — the picker holds one representative SNO per
+    // deduplicated display name, and a name's variants can carry different derived classes.
+    public override void ApplyAllowedClasses(IReadOnlySet<string>? allowedClasses)
     {
-        if (playerClass == PlayerClass.All)
-            Picker.SourceFilter = null;
-        else
+        if (allowedClasses is null)
         {
-            var allowed = _data.Uniques.ForClass(playerClass.ToString())
-                .Select(e => e.SnoId)
-                .ToHashSet();
-            Picker.SourceFilter = e => allowed.Contains(e.Hash);
+            Picker.SourceFilter = null;
+            return;
         }
+
+        var visibleNames = _data.Uniques.Released
+            .Where(e => ConditionViewModelHelpers.MatchesClasses(e.Classes, allowedClasses))
+            .Select(e => e.Name)
+            .ToHashSet();
+        Picker.SourceFilter = e => visibleNames.Contains(e.DisplayName);
     }
 
     public override string TypeName => "Specific Unique";

@@ -51,17 +51,34 @@
                             </Style>
                         </Button.Style>
                     </Button>
-                    <Button Content="−"  Command="{Binding DeleteRuleCommand}" ToolTip="Delete rule" Width="26" Height="22" FontSize="14" FontWeight="Bold" />
+                    <Button Content="−"  Command="{Binding DeleteRuleCommand}" ToolTip="Delete rule (Del)" Width="26" Height="22" FontSize="14" FontWeight="Bold" />
+                    <Button Content="&#xE8C8;" Command="{Binding DuplicateRuleCommand}"
+                            ToolTip="Duplicate rule (Ctrl+D)"
+                            Width="26" Height="22" FontSize="13" FontFamily="Segoe MDL2 Assets" />
                     <Separator />
-                    <Button Content="↑"  Command="{Binding MoveUpCommand}"     ToolTip="Move up"    Width="26" Height="22" FontSize="14" FontWeight="Bold" />
-                    <Button Content="↓"  Command="{Binding MoveDownCommand}"   ToolTip="Move down"  Width="26" Height="22" FontSize="14" FontWeight="Bold" />
+                    <Button Content="↑"  Command="{Binding MoveUpCommand}"     ToolTip="Move up (or drag rules to reorder)"    Width="26" Height="22" FontSize="14" FontWeight="Bold" />
+                    <Button Content="↓"  Command="{Binding MoveDownCommand}"   ToolTip="Move down (or drag rules to reorder)"  Width="26" Height="22" FontSize="14" FontWeight="Bold" />
+                    <Separator />
+                    <Button Content="&#xEA99;" Command="{Binding RemoveDuplicateRulesCommand}"
+                            ToolTip="Clean up — find and remove rules that duplicate an earlier rule"
+                            Width="26" Height="22" FontSize="13" FontFamily="Segoe MDL2 Assets" />
                 </ToolBar>
             </ToolBarTray>
 
-            <ListBox ItemsSource="{Binding Rules}"
+            <ListBox x:Name="RuleList"
+                     ItemsSource="{Binding Rules}"
                      SelectedItem="{Binding SelectedRule}"
                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                     BorderThickness="0,1,1,0">
+                     BorderThickness="0,1,1,0"
+                     AllowDrop="True"
+                     PreviewMouseLeftButtonDown="RuleList_PreviewMouseLeftButtonDown"
+                     PreviewMouseMove="RuleList_PreviewMouseMove"
+                     DragOver="RuleList_DragOver"
+                     Drop="RuleList_Drop">
+                <ListBox.InputBindings>
+                    <KeyBinding Key="Delete" Command="{Binding DeleteRuleCommand}" />
+                    <KeyBinding Key="D" Modifiers="Control" Command="{Binding DuplicateRuleCommand}" />
+                </ListBox.InputBindings>
                 <ListBox.ItemTemplate>
                     <DataTemplate DataType="{x:Type vm:FilterRuleViewModel}">
                         <DockPanel Margin="4,2" LastChildFill="True">

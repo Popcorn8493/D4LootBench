@@ -18,6 +18,10 @@ public sealed partial class AffixConditionViewModel : ConditionViewModel
     [NotifyPropertyChangedFor(nameof(Summary))]
     private int _minimumCount = 1;
 
+    /// <summary>The Greater Affixes sub-picker is tucked away unless it has selections.</summary>
+    [ObservableProperty]
+    private bool _isGreaterExpanded;
+
     public AffixConditionViewModel(IFilterDataService data)
     {
         _data = data;
@@ -34,6 +38,7 @@ public sealed partial class AffixConditionViewModel : ConditionViewModel
         _data = data;
         _minimumCount = m.MinimumCount;
         _preservedField5 = m.Field5;
+        _isGreaterExpanded = m.GreaterEntries.Count > 0;
         foreach (var ge in m.GreaterEntries)
         {
             if (!_preservedGreaterValues.ContainsKey(ge.AffixId))
@@ -69,23 +74,26 @@ public sealed partial class AffixConditionViewModel : ConditionViewModel
     private PickerViewModel MakeGreaterPicker() =>
         new(Enumerable.Empty<PickerEntry>())
         {
-            MaxSelectionCount = AffixCondition.MaxSelectionCount
+            MaxSelectionCount = AffixCondition.MaxSelectionCount,
+            OwnsEntries       = false
         };
 
     private PickerEntry ToPickerEntry(GreaterAffixEntry ge) =>
         new(ge.AffixId, _data.Affixes.GetDisplayName(ge.AffixId));
 
-    public override void ApplyClassFilter(PlayerClass playerClass)
+    public override void ApplyAllowedClasses(IReadOnlySet<string>? allowedClasses)
     {
-        if (playerClass == PlayerClass.All)
-            Picker.SourceFilter = null;
-        else
+        if (allowedClasses is null)
         {
-            var allowed = _data.Affixes.ForClass(playerClass.ToString())
-                .Select(e => e.Hash)
-                .ToHashSet();
-            Picker.SourceFilter = e => allowed.Contains(e.Hash);
+            Picker.SourceFilter = null;
+            return;
         }
+
+        var visible = _data.Affixes.All
+            .Where(a => ConditionViewModelHelpers.MatchesClasses(a.Classes, allowedClasses))
+            .Select(a => a.Hash)
+            .ToHashSet();
+        Picker.SourceFilter = e => visible.Contains(e.Hash);
     }
 
     public override string TypeName => "Required Affixes";

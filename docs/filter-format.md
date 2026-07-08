@@ -125,7 +125,7 @@ The condition type discriminator is field 1. The complete enum (from
 |------|------|-----------|--------|
 | 0 | Item Power Range | `ItemPowerCondition` | ✅ fully modelled |
 | 1 | Item Rarity Match | `RarityCondition` | ✅ fully modelled |
-| 2 | Item Properties | `ItemPropertiesCondition` | ✅ fully modelled (1=None, 4=Ancestral) |
+| 2 | Item Properties | `ItemPropertiesCondition` | ✅ fully modelled (bitmask: 1=None, 4=Ancestral, 32=Mythic) |
 | 3 | Codex Upgrade Check | `CodexCondition` | ✅ fully modelled |
 | 4 | Greater Affix Check | `GreaterAffixCondition` | ✅ fully modelled |
 | 5 | Item Type Match | `ItemTypeCondition` | ✅ fully modelled |
@@ -188,14 +188,16 @@ field 1 (varint) = 2
 field 4 (varint) = property_mask
 ```
 
-Property mask values:
-| Value | Meaning |
-|-------|---------|
-| 1 | None (no property filter) |
-| 4 | Ancestral |
+Property mask bits (a bitmask — the in-game editor's None/Ancestral/Mythic checkboxes OR together):
+| Bit | Value | Meaning |
+|-----|-------|---------|
+| 0   | 1  | None (no property filter) |
+| 2   | 4  | Ancestral |
+| 5   | 32 | Mythic |
 
-Example: "All Ancestrals" raw bytes `CAIgBA==` → type=2, field 4=4 (Ancestral).
-Model class pending; codec preserves as `UnknownCondition`.
+Examples: "All Ancestrals" raw bytes `CAIgBA==` → type=2, field 4=4 (Ancestral).
+A rule with Ancestral + Mythic checked in-game exports mask 36 (= 4 | 32).
+Modelled as `ItemPropertiesCondition`; unknown bits are preserved for lossless round-trips.
 
 ---
 

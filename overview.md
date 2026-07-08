@@ -56,7 +56,9 @@ D4LootBench.slnx
 ```
 
 ## Current State
-All phases complete (0–4B). **88 tests**, 0 warnings. See `docs/design/phase-history.md` for the full build narrative.
+All phases complete (0–4B). **109 tests**, 0 warnings. See `docs/design/phase-history.md` for the full build narrative.
+
+Editor ergonomics round (July 2026): duplicate rule (toolbar + Ctrl+D), Delete key removes the selected rule, drag-to-reorder in the rule list, drag entries between picker lists (Available→Selected adds; cross-picker Selected→Selected moves; drops into the greater-affix picker copy instead of move via `PickerViewModel.OwnsEntries`), Required⇄Optional affix condition conversion (keeps affixes/count/greater flags; blocked while the rule already has the target type), and redundancy detection: `RedundancyAnalyzer` in Core finds duplicate rules and shadowing catch-alls, `FilterValidator` surfaces them as warnings (plus "min count exceeds selected affixes" never-match warnings), and a Clean Up toolbar button removes duplicates after confirmation.
 
 Phase 4B added build guide import: paste a gear section from Mobalytics, Maxroll, or Icy Veins to auto-generate a BiS filter. Parsers live in `D4LootBench.Core/Import/`; `BuildGuideFilterGenerator` in `D4LootBench.Ai/Import/` does deterministic name resolution and rule construction (no LLM). Dialog + ViewModel in `D4LootBench.App`. Output: per-slot rules (ItemType + up to 4 affixes, require 2), Target Uniques rule, All Charms rule, Hide All fallback.
 
@@ -94,7 +96,7 @@ Filter JSON emits hash IDs as `{ "id": "0x…", "name": "…" }` objects across 
 ## Running / Testing
 ```powershell
 dotnet build          # full solution (0 warnings)
-dotnet test           # 58 tests in D4LootBench.Core.Tests
+dotnet test           # 109 tests in D4LootBench.Core.Tests
 dotnet publish src/D4LootBench.App -r win-x64 -p:PublishSingleFile=true --self-contained true
 ```
 

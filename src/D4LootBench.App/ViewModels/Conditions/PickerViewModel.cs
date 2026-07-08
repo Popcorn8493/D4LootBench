@@ -29,6 +29,13 @@ public sealed partial class PickerViewModel : ObservableObject
     /// <summary>Optional game-enforced limit on total selected items.</summary>
     public int? MaxSelectionCount { get; init; }
 
+    /// <summary>
+    /// False for pickers whose selection is a flag over another picker's entries (e.g. the
+    /// greater-affix picker). Drag-and-drop treats drops into or out of a non-owning picker
+    /// as a copy instead of a move, so flagging an affix never removes it elsewhere.
+    /// </summary>
+    public bool OwnsEntries { get; init; } = true;
+
     /// <summary>Optional external limit check (e.g., shared limit across pickers).</summary>
     public Func<bool>? ExternalAtMax { get; set; }
 
@@ -70,6 +77,15 @@ public sealed partial class PickerViewModel : ObservableObject
     {
         HasCurrentSelection = items.Count > 0;
     }
+
+    /// <summary>
+    /// Whether a dragged entry can be dropped into this picker's selection: the entry must
+    /// exist in this picker's source catalog, not already be selected, and fit under the limit.
+    /// </summary>
+    public bool CanAccept(PickerEntry entry) =>
+        !IsAtMax &&
+        Selected.All(s => s.Hash != entry.Hash) &&
+        _source.Any(s => s.Hash == entry.Hash);
 
     /// <summary>Called by view code-behind with a pre-captured snapshot of SelectedItems.</summary>
     public void AddItems(IReadOnlyList<PickerEntry> items)

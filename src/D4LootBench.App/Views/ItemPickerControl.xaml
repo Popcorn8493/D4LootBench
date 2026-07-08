@@ -31,12 +31,17 @@
                          ItemsSource="{Binding Available}"
                          SelectionMode="Extended"
                          DisplayMemberPath="DisplayName"
-                         MinHeight="200"
-                         MaxHeight="300"
-                         ToolTip="Double-click or use → to add; Ctrl/Shift for multi-select"
+                         MinHeight="110"
+                         MaxHeight="210"
+                         ToolTip="Double-click, drag to Selected, or use → to add; Ctrl/Shift for multi-select"
                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                          SelectionChanged="AvailableList_SelectionChanged"
-                         MouseDoubleClick="AvailableList_MouseDoubleClick" />
+                         MouseDoubleClick="AvailableList_MouseDoubleClick"
+                         PreviewMouseLeftButtonDown="List_PreviewMouseLeftButtonDown"
+                         PreviewMouseMove="List_PreviewMouseMove"
+                         AllowDrop="True"
+                         DragOver="AvailableList_DragOver"
+                         Drop="AvailableList_Drop" />
             </StackPanel>
 
             <!-- Add / Remove buttons -->
@@ -74,12 +79,17 @@
                          ItemsSource="{Binding Selected}"
                          SelectionMode="Extended"
                          DisplayMemberPath="DisplayName"
-                         MinHeight="200"
-                         MaxHeight="300"
-                         ToolTip="Double-click or use ← to remove; Ctrl/Shift for multi-select"
+                         MinHeight="110"
+                         MaxHeight="210"
+                         ToolTip="Double-click or use ← to remove; drag into another list to move; Ctrl/Shift for multi-select"
                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                          SelectionChanged="SelectedList_SelectionChanged"
-                         MouseDoubleClick="SelectedList_MouseDoubleClick" />
+                         MouseDoubleClick="SelectedList_MouseDoubleClick"
+                         PreviewMouseLeftButtonDown="List_PreviewMouseLeftButtonDown"
+                         PreviewMouseMove="List_PreviewMouseMove"
+                         AllowDrop="True"
+                         DragOver="SelectedList_DragOver"
+                         Drop="SelectedList_Drop" />
             </StackPanel>
         </Grid>
     </StackPanel>

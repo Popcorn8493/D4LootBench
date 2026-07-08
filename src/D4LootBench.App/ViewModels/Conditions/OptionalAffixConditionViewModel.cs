@@ -44,17 +44,19 @@ public sealed partial class OptionalAffixConditionViewModel : ConditionViewModel
             MaxSelectionCount = OptionalAffixCondition.MaxSelectionCount
         };
 
-    public override void ApplyClassFilter(PlayerClass playerClass)
+    public override void ApplyAllowedClasses(IReadOnlySet<string>? allowedClasses)
     {
-        if (playerClass == PlayerClass.All)
-            Picker.SourceFilter = null;
-        else
+        if (allowedClasses is null)
         {
-            var allowed = _data.Affixes.ForClass(playerClass.ToString())
-                .Select(e => e.Hash)
-                .ToHashSet();
-            Picker.SourceFilter = e => allowed.Contains(e.Hash);
+            Picker.SourceFilter = null;
+            return;
         }
+
+        var visible = _data.Affixes.All
+            .Where(a => ConditionViewModelHelpers.MatchesClasses(a.Classes, allowedClasses))
+            .Select(a => a.Hash)
+            .ToHashSet();
+        Picker.SourceFilter = e => visible.Contains(e.Hash);
     }
 
     public override string TypeName => "Optional Affixes";

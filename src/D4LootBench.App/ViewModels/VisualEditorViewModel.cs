@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using D4LootBench.App.ViewModels.Conditions;
 using D4LootBench.Core.Data;
 using D4LootBench.Core.Models;
+using D4LootBench.Core.Validation;
 
 namespace D4LootBench.App.ViewModels;
 
@@ -15,6 +16,7 @@ public partial class VisualEditorViewModel : ObservableObject
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(DeleteRuleCommand))]
+    [NotifyCanExecuteChangedFor(nameof(DuplicateRuleCommand))]
     [NotifyCanExecuteChangedFor(nameof(MoveUpCommand))]
     [NotifyCanExecuteChangedFor(nameof(MoveDownCommand))]
     private FilterRuleViewModel? _selectedRule;
@@ -40,6 +42,7 @@ public partial class VisualEditorViewModel : ObservableObject
             OnPropertyChanged(nameof(RuleCountDisplay));
             OnPropertyChanged(nameof(IsAtRuleLimit));
             AddRuleCommand.NotifyCanExecuteChanged();
+            DuplicateRuleCommand.NotifyCanExecuteChanged();
         };
     }
 
@@ -65,6 +68,68 @@ public partial class VisualEditorViewModel : ObservableObject
         var idx = Rules.IndexOf(SelectedRule);
         Rules.Remove(SelectedRule);
         SelectedRule = Rules.Count > 0 ? Rules[Math.Min(idx, Rules.Count - 1)] : null;
+    }
+
+    [RelayCommand(CanExecute = nameof(CanDuplicateRule))]
+    private void DuplicateRule()
+    {
+        if (SelectedRule is null) return;
+        var copy = SelectedRule.BuildRule();
+        copy.Name = MakeCopyName(copy.Name);
+        var vm = MakeRuleVm(copy);
+        Rules.Insert(Rules.IndexOf(SelectedRule) + 1, vm);
+        SelectedRule = vm;
+    }
+
+    private bool CanDuplicateRule() => SelectedRule is not null && Rules.Count < FilterRuleset.MaxRuleCount;
+
+    private static string MakeCopyName(string name)
+    {
+        const string suffix = " copy";
+        return name.Length + suffix.Length <= FilterValidator.MaxRuleNameLength
+            ? name + suffix
+            : name[..(FilterValidator.MaxRuleNameLength - suffix.Length)] + suffix;
+    }
+
+    /// <summary>
+    /// Removes rules that duplicate an earlier rule (same visibility and conditions),
+    /// after user confirmation.
+    /// </summary>
+    [RelayCommand]
+    private void RemoveDuplicateRules()
+    {
+        var duplicates = RedundancyAnalyzer.FindDuplicateRules(BuildRuleset());
+        if (duplicates.Count == 0)
+        {
+            System.Windows.MessageBox.Show(
+                "No duplicate rules found.", "Clean Up",
+                System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+            return;
+        }
+
+        var lines = duplicates.Select(d =>
+            $"• \"{Rules[d.Index].Name}\" (duplicate of \"{Rules[d.DuplicateOfIndex].Name}\")");
+        var confirm = System.Windows.MessageBox.Show(
+            $"Remove {duplicates.Count} duplicate rule(s)?\n\n{string.Join("\n", lines)}",
+            "Clean Up",
+            System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Question);
+        if (confirm != System.Windows.MessageBoxResult.Yes) return;
+
+        foreach (var d in duplicates.OrderByDescending(d => d.Index))
+            Rules.RemoveAt(d.Index);
+
+        if (SelectedRule is not null && !Rules.Contains(SelectedRule))
+            SelectedRule = Rules.FirstOrDefault();
+    }
+
+    /// <summary>Moves a rule to a new position — used by drag-and-drop reordering in the rule list.</summary>
+    public void MoveRule(int from, int to)
+    {
+        if (from < 0 || from >= Rules.Count) return;
+        to = Math.Clamp(to, 0, Rules.Count - 1);
+        if (from == to) return;
+        Rules.Move(from, to);
+        RefreshMoveCanExecute();
     }
 
     [RelayCommand(CanExecute = nameof(CanMoveUp))]

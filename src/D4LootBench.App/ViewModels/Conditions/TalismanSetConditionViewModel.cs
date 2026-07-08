@@ -67,19 +67,19 @@ public sealed partial class TalismanSetConditionViewModel : ConditionViewModel
         ItemPicker.ReplaceSource(items);
     }
 
-    public override void ApplyClassFilter(PlayerClass playerClass)
+    public override void ApplyAllowedClasses(IReadOnlySet<string>? allowedClasses)
     {
-        if (playerClass == PlayerClass.All)
+        if (allowedClasses is null)
         {
             SetPicker.SourceFilter = null;
+            return;
         }
-        else
-        {
-            var allowed = _data.TalismanSets.ForClass(playerClass.ToString())
-                .Select(e => e.Hash)
-                .ToHashSet();
-            SetPicker.SourceFilter = e => allowed.Contains(e.Hash);
-        }
+
+        var visible = _data.TalismanSets.All
+            .Where(s => ConditionViewModelHelpers.MatchesClasses(s.Classes, allowedClasses))
+            .Select(s => s.Hash)
+            .ToHashSet();
+        SetPicker.SourceFilter = e => visible.Contains(e.Hash);
     }
 
     public override string TypeName => "Talisman Set";

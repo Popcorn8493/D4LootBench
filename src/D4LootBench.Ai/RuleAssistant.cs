@@ -103,8 +103,12 @@ public sealed class RuleAssistant(
                     {
                         if (p.Equals("Ancestral", StringComparison.OrdinalIgnoreCase))
                             mask |= 4;
+                        else if (p.Equals("Mythic", StringComparison.OrdinalIgnoreCase))
+                            mask |= 32;
+                        else if (p.Equals("None", StringComparison.OrdinalIgnoreCase))
+                            mask |= 1;
                         else
-                            errors.Add($"Unknown item property '{p}'. Only 'Ancestral' is supported.");
+                            errors.Add($"Unknown item property '{p}'. Supported: 'Ancestral', 'Mythic', 'None'.");
                     }
                     if (errors.Count == 0)
                         conditions.Add(new ItemPropertiesCondition(mask == 0 ? 4 : mask));

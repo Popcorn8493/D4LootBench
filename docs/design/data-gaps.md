@@ -53,7 +53,7 @@ Complete S04_ affix set (all 236 type-104 S04_ entries from CoreTOC) including:
 
 ### What We Have
 - All 8 classes documented (Barbarian, Sorcerer, Necromancer, Druid, Rogue, Paladin, Spiritborn, Warlock)
-- ~200 core verified and datamined skills per AGENTS.md
+- ~200 core verified and datamined skills per project docs
 - Coverage includes new Warlock class (Season 13)
 
 ### What's Missing
@@ -286,7 +286,7 @@ To add new items/affixes/skills:
   - Reference `.proto` file
 - **D4LF:** https://github.com/d4lfteam/d4lf
   - Real-world filter usage patterns
-- **Project AGENTS.md:** Lists known data coverage by category
+- **Project docs (`overview.md`):** Lists known data coverage by category
 
 ---
 

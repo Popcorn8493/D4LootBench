@@ -40,7 +40,7 @@ public sealed class SystemPromptBuilder
 
             CONDITION TYPES — include only what is relevant to the request:
               { "type": "ItemType",        "items": ["exact name", ...] }  // names from ITEM TYPES list only (e.g. "Sword", "Helm")
-              { "type": "ItemProperties",  "properties": ["Ancestral"] }  // only valid value is "Ancestral"
+              { "type": "ItemProperties",  "properties": ["Ancestral"] }  // valid values: "Ancestral", "Mythic", "None" (combinable)
               { "type": "Codex" }                                          // items usable to upgrade a Codex of Power entry; no parameters
               { "type": "ItemPower",       "minimum": 0, "maximum": 0 }    // maximum 0 = no cap; hard cap is 900
               { "type": "RequiredAffixes", "affixes": ["exact name", ...], "greaterAffixes": ["exact name", ...], "minimumCount": 1 }
