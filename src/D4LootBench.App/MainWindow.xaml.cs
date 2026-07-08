@@ -12,6 +12,7 @@ public partial class MainWindow
     private readonly WindowSettingsService _windowSettings;
     private double _savedPanelHeight = 220;
     private HelpWindow? _helpWindow;
+    private ParagonPlannerWindow? _paragonWindow;
 
     public MainWindow(MainWindowViewModel vm, WindowSettingsService windowSettings)
     {
@@ -20,6 +21,7 @@ public partial class MainWindow
         _windowSettings = windowSettings;
         DataContext     = _vm;
         _vm.ShowRawEditorRequested += OnShowRawEditorRequested;
+        _vm.ShowParagonPlannerRequested += OnShowParagonPlannerRequested;
         _vm.OpenHelpRequested     += OnOpenHelpRequested;
         _vm.ShowAboutRequested    += OnShowAboutRequested;
         _vm.PropertyChanged       += OnVmPropertyChanged;
@@ -91,6 +93,24 @@ public partial class MainWindow
             Owner = this
         };
         window.Show();
+    }
+
+    private void OnShowParagonPlannerRequested()
+    {
+        if (_paragonWindow is null || !_paragonWindow.IsLoaded)
+        {
+            _paragonWindow = new ParagonPlannerWindow
+            {
+                DataContext = new ParagonPlannerViewModel(),
+                Owner = this,
+            };
+            _paragonWindow.Closed += (_, _) => _paragonWindow = null;
+            _paragonWindow.Show();
+        }
+        else
+        {
+            _paragonWindow.Activate();
+        }
     }
 
     private void OnOpenHelpRequested(string topic)

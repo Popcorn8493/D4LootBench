@@ -1,0 +1,166 @@
+<Window
+    x:Class="D4LootBench.App.Views.ParagonPlannerWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:vm="clr-namespace:D4LootBench.App.ViewModels"
+    mc:Ignorable="d"
+    d:DataContext="{d:DesignInstance Type=vm:ParagonPlannerViewModel, IsDesignTimeCreatable=False}"
+    Title="Paragon Planner — D4LootBench"
+    Height="780" Width="760"
+    MinHeight="500" MinWidth="640">
+
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+        <SolidColorBrush x:Key="NormalNodeBrush"   Color="#8A8A8A" />
+        <SolidColorBrush x:Key="MagicNodeBrush"    Color="#5B7FD4" />
+        <SolidColorBrush x:Key="RareNodeBrush"     Color="#D4B45E" />
+        <SolidColorBrush x:Key="LegendaryNodeBrush" Color="#D0603A" />
+        <SolidColorBrush x:Key="SocketNodeBrush"   Color="#5BB8A8" />
+        <SolidColorBrush x:Key="GateNodeBrush"     Color="#C9A45C" />
+        <SolidColorBrush x:Key="StartNodeBrush"    Color="#F0EAD8" />
+        <SolidColorBrush x:Key="BoardBackground"   Color="#1E1A17" />
+    </Window.Resources>
+
+    <DockPanel>
+        <!-- ── Controls ─────────────────────────────────────────────── -->
+        <Border DockPanel.Dock="Top" Padding="10,8" BorderThickness="0,0,0,1" BorderBrush="#DDD">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="Class:" VerticalAlignment="Center" Margin="0,0,5,0" />
+                <ComboBox ItemsSource="{Binding Classes}" SelectedItem="{Binding SelectedClass}"
+                          Width="110" Margin="0,0,12,0" />
+
+                <TextBlock Text="Attached board:" VerticalAlignment="Center" Margin="0,0,5,0" />
+                <ComboBox ItemsSource="{Binding BoardOptions}" SelectedItem="{Binding SelectedBoardOption}"
+                          Width="170" Margin="0,0,12,0" />
+
+                <TextBlock Text="Rotation:" VerticalAlignment="Center" Margin="0,0,5,0" />
+                <ComboBox ItemsSource="{Binding Rotations}" SelectedItem="{Binding SelectedRotation}"
+                          Width="60" Margin="0,0,16,0" />
+
+                <Button Command="{Binding SolveCommand}" Padding="10,3" Margin="0,0,6,0">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#xE9D2;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,5,0" />
+                        <TextBlock Text="Solve Path" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+                <Button Command="{Binding ClearTargetsCommand}" Content="Clear Targets" Padding="10,3" />
+            </StackPanel>
+        </Border>
+
+        <!-- ── Status ───────────────────────────────────────────────── -->
+        <Border DockPanel.Dock="Bottom" Padding="10,6" BorderThickness="0,1,0,0" BorderBrush="#DDD">
+            <TextBlock Text="{Binding StatusText}">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding StatusIsError}" Value="True">
+                                <Setter Property="Foreground" Value="#C0392B" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+        </Border>
+
+        <!-- ── Board canvas ─────────────────────────────────────────── -->
+        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
+                      Background="{StaticResource BoardBackground}" Padding="20">
+            <ItemsControl ItemsSource="{Binding Cells}"
+                          Width="{Binding CanvasWidth}" Height="{Binding CanvasHeight}"
+                          HorizontalAlignment="Center" VerticalAlignment="Center">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <Canvas />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemContainerStyle>
+                    <Style TargetType="ContentPresenter">
+                        <Setter Property="Canvas.Left" Value="{Binding CanvasLeft}" />
+                        <Setter Property="Canvas.Top" Value="{Binding CanvasTop}" />
+                    </Style>
+                </ItemsControl.ItemContainerStyle>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type vm:ParagonCellViewModel}">
+                        <Button Width="26" Height="26"
+                                Command="{Binding DataContext.ToggleTargetCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                CommandParameter="{Binding}"
+                                Background="Transparent" BorderThickness="0" Cursor="Hand"
+                                ToolTip="{Binding ToolTipText}" ToolTipService.InitialShowDelay="150">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Grid Background="Transparent">
+                                        <!-- Purchased-path ring -->
+                                        <Ellipse Width="24" Height="24" StrokeThickness="2.5" Stroke="#7CCB5A"
+                                                 Visibility="{Binding IsPurchased, Converter={StaticResource BoolToVis}}" />
+                                        <!-- Target ring -->
+                                        <Ellipse Width="24" Height="24" StrokeThickness="2" Stroke="White"
+                                                 Visibility="{Binding IsTarget, Converter={StaticResource BoolToVis}}" />
+                                        <!-- Node shape -->
+                                        <Border x:Name="Shape" Width="14" Height="14"
+                                                HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                RenderTransformOrigin="0.5,0.5" />
+                                    </Grid>
+                                    <ControlTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding Kind}" Value="Normal">
+                                            <Setter TargetName="Shape" Property="Background" Value="{StaticResource NormalNodeBrush}" />
+                                            <Setter TargetName="Shape" Property="CornerRadius" Value="7" />
+                                            <Setter TargetName="Shape" Property="Width" Value="11" />
+                                            <Setter TargetName="Shape" Property="Height" Value="11" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Kind}" Value="Magic">
+                                            <Setter TargetName="Shape" Property="Background" Value="{StaticResource MagicNodeBrush}" />
+                                            <Setter TargetName="Shape" Property="CornerRadius" Value="8" />
+                                            <Setter TargetName="Shape" Property="Width" Value="15" />
+                                            <Setter TargetName="Shape" Property="Height" Value="15" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Kind}" Value="Rare">
+                                            <Setter TargetName="Shape" Property="Background" Value="{StaticResource RareNodeBrush}" />
+                                            <Setter TargetName="Shape" Property="CornerRadius" Value="3" />
+                                            <Setter TargetName="Shape" Property="Width" Value="16" />
+                                            <Setter TargetName="Shape" Property="Height" Value="16" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Kind}" Value="Legendary">
+                                            <Setter TargetName="Shape" Property="Background" Value="{StaticResource LegendaryNodeBrush}" />
+                                            <Setter TargetName="Shape" Property="Width" Value="15" />
+                                            <Setter TargetName="Shape" Property="Height" Value="15" />
+                                            <Setter TargetName="Shape" Property="RenderTransform">
+                                                <Setter.Value>
+                                                    <RotateTransform Angle="45" />
+                                                </Setter.Value>
+                                            </Setter>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Kind}" Value="GlyphSocket">
+                                            <Setter TargetName="Shape" Property="BorderBrush" Value="{StaticResource SocketNodeBrush}" />
+                                            <Setter TargetName="Shape" Property="BorderThickness" Value="4" />
+                                            <Setter TargetName="Shape" Property="CornerRadius" Value="9" />
+                                            <Setter TargetName="Shape" Property="Width" Value="18" />
+                                            <Setter TargetName="Shape" Property="Height" Value="18" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Kind}" Value="Gate">
+                                            <Setter TargetName="Shape" Property="BorderBrush" Value="{StaticResource GateNodeBrush}" />
+                                            <Setter TargetName="Shape" Property="BorderThickness" Value="2.5" />
+                                            <Setter TargetName="Shape" Property="Width" Value="16" />
+                                            <Setter TargetName="Shape" Property="Height" Value="16" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Kind}" Value="Start">
+                                            <Setter TargetName="Shape" Property="Background" Value="{StaticResource StartNodeBrush}" />
+                                            <Setter TargetName="Shape" Property="Width" Value="15" />
+                                            <Setter TargetName="Shape" Property="Height" Value="15" />
+                                            <Setter TargetName="Shape" Property="RenderTransform">
+                                                <Setter.Value>
+                                                    <RotateTransform Angle="45" />
+                                                </Setter.Value>
+                                            </Setter>
+                                        </DataTrigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+    </DockPanel>
+</Window>

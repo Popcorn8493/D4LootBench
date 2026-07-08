@@ -3,9 +3,11 @@
     <Project Path="src/D4LootBench.Ai/D4LootBench.Ai.csproj" />
     <Project Path="src/D4LootBench.App/D4LootBench.App.csproj" />
     <Project Path="src/D4LootBench.Core/D4LootBench.Core.csproj" />
+    <Project Path="src/D4LootBench.Paragon/D4LootBench.Paragon.csproj" />
     <Project Path="src/D4LootBench.PromptLab/D4LootBench.PromptLab.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/D4LootBench.Core.Tests/D4LootBench.Core.Tests.csproj" />
+    <Project Path="tests/D4LootBench.Paragon.Tests/D4LootBench.Paragon.Tests.csproj" />
   </Folder>
 </Solution>

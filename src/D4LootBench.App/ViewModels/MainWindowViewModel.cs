@@ -102,6 +102,12 @@ public partial class MainWindowViewModel : ObservableObject
     /// <summary>Raised when the About dialog should be shown.</summary>
     public event Action? ShowAboutRequested;
 
+    /// <summary>Raised when the Paragon Planner window should be opened. Handler must show the window.</summary>
+    public event Action? ShowParagonPlannerRequested;
+
+    [RelayCommand]
+    private void OpenParagonPlanner() => ShowParagonPlannerRequested?.Invoke();
+
     [RelayCommand]
     private void OpenHelp(string? topic) => OpenHelpRequested?.Invoke(topic ?? "GettingStarted");
 

@@ -38,6 +38,9 @@ D4LootBench.slnx
 │   ├── Converters/           # BoolToBrushConverter, ValidationSeverityConverter
 │   ├── Services/             # ServiceConfiguration, LlmSettingsService, LlmProviderFactory, SettingsAwareLlmProvider
 │   └── Utilities/            # ColorUtility (HSV/ABGR conversion, contrast helper)
+├── src/D4LootBench.Paragon/       # Pure class library — paragon board data + models (Phase 5, in progress)
+│   ├── Models/               # ParagonData, ParagonBoardDef, ParagonNodeDef, ParagonGlyphDef, thresholds
+│   └── Data/                 # ParagonDatabase lazy singleton, embedded paragon-data.json (79 boards / 561 nodes / 160 glyphs)
 ├── tests/D4LootBench.Core.Tests/
 │   ├── Codec/                # FilterCodecTests — round-trip, real Raxx filter, idempotency
 │   ├── Validation/           # FilterValidatorTests — 19 tests for limits, boundaries, indices
@@ -56,11 +59,13 @@ D4LootBench.slnx
 ```
 
 ## Current State
-All phases complete (0–4B). **109 tests**, 0 warnings. See `docs/design/phase-history.md` for the full build narrative.
+All phases complete (0–4B); Phase 5 (paragon) data layer in progress. **121 tests**, 0 warnings. See `docs/design/phase-history.md` for the full build narrative.
 
 Editor ergonomics round (July 2026): duplicate rule (toolbar + Ctrl+D), Delete key removes the selected rule, drag-to-reorder in the rule list, drag entries between picker lists (Available→Selected adds; cross-picker Selected→Selected moves; drops into the greater-affix picker copy instead of move via `PickerViewModel.OwnsEntries`), Required⇄Optional affix condition conversion (keeps affixes/count/greater flags; blocked while the rule already has the target type), and redundancy detection: `RedundancyAnalyzer` in Core finds duplicate rules and shadowing catch-alls, `FilterValidator` surfaces them as warnings (plus "min count exceeds selected affixes" never-match warnings), and a Clean Up toolbar button removes duplicates after confirmation.
 
 Phase 4B added build guide import: paste a gear section from Mobalytics, Maxroll, or Icy Veins to auto-generate a BiS filter. Parsers live in `D4LootBench.Core/Import/`; `BuildGuideFilterGenerator` in `D4LootBench.Ai/Import/` does deterministic name resolution and rule construction (no LLM). Dialog + ViewModel in `D4LootBench.App`. Output: per-slot rules (ItemType + up to 4 affixes, require 2), Target Uniques rule, All Charms rule, Hide All fallback.
+
+Phase 5 (paragon board tool, July 2026, in progress): P1 data layer, P3 path solver, and a first P2 planner window are done. `tools/extract-paragon-data.cs` generates `paragon-data.json` from a DiabloTools/d4data sparse checkout (boards, nodes, glyphs, glyph affixes, thresholds; schema in `docs/paragon-data-format.md`). Node magnitudes resolve through six empirically calibrated engine multiplier constants — extraction validated cell-for-cell and stat-for-stat against Wowhead's paragon calculator (227/227 values across two boards). `D4LootBench.Paragon` is a pure class library: models + `ParagonDatabase` loader (same embedded/local-override convention as d4-data.json), plus `Solver/` — `ParagonLayout` (attachment tree + 90° rotations, gates at edge midpoints), `ComposedGraph`, and `SteinerSolver` (exact Dreyfus–Wagner node-weighted Steiner DP up to 10 targets, nearest-terminal heuristic + prune beyond; single-target answers verified against BFS). The App's "Paragon" toolbar button opens `ParagonPlannerWindow`: class/board selection (starter + one attached board with rotation, v1), click-to-mark targets, Solve highlights the cheapest path with a point count. No game share-code exists for paragon, so output is a rendered path, not a code. Next: full multi-board layout UI, glyph-radius-aware optimization, Maxroll variant-code interop (P4).
 
 ## Filter Code Format (Critical Background)
 D4 share codes are **Base64-encoded hand-rolled Protocol Buffers binary**. Full spec in `docs/filter-format.md`. Key points:
