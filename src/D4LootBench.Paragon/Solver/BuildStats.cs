@@ -34,6 +34,19 @@ public static class BuildStats
         ParagonData data,
         double nonParagonStat = 0,
         string? className = null)
+        => Compute(graph, purchased, data, NonParagonStats.Uniform(nonParagonStat), className);
+
+    /// <param name="cellMultipliers">
+    /// Per-cell stat multipliers from glyph node buffs (see <see cref="GlyphNodeBuffs"/>);
+    /// absent cells count ×1. Applied to everything the node grants, threshold bonuses included.
+    /// </param>
+    public static BuildStatsReport Compute(
+        ComposedGraph graph,
+        IEnumerable<CellRef> purchased,
+        ParagonData data,
+        NonParagonStats nonParagonStats,
+        string? className = null,
+        IReadOnlyDictionary<CellRef, double>? cellMultipliers = null)
     {
         var thresholdsBySnoId = data.Thresholds.ToDictionary(t => t.SnoId, StringComparer.OrdinalIgnoreCase);
         var purchasedSet = purchased as ISet<CellRef> ?? purchased.ToHashSet();
@@ -46,10 +59,11 @@ public static class BuildStats
             if (v != graph.StartVertex && !purchasedSet.Contains(vertex.Cell))
                 continue;
 
+            double factor = cellMultipliers?.GetValueOrDefault(vertex.Cell, 1.0) ?? 1.0;
             foreach (var attribute in vertex.Node.Attributes)
             {
                 if (!attribute.IsThresholdBonus && attribute.Value is double value)
-                    totals[attribute.Attribute] = totals.GetValueOrDefault(attribute.Attribute) + value;
+                    totals[attribute.Attribute] = totals.GetValueOrDefault(attribute.Attribute) + value * factor;
             }
 
             if (vertex.Node.Thresholds.Count == 0)
@@ -82,10 +96,11 @@ public static class BuildStats
                     continue;
                 met.Add(i);
                 changed = true;
+                double factor = cellMultipliers?.GetValueOrDefault(vertex.Cell, 1.0) ?? 1.0;
                 foreach (var attribute in vertex.Node.Attributes)
                 {
                     if (attribute.IsThresholdBonus && attribute.Value is double value)
-                        totals[attribute.Attribute] = totals.GetValueOrDefault(attribute.Attribute) + value;
+                        totals[attribute.Attribute] = totals.GetValueOrDefault(attribute.Attribute) + value * factor;
                 }
             }
         }
@@ -115,7 +130,7 @@ public static class BuildStats
                 : requirementAttribute;
             double have = totals.GetValueOrDefault(paragonKey) + totals.GetValueOrDefault(requirementAttribute);
             return requirementAttribute.EndsWith("_Total", StringComparison.Ordinal)
-                ? have + nonParagonStat
+                ? have + nonParagonStats.For(requirementAttribute)
                 : have;
         }
     }

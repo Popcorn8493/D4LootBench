@@ -8,8 +8,10 @@
     mc:Ignorable="d"
     d:DataContext="{d:DesignInstance Type=vm:ParagonPlannerViewModel, IsDesignTimeCreatable=False}"
     Title="Paragon Planner — D4LootBench"
-    Height="780" Width="1080"
-    MinHeight="500" MinWidth="900">
+    Height="780" Width="1160"
+    MinHeight="500" MinWidth="900"
+    WindowStartupLocation="CenterScreen"
+    UseLayoutRounding="True">
 
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis" />
@@ -21,36 +23,124 @@
         <SolidColorBrush x:Key="GateNodeBrush"     Color="#C9A45C" />
         <SolidColorBrush x:Key="StartNodeBrush"    Color="#F0EAD8" />
         <SolidColorBrush x:Key="BoardBackground"   Color="#1E1A17" />
+
+        <Style x:Key="SummaryLine" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Foreground" Value="#555" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="Margin" Value="0,2,0,0" />
+            <Style.Triggers>
+                <Trigger Property="Text" Value="">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="ToolbarDivider" TargetType="Border">
+            <Setter Property="Width" Value="1" />
+            <Setter Property="Height" Value="20" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Background" Value="#D4D4D4" />
+            <Setter Property="Margin" Value="10,3" />
+        </Style>
     </Window.Resources>
+
+    <Window.InputBindings>
+        <KeyBinding Key="F5" Command="{Binding SolveCommand}" />
+        <KeyBinding Key="S" Modifiers="Control" Command="{Binding SaveProjectCommand}" />
+        <KeyBinding Key="O" Modifiers="Control" Command="{Binding OpenProjectCommand}" />
+        <KeyBinding Key="I" Modifiers="Control" Command="{Binding ImportBuildCommand}" />
+    </Window.InputBindings>
 
     <DockPanel>
         <!-- ── Controls ─────────────────────────────────────────────── -->
         <Border DockPanel.Dock="Top" Padding="10,8" BorderThickness="0,0,0,1" BorderBrush="#DDD">
+            <Border.Style>
+                <Style TargetType="Border">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsBusy}" Value="True">
+                            <Setter Property="IsEnabled" Value="False" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
             <StackPanel>
-                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                <WrapPanel Margin="0,0,0,6">
                     <TextBlock Text="Class:" VerticalAlignment="Center" Margin="0,0,5,0" />
                     <ComboBox ItemsSource="{Binding Classes}" SelectedItem="{Binding SelectedClass}"
-                              Width="110" Margin="0,0,16,0" />
+                              Width="110" />
 
-                    <Button Command="{Binding SolveCommand}" Padding="10,3" Margin="0,0,6,0">
+                    <Border Style="{StaticResource ToolbarDivider}" />
+                    <Button Command="{Binding SolveCommand}" Padding="10,3" Margin="0,0,6,0"
+                            ToolTip="Find the cheapest connected path through every target (F5)">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="&#xE9D2;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,5,0" />
                             <TextBlock Text="Solve Path" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
-                    <Button Command="{Binding ClearTargetsCommand}" Content="Clear Targets" Padding="10,3" Margin="0,0,16,0" />
+                    <Button Command="{Binding ClearTargetsCommand}" Content="Clear Targets" Padding="10,3" />
 
+                    <Border Style="{StaticResource ToolbarDivider}" />
                     <Button Command="{Binding ImportBuildCommand}" Content="Import Build" Padding="10,3" Margin="0,0,6,0"
-                            ToolTip="Import a paragon build from the clipboard: a Maxroll variant code, a maxroll.gg planner or build-guide URL, a mobalytics.gg build URL, or the page's HTML if fetching is blocked" />
-                    <Button Command="{Binding CompareImportCommand}" Content="Compare Import" Padding="10,3" Margin="0,0,6,0"
+                            ToolTip="Import a paragon build from the clipboard: a Maxroll variant code, a maxroll.gg planner or build-guide URL, a mobalytics.gg build URL, or the page's HTML if fetching is blocked (Ctrl+I)" />
+                    <Button Command="{Binding CompareImportCommand}" Content="Compare" Padding="10,3" Margin="0,0,6,0"
                             ToolTip="Compare the current build against a build on the clipboard (code, URL, or HTML) — points, stats, glyphs, and which is best" />
-                    <Button Command="{Binding CombineImportCommand}" Content="Combine Import" Padding="10,3" Margin="0,0,6,0"
+                    <Button Command="{Binding CombineImportCommand}" Content="Combine" Padding="10,3" Margin="0,0,6,0"
                             ToolTip="Merge a build on the clipboard into the current one, then re-solve the cheapest path covering both builds' rare and legendary nodes" />
                     <Button Command="{Binding ExportMaxrollCodeCommand}" Content="Export Code" Padding="10,3"
                             ToolTip="Copy the current allocation as a Maxroll planner variant code" />
-                </StackPanel>
 
-                <StackPanel Orientation="Horizontal">
+                    <Border Style="{StaticResource ToolbarDivider}" />
+                    <Button Command="{Binding SaveProjectCommand}" Padding="10,3" Margin="0,0,6,0"
+                            ToolTip="Save the whole planner session to a file: boards, targets, solved path, glyphs, node rules, and character stats (Ctrl+S)">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE74E;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,5,0" />
+                            <TextBlock Text="Save" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                    <Button Command="{Binding OpenProjectCommand}" Padding="10,3"
+                            ToolTip="Load a previously saved planner session (Ctrl+O)">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE8E5;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,5,0" />
+                            <TextBlock Text="Open" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                    <Button Content="Recent ▾" Padding="8,3" Margin="4,0,0,0" Click="RecentButton_Click"
+                            ToolTip="Reopen a recently saved or opened project">
+                        <Button.Style>
+                            <Style TargetType="Button">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding RecentProjects.Count}" Value="0">
+                                        <Setter Property="IsEnabled" Value="False" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                        <Button.ContextMenu>
+                            <ContextMenu ItemsSource="{Binding RecentProjects}">
+                                <ContextMenu.ItemContainerStyle>
+                                    <Style TargetType="MenuItem">
+                                        <Setter Property="Header" Value="{Binding}" />
+                                        <!-- HeaderTemplate keeps underscores in file names from becoming mnemonics -->
+                                        <Setter Property="HeaderTemplate">
+                                            <Setter.Value>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding FileName}" />
+                                                </DataTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                        <Setter Property="ToolTip" Value="{Binding FullPath}" />
+                                        <Setter Property="Command"
+                                                Value="{Binding PlacementTarget.DataContext.OpenRecentProjectCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                                        <Setter Property="CommandParameter" Value="{Binding}" />
+                                    </Style>
+                                </ContextMenu.ItemContainerStyle>
+                            </ContextMenu>
+                        </Button.ContextMenu>
+                    </Button>
+                </WrapPanel>
+
+                <WrapPanel>
                     <TextBlock Text="Attach:" VerticalAlignment="Center" Margin="0,0,5,0" />
                     <ComboBox ItemsSource="{Binding AttachableBoards}" SelectedItem="{Binding SelectedAttachBoard}"
                               DisplayMemberPath="Name" Width="170" Margin="0,0,8,0" />
@@ -67,165 +157,411 @@
                     <Button Command="{Binding RemoveLastBoardCommand}" Content="Remove Last" Padding="10,3" Margin="0,0,16,0" />
                     <Button Command="{Binding PlanLayoutCommand}" Content="Plan Layout" Padding="10,3"
                             ToolTip="Start from the goal: pick the boards you want (or a pool to choose from) and the glyphs to socket — the optimizer finds positions, rotations, and glyph placement, then solves the path" />
-                </StackPanel>
+                </WrapPanel>
             </StackPanel>
         </Border>
 
         <!-- ── Status ───────────────────────────────────────────────── -->
         <Border DockPanel.Dock="Bottom" Padding="10,6" BorderThickness="0,1,0,0" BorderBrush="#DDD">
             <StackPanel>
-                <TextBlock Text="{Binding StatusText}" TextWrapping="Wrap">
-                    <TextBlock.Style>
-                        <Style TargetType="TextBlock">
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding StatusIsError}" Value="True">
-                                    <Setter Property="Foreground" Value="#C0392B" />
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </TextBlock.Style>
-                </TextBlock>
-                <TextBlock Text="{Binding SolveDetails}" TextWrapping="Wrap" Foreground="#666" Margin="0,3,0,0">
-                    <TextBlock.Style>
-                        <Style TargetType="TextBlock">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Left" Text="&#xE7BA;" FontFamily="Segoe MDL2 Assets" FontSize="13"
+                               Foreground="#C0392B" VerticalAlignment="Top" Margin="0,2,6,0"
+                               Visibility="{Binding StatusIsError, Converter={StaticResource BoolToVis}}" />
+                    <TextBlock Text="{Binding StatusText}" TextWrapping="Wrap">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding StatusIsError}" Value="True">
+                                        <Setter Property="Foreground" Value="#C0392B" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </DockPanel>
+                <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="130"
+                              PreviewMouseWheel="InnerScroll_PreviewMouseWheel">
+                    <ScrollViewer.Style>
+                        <Style TargetType="ScrollViewer">
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding SolveDetails}" Value="">
                                     <Setter Property="Visibility" Value="Collapsed" />
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>
-                    </TextBlock.Style>
-                </TextBlock>
+                    </ScrollViewer.Style>
+                    <TextBlock Text="{Binding SolveDetails}" TextWrapping="Wrap" Foreground="#666" Margin="0,3,0,0" />
+                </ScrollViewer>
             </StackPanel>
         </Border>
 
-        <!-- ── Glyphs & node rules ──────────────────────────────────── -->
-        <Border DockPanel.Dock="Right" Width="300" BorderThickness="1,0,0,0" BorderBrush="#DDD">
-            <ScrollViewer VerticalScrollBarVisibility="Auto">
-                <StackPanel Margin="10,8">
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                        <TextBlock Text="Sheet stats (level+gear):" VerticalAlignment="Center" FontSize="11" Margin="0,0,5,0" />
-                        <TextBox Text="{Binding SheetStats, UpdateSourceTrigger=PropertyChanged}" Width="44" FontSize="11"
-                                 ToolTip="Your character's core stat from everything except paragon. Rare-node threshold bonuses check the character TOTAL, and their requirement grows with each board's attachment order — this is added to the paragon-provided stat when checking them." />
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" MinWidth="360" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="332" MinWidth="280" MaxWidth="560" />
+            </Grid.ColumnDefinitions>
+
+            <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Center" VerticalAlignment="Stretch"
+                          Background="#EEE" ToolTip="Drag to resize the side panel" />
+
+        <!-- ── Build summary, glyphs & node rules ───────────────────── -->
+        <Border Grid.Column="2" BorderThickness="1,0,0,0" BorderBrush="#DDD">
+            <DockPanel>
+                <!-- Pinned build summary -->
+                <Border DockPanel.Dock="Top" Padding="10,8" BorderThickness="0,0,0,1" BorderBrush="#DDD">
+                    <StackPanel>
+                        <Grid Margin="0,0,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Build Summary" FontWeight="SemiBold" />
+                            <TextBlock Grid.Column="1" Text="{Binding PointsSummary}" FontSize="11" VerticalAlignment="Center">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="#666" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding PointsOverBudget}" Value="True">
+                                                <Setter Property="Foreground" Value="#C0392B" />
+                                                <Setter Property="FontWeight" Value="SemiBold" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Grid>
+                        <ProgressBar Height="6" Minimum="0" Maximum="1" Value="{Binding PointsFraction, Mode=OneWay}"
+                                     Margin="0,0,0,4">
+                            <ProgressBar.Style>
+                                <Style TargetType="ProgressBar">
+                                    <Setter Property="Foreground" Value="#7CCB5A" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding PointsOverBudget}" Value="True">
+                                            <Setter Property="Foreground" Value="#C0392B" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ProgressBar.Style>
+                        </ProgressBar>
+                        <TextBlock Text="{Binding NodeMixSummary}" Style="{StaticResource SummaryLine}" />
+                        <TextBlock Text="{Binding GlyphSummary}" Style="{StaticResource SummaryLine}" />
+                        <TextBlock Text="{Binding ThresholdSummary}" Style="{StaticResource SummaryLine}" />
+                        <ItemsControl ItemsSource="{Binding ThresholdWarnings}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding}" FontSize="11" Foreground="#B8641B"
+                                               TextWrapping="Wrap" Margin="0,2,0,0" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
                     </StackPanel>
-                    <TextBlock Text="Glyphs" FontWeight="SemiBold" Margin="0,0,0,4" />
-                    <ItemsControl ItemsSource="{Binding GlyphSockets}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate DataType="{x:Type vm:GlyphSocketViewModel}">
-                                <Border BorderBrush="#E3E3E3" BorderThickness="1" CornerRadius="3" Padding="6,4" Margin="0,0,0,6">
-                                    <StackPanel>
-                                        <TextBlock Text="{Binding Header}" FontSize="11" Foreground="#666" Margin="0,0,0,3" />
-                                        <ComboBox ItemsSource="{Binding Glyphs}" SelectedItem="{Binding SelectedGlyph}"
-                                                  DisplayMemberPath="Name" Margin="0,0,0,4"
-                                                  ToolTip="Glyph socketed on this board" />
-                                        <StackPanel Orientation="Horizontal" Margin="0,0,0,3">
-                                            <TextBlock Text="Level" VerticalAlignment="Center" FontSize="11" Margin="0,0,4,0" />
-                                            <TextBox Text="{Binding Level}" Width="36" FontSize="11"
-                                                     ToolTip="Glyph level — sets the radius (3 / 4 at 25 / 5 at 50)" />
-                                            <TextBlock Text="{Binding Radius, StringFormat='  radius {0}   needs'}" VerticalAlignment="Center" FontSize="11" />
-                                            <TextBox Text="{Binding RequiredStat}" Width="36" FontSize="11" Margin="4,0"
-                                                     ToolTip="Stat required in radius for the additional bonus (engine-side value — edit to match the in-game tooltip)" />
-                                            <TextBlock Text="{Binding StatName}" VerticalAlignment="Center" FontSize="11" />
-                                        </StackPanel>
-                                        <CheckBox IsChecked="{Binding EnsureActive}" FontSize="11"
-                                                  Content="Buy stat in radius to activate on Solve" />
-                                    </StackPanel>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                </Border>
 
-                    <Button Command="{Binding AnalyzePlacementCommand}" Content="Analyze Placement" Padding="10,3" Margin="0,2,0,8"
-                            ToolTip="Re-solves under every alternate rotation of each attached board and checks whether glyphs would see more of their stat in another socket" />
-
-                    <ItemsControl ItemsSource="{Binding Suggestions}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Border BorderBrush="#E3E3E3" BorderThickness="1" CornerRadius="3" Padding="6,4" Margin="0,0,0,6">
-                                    <StackPanel>
-                                        <TextBlock Text="{Binding Description}" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,4" />
-                                        <Button Content="Apply"
-                                                Command="{Binding DataContext.ApplySuggestionCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                                CommandParameter="{Binding}"
-                                                HorizontalAlignment="Left" Padding="10,2"
-                                                ToolTip="Apply this change to the board and re-solve, so you can see the difference" />
-                                    </StackPanel>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                    <Button Command="{Binding RevertPlacementCommand}" Content="Revert Applied Change" Padding="10,3" Margin="0,0,0,8"
-                            ToolTip="Restore the layout, targets, and glyphs from before the last applied suggestion">
-                        <Button.Style>
-                            <Style TargetType="Button">
-                                <Style.Triggers>
-                                    <Trigger Property="IsEnabled" Value="False">
-                                        <Setter Property="Visibility" Value="Collapsed" />
-                                    </Trigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Button.Style>
-                    </Button>
-
-                    <Separator Margin="0,0,0,6" />
-                    <TextBlock Text="Spend Remaining Points" FontWeight="SemiBold" />
-                    <TextBlock Text="After solving, spend the leftover of your point pool on focused stats and/or rare (yellow) nodes."
-                               FontSize="11" Foreground="#888" TextWrapping="Wrap" Margin="0,2,0,4" />
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                        <TextBlock Text="Point pool:" VerticalAlignment="Center" FontSize="11" Margin="0,0,5,0" />
-                        <TextBox Text="{Binding TotalPoints, UpdateSourceTrigger=PropertyChanged}" Width="44" FontSize="11"
-                                 ToolTip="Your total paragon points (300 from levels + seasonal rank rewards)" />
-                    </StackPanel>
-                    <Border BorderBrush="#E3E3E3" BorderThickness="1" CornerRadius="3" MaxHeight="110" Margin="0,0,0,4">
+                <TabControl BorderThickness="0" Background="Transparent" Padding="0" Margin="0,4,0,0">
+                    <TabItem Header="Build">
                         <ScrollViewer VerticalScrollBarVisibility="Auto">
-                            <ItemsControl ItemsSource="{Binding FocusStats}" Margin="4,2">
+                    <StackPanel Margin="10,8">
+                        <TextBlock Text="Character Stats" FontWeight="SemiBold" Margin="0,0,0,4" />
+                            <StackPanel>
+                                <TextBlock Text="Core stats from everything except paragon (level, gear, item bonuses). Rare-node threshold bonuses check the character TOTAL — these are added to the paragon-provided stat."
+                                           FontSize="11" Foreground="#888" TextWrapping="Wrap" Margin="0,0,0,4" />
+                                <UniformGrid Columns="2">
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,3">
+                                        <TextBlock Text="Strength" Width="66" VerticalAlignment="Center" FontSize="11" />
+                                        <TextBox Text="{Binding SheetStrength, UpdateSourceTrigger=PropertyChanged}" Width="44" FontSize="11" />
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="8,0,0,3">
+                                        <TextBlock Text="Intelligence" Width="66" VerticalAlignment="Center" FontSize="11" />
+                                        <TextBox Text="{Binding SheetIntelligence, UpdateSourceTrigger=PropertyChanged}" Width="44" FontSize="11" />
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,3">
+                                        <TextBlock Text="Willpower" Width="66" VerticalAlignment="Center" FontSize="11" />
+                                        <TextBox Text="{Binding SheetWillpower, UpdateSourceTrigger=PropertyChanged}" Width="44" FontSize="11" />
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="8,0,0,3">
+                                        <TextBlock Text="Dexterity" Width="66" VerticalAlignment="Center" FontSize="11" />
+                                        <TextBox Text="{Binding SheetDexterity, UpdateSourceTrigger=PropertyChanged}" Width="44" FontSize="11" />
+                                    </StackPanel>
+                                </UniformGrid>
+                                <StackPanel Orientation="Horizontal" Margin="0,3,0,0">
+                                    <TextBlock Text="Point pool" Width="66" VerticalAlignment="Center" FontSize="11" />
+                                    <TextBox Text="{Binding TotalPoints, UpdateSourceTrigger=PropertyChanged}" Width="44" FontSize="11"
+                                             ToolTip="Your total paragon points (300 from levels + seasonal rank rewards)" />
+                                </StackPanel>
+                            </StackPanel>
+
+                        <Separator Margin="0,10,0,8" />
+                        <TextBlock Text="Stat Totals" FontWeight="SemiBold" />
+                        <TextBlock Text="Click a row to highlight its nodes on the board; click again to clear."
+                                   FontSize="11" Foreground="#888" TextWrapping="Wrap" Margin="0,0,0,4" />
+                            <StackPanel>
+                                <TextBlock Text="Solve a path or import a build to see its effective stat totals."
+                                           FontSize="11" Foreground="#888" TextWrapping="Wrap">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding StatTotals.Count}" Value="0">
+                                                    <Setter Property="Visibility" Value="Visible" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                                <Border BorderBrush="#E3E3E3" BorderThickness="1" CornerRadius="3">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding StatTotals.Count}" Value="0">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                        <ItemsControl ItemsSource="{Binding StatTotals}" Margin="6,3">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate DataType="{x:Type vm:StatTotalLine}">
+                                                    <Button Command="{Binding DataContext.ToggleStatHighlightCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                            CommandParameter="{Binding}" Cursor="Hand"
+                                                            ToolTip="{Binding Detail}" HorizontalContentAlignment="Stretch">
+                                                        <Button.Template>
+                                                            <ControlTemplate TargetType="Button">
+                                                                <Border x:Name="RowBackground" Background="Transparent" Padding="2,1" CornerRadius="2">
+                                                                    <ContentPresenter />
+                                                                </Border>
+                                                                <ControlTemplate.Triggers>
+                                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                                        <Setter TargetName="RowBackground" Property="Background" Value="#F2ECE1" />
+                                                                    </Trigger>
+                                                                    <DataTrigger Binding="{Binding IsHighlighted}" Value="True">
+                                                                        <Setter TargetName="RowBackground" Property="Background" Value="#FFE9C8" />
+                                                                    </DataTrigger>
+                                                                </ControlTemplate.Triggers>
+                                                            </ControlTemplate>
+                                                        </Button.Template>
+                                                        <Grid>
+                                                            <Grid.Resources>
+                                                                <Style TargetType="TextBlock">
+                                                                    <Setter Property="FontSize" Value="12" />
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding IsCore}" Value="True">
+                                                                            <Setter Property="FontWeight" Value="SemiBold" />
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </Grid.Resources>
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="*" />
+                                                                <ColumnDefinition Width="Auto" />
+                                                            </Grid.ColumnDefinitions>
+                                                            <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                                                            <TextBlock Grid.Column="1" Text="{Binding Value}" Margin="8,0,0,0" />
+                                                        </Grid>
+                                                    </Button>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                </Border>
+                            </StackPanel>
+                    </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+
+                    <TabItem Header="Glyphs">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <ItemsControl ItemsSource="{Binding GlyphSockets}" Margin="10,8">
                                 <ItemsControl.ItemTemplate>
-                                    <DataTemplate DataType="{x:Type vm:FocusStatViewModel}">
-                                        <CheckBox IsChecked="{Binding IsSelected}" Content="{Binding DisplayName}"
-                                                  FontSize="11" Margin="0,1" />
+                                    <DataTemplate DataType="{x:Type vm:GlyphSocketViewModel}">
+                                        <Border BorderBrush="#E3E3E3" BorderThickness="1" CornerRadius="3" Padding="6,4" Margin="0,0,0,6">
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding Header}" FontSize="11" Foreground="#666" Margin="0,0,0,3" />
+                                                <ComboBox ItemsSource="{Binding Glyphs}" SelectedItem="{Binding SelectedGlyph}"
+                                                          DisplayMemberPath="Name" Margin="0,0,0,4" MaxDropDownHeight="340"
+                                                          ToolTip="Glyph socketed on this board — with the list open, type a name to jump to it" />
+                                                <WrapPanel Margin="0,0,0,3">
+                                                    <TextBlock Text="Level" VerticalAlignment="Center" FontSize="11" Margin="0,0,4,0" />
+                                                    <TextBox Text="{Binding Level}" Width="36" FontSize="11"
+                                                             ToolTip="Glyph level — sets the radius (3 / 4 at 25 / 5 at 50)" />
+                                                    <TextBlock Text="{Binding Radius, StringFormat='  radius {0}   needs'}" VerticalAlignment="Center" FontSize="11" />
+                                                    <TextBox Text="{Binding RequiredStat}" Width="36" FontSize="11" Margin="4,0"
+                                                             ToolTip="Stat required in radius for the additional bonus (engine-side value — edit to match the in-game tooltip)" />
+                                                    <TextBlock Text="{Binding StatName}" VerticalAlignment="Center" FontSize="11" />
+                                                </WrapPanel>
+                                                <CheckBox IsChecked="{Binding EnsureActive}" FontSize="11"
+                                                          Content="Buy stat in radius to activate on Solve" />
+                                                <CheckBox IsChecked="{Binding HighlightRadius}" FontSize="11" Margin="0,3,0,0"
+                                                          Content="Highlight radius on the board"
+                                                          ToolTip="Tint the cells this glyph's radius covers on the board canvas" />
+                                            </StackPanel>
+                                        </Border>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
                         </ScrollViewer>
-                    </Border>
-                    <CheckBox IsChecked="{Binding PreferRareNodes}" Content="Prefer rare (yellow) nodes first" FontSize="11" Margin="0,0,0,4"
-                              ToolTip="Buy reachable rare nodes cheapest-first before spending the rest on the focused stats" />
-                    <Button Command="{Binding MaximizePointsCommand}" Content="Spend Remaining Points" Padding="10,3" Margin="0,2,0,8"
-                            ToolTip="Grow the current path with the leftover points; no stats selected means the four core stats" />
+                    </TabItem>
 
-                    <Separator Margin="0,0,0,6" />
-                    <TextBlock Text="Node Rules" FontWeight="SemiBold" />
-                    <TextBlock Text="Right-click a node on the board to avoid (orange) or exclude (red) just that node."
-                               FontSize="11" Foreground="#888" TextWrapping="Wrap" Margin="0,2,0,6" />
-                    <ItemsControl ItemsSource="{Binding NodeRules}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate DataType="{x:Type vm:NodeRuleViewModel}">
-                                <Grid Margin="0,0,0,3">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="Auto" />
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="{Binding DisplayName}" VerticalAlignment="Center" FontSize="11"
-                                               TextTrimming="CharacterEllipsis" ToolTip="{Binding DisplayName}" />
-                                    <ComboBox Grid.Column="1" ItemsSource="{Binding Modes}" SelectedItem="{Binding Mode}"
-                                              Width="72" FontSize="11" Margin="4,0,0,0" />
-                                    <TextBox Grid.Column="2" Text="{Binding Limit}" Width="30" FontSize="11" Margin="4,0,0,0"
-                                             Visibility="{Binding IsLimit, Converter={StaticResource BoolToVis}}"
-                                             ToolTip="Take at most this many nodes of the group" />
-                                </Grid>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </StackPanel>
-            </ScrollViewer>
+                    <TabItem Header="Optimize">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel Margin="10,8">
+                                <TextBlock Text="Placement Analysis" FontWeight="SemiBold" Margin="0,0,0,4" />
+                                <Button Command="{Binding AnalyzePlacementCommand}" Content="Analyze Placement" Padding="10,3" Margin="0,0,0,8"
+                                        ToolTip="Re-solves under every alternate rotation of each attached board and checks whether glyphs would see more of their stat in another socket" />
+
+                                <ItemsControl ItemsSource="{Binding Suggestions}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border BorderBrush="#E3E3E3" BorderThickness="1" CornerRadius="3" Padding="6,4" Margin="0,0,0,6">
+                                                <StackPanel>
+                                                    <TextBlock Text="{Binding Description}" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,4" />
+                                                    <Button Content="Apply"
+                                                            Command="{Binding DataContext.ApplySuggestionCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                            CommandParameter="{Binding}"
+                                                            HorizontalAlignment="Left" Padding="10,2"
+                                                            ToolTip="Apply this change to the board and re-solve, so you can see the difference" />
+                                                </StackPanel>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <Button Command="{Binding RevertPlacementCommand}" Content="Revert Applied Change" Padding="10,3"
+                                        ToolTip="Restore the layout, targets, and glyphs from before the last applied suggestion">
+                                    <Button.Style>
+                                        <Style TargetType="Button">
+                                            <Style.Triggers>
+                                                <Trigger Property="IsEnabled" Value="False">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
+
+                                <Separator Margin="0,10,0,8" />
+                                <TextBlock Text="Spend Remaining Points" FontWeight="SemiBold" Margin="0,0,0,4" />
+                                <TextBlock Text="After solving, spend the leftover of your point pool on focused stats and/or rare (yellow) nodes."
+                                           FontSize="11" Foreground="#888" TextWrapping="Wrap" Margin="0,0,0,4" />
+                                <Border BorderBrush="#E3E3E3" BorderThickness="1" CornerRadius="3" Margin="0,0,0,4">
+                                        <ItemsControl ItemsSource="{Binding FocusStats}" Margin="4,2">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate DataType="{x:Type vm:FocusStatViewModel}">
+                                                    <CheckBox IsChecked="{Binding IsSelected}" Content="{Binding DisplayName}"
+                                                              FontSize="11" Margin="0,1" />
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                </Border>
+                                <CheckBox IsChecked="{Binding PreferRareNodes}" Content="Prefer rare (yellow) nodes first" FontSize="11" Margin="0,0,0,4"
+                                          ToolTip="Buy reachable rare nodes cheapest-first before spending the rest on the focused stats" />
+                                <CheckBox IsChecked="{Binding ActivateThresholds}" Content="Activate rare-node thresholds" FontSize="11" Margin="0,0,0,4"
+                                          ToolTip="Buy whatever core stat unmet rare-node threshold bonuses are short of (smallest deficit first) before spending on focused stats. Requirements check the character TOTAL — enter your level/gear stats under Character Stats. Warns when the boards can't supply enough." />
+                                <Button Command="{Binding MaximizePointsCommand}" Content="Spend Remaining Points" Padding="10,3" Margin="0,2,0,0"
+                                        ToolTip="Grow the current path with the leftover points; no stats selected means the four core stats" />
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+
+                    <TabItem Header="Rules">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel Margin="10,8">
+                                <TextBlock FontSize="11" Foreground="#888" TextWrapping="Wrap" Margin="0,0,0,6"
+                                           Text="Right-click a node on the board to avoid (orange) or exclude (red) just that node. Normal and magic nodes group by stat; each rare/legendary node is its own group. The 'Any:' rows at the bottom cover every node granting that stat regardless of kind — limit 'Any: Hitpoints Max Bonus' to cap max-life nodes overall." />
+                                <DockPanel Margin="0,0,0,6">
+                                    <TextBlock DockPanel.Dock="Left" Text="Filter:" VerticalAlignment="Center" FontSize="11" Margin="0,0,5,0" />
+                                    <TextBox Text="{Binding RuleFilter, UpdateSourceTrigger=PropertyChanged}" FontSize="11"
+                                             ToolTip="Show only rule rows whose name matches — try 'life', 'hitpoints', or 'Any:'" />
+                                </DockPanel>
+                                <ItemsControl ItemsSource="{Binding NodeRulesView}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate DataType="{x:Type vm:NodeRuleViewModel}">
+                                            <Grid Margin="0,0,0,3">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="{Binding DisplayName}" VerticalAlignment="Center" FontSize="11"
+                                                           TextTrimming="CharacterEllipsis" ToolTip="{Binding DisplayName}" />
+                                                <TextBlock Grid.Column="1" Text="{Binding UsedText}" VerticalAlignment="Center"
+                                                           FontSize="10" Margin="4,0,0,0"
+                                                           ToolTip="Nodes of this group in the current allocation">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Foreground" Value="#4A9E4A" />
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsOverLimit}" Value="True">
+                                                                    <Setter Property="Foreground" Value="#C0392B" />
+                                                                    <Setter Property="FontWeight" Value="SemiBold" />
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                                <ComboBox Grid.Column="2" ItemsSource="{Binding Modes}" SelectedItem="{Binding Mode}"
+                                                          Width="72" FontSize="11" Margin="4,0,0,0" />
+                                                <TextBox Grid.Column="3" Text="{Binding Limit}" Width="30" FontSize="11" Margin="4,0,0,0"
+                                                         Visibility="{Binding IsLimit, Converter={StaticResource BoolToVis}}"
+                                                         ToolTip="Take at most this many nodes of the group" />
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+                </TabControl>
+            </DockPanel>
         </Border>
 
         <!-- ── Board canvas ─────────────────────────────────────────── -->
-        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
-                      Background="{StaticResource BoardBackground}" Padding="20">
+        <Grid Grid.Column="0">
+        <ScrollViewer x:Name="BoardScroll" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
+                      Background="{StaticResource BoardBackground}" Padding="20"
+                      PreviewMouseWheel="Board_PreviewMouseWheel"
+                      MouseDown="Board_MouseDown" MouseMove="Board_MouseMove" MouseUp="Board_MouseUp"
+                      ToolTip="Middle-drag to pan · Ctrl+wheel to zoom · Shift+wheel to scroll sideways"
+                      ToolTipService.InitialShowDelay="1200" ToolTipService.BetweenShowDelay="60000">
             <Grid Width="{Binding CanvasWidth}" Height="{Binding CanvasHeight}"
                   HorizontalAlignment="Center" VerticalAlignment="Center">
+                <Grid.LayoutTransform>
+                    <ScaleTransform ScaleX="{Binding Zoom}" ScaleY="{Binding Zoom}" />
+                </Grid.LayoutTransform>
+            <ItemsControl ItemsSource="{Binding BoardPlates}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <Canvas />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemContainerStyle>
+                    <Style TargetType="ContentPresenter">
+                        <Setter Property="Canvas.Left" Value="{Binding CanvasLeft}" />
+                        <Setter Property="Canvas.Top" Value="{Binding CanvasTop}" />
+                    </Style>
+                </ItemsControl.ItemContainerStyle>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type vm:BoardPlate}">
+                        <Border Width="{Binding Size}" Height="{Binding Size}"
+                                Background="#282320" BorderBrush="#453C33" BorderThickness="1.5" CornerRadius="6" />
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <!-- Purchased-path segments, drawn under the nodes so the allocation reads as a route -->
+            <ItemsControl ItemsSource="{Binding PathEdges}" IsHitTestVisible="False">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <Canvas />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type vm:PathEdge}">
+                        <Line X1="{Binding X1}" Y1="{Binding Y1}" X2="{Binding X2}" Y2="{Binding Y2}"
+                              Stroke="#9A7CCB5A" StrokeThickness="5"
+                              StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
             <ItemsControl ItemsSource="{Binding BoardLabels}">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
@@ -240,7 +576,7 @@
                 </ItemsControl.ItemContainerStyle>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate DataType="{x:Type vm:BoardLabel}">
-                        <TextBlock Text="{Binding Text}" Foreground="#C9A45C" FontSize="12" FontWeight="SemiBold" />
+                        <TextBlock Text="{Binding Text}" Foreground="#DFBB74" FontSize="13" FontWeight="SemiBold" />
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
@@ -267,6 +603,15 @@
                             <Button.Template>
                                 <ControlTemplate TargetType="Button">
                                     <Grid Background="Transparent">
+                                        <!-- Glyph radius highlight (see the socket's checkbox) -->
+                                        <Rectangle Fill="#4A5BB8A8"
+                                                   Visibility="{Binding IsInGlyphRadius, Converter={StaticResource BoolToVis}}" />
+                                        <!-- Stat highlight (click a Stat Totals row) -->
+                                        <Ellipse Width="24" Height="24" Fill="#66F2C14E"
+                                                 Visibility="{Binding IsStatHighlighted, Converter={StaticResource BoolToVis}}" />
+                                        <!-- Hover feedback -->
+                                        <Ellipse x:Name="HoverRing" Width="24" Height="24" StrokeThickness="1.5"
+                                                 Stroke="#88FFFFFF" Visibility="Collapsed" />
                                         <!-- Purchased-path ring -->
                                         <Ellipse Width="24" Height="24" StrokeThickness="2.5" Stroke="#7CCB5A"
                                                  Visibility="{Binding IsPurchased, Converter={StaticResource BoolToVis}}" />
@@ -286,6 +631,9 @@
                                                 RenderTransformOrigin="0.5,0.5" />
                                     </Grid>
                                     <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="HoverRing" Property="Visibility" Value="Visible" />
+                                        </Trigger>
                                         <DataTrigger Binding="{Binding Kind}" Value="Normal">
                                             <Setter TargetName="Shape" Property="Background" Value="{StaticResource NormalNodeBrush}" />
                                             <Setter TargetName="Shape" Property="CornerRadius" Value="7" />
@@ -344,7 +692,171 @@
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
+            <!-- Socketed glyph names, anchored under their sockets -->
+            <ItemsControl ItemsSource="{Binding GlyphLabels}" IsHitTestVisible="False">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <Canvas />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemContainerStyle>
+                    <Style TargetType="ContentPresenter">
+                        <Setter Property="Canvas.Left" Value="{Binding CanvasLeft}" />
+                        <Setter Property="Canvas.Top" Value="{Binding CanvasTop}" />
+                    </Style>
+                </ItemsControl.ItemContainerStyle>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type vm:BoardLabel}">
+                        <TextBlock Text="{Binding Text}" Width="120" TextAlignment="Center"
+                                   Foreground="#8FE3D2" FontSize="10" FontWeight="SemiBold">
+                            <TextBlock.Effect>
+                                <DropShadowEffect Color="Black" BlurRadius="3" ShadowDepth="0" Opacity="0.9" />
+                            </TextBlock.Effect>
+                        </TextBlock>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
             </Grid>
         </ScrollViewer>
+
+        <!-- Zoom overlay -->
+        <Border HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,20,16"
+                Background="#CC1E1A17" CornerRadius="4" Padding="8,4">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="Zoom" Foreground="#BBB" FontSize="11" VerticalAlignment="Center" Margin="0,0,6,0" />
+                <Slider Width="90" Minimum="0.4" Maximum="2" Value="{Binding Zoom}" VerticalAlignment="Center"
+                        ToolTip="Board zoom — Ctrl+mouse wheel works too" />
+                <TextBlock Text="{Binding Zoom, StringFormat={}{0:P0}}" Foreground="#BBB" FontSize="11"
+                           VerticalAlignment="Center" Margin="6,0,0,0" MinWidth="32" />
+                <Button Content="Fit" Click="FitZoom_Click" Padding="7,1" Margin="8,0,0,0" FontSize="11"
+                        ToolTip="Zoom so the whole layout fits the view" />
+                <Button Content="100%" Click="ResetZoom_Click" Padding="7,1" Margin="4,0,0,0" FontSize="11"
+                        ToolTip="Reset the zoom to actual size" />
+            </StackPanel>
+        </Border>
+
+        <!-- Legend overlay -->
+        <Border HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="20,0,0,16"
+                Background="#CC1E1A17" CornerRadius="4" Padding="8,4">
+            <Expander ExpandDirection="Up" IsExpanded="False" Foreground="#BBB">
+                <Expander.Header>
+                    <TextBlock Text="Legend" FontSize="11" Foreground="#BBB" />
+                </Expander.Header>
+                <Border Padding="2,6,2,2">
+                    <Border.Resources>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="FontSize" Value="11" />
+                            <Setter Property="Foreground" Value="#CCC" />
+                            <Setter Property="VerticalAlignment" Value="Center" />
+                            <Setter Property="Margin" Value="6,0,10,0" />
+                        </Style>
+                        <Style TargetType="Grid" x:Key="Swatch">
+                            <Setter Property="Width" Value="18" />
+                            <Setter Property="Height" Value="18" />
+                        </Style>
+                    </Border.Resources>
+                    <UniformGrid Columns="2">
+                        <StackPanel Orientation="Horizontal" Margin="0,1">
+                            <Grid Style="{StaticResource Swatch}">
+                                <Ellipse Width="9" Height="9" Fill="{StaticResource NormalNodeBrush}" />
+                            </Grid>
+                            <TextBlock Text="Normal" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,1">
+                            <Grid Style="{StaticResource Swatch}">
+                                <Ellipse Width="12" Height="12" Fill="{StaticResource MagicNodeBrush}" />
+                            </Grid>
+                            <TextBlock Text="Magic" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,1">
+                            <Grid Style="{StaticResource Swatch}">
+                                <Rectangle Width="12" Height="12" RadiusX="2" RadiusY="2" Fill="{StaticResource RareNodeBrush}" />
+                            </Grid>
+                            <TextBlock Text="Rare" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,1">
+                            <Grid Style="{StaticResource Swatch}">
+                                <Rectangle Width="10" Height="10" Fill="{StaticResource LegendaryNodeBrush}"
+                                           RenderTransformOrigin="0.5,0.5">
+                                    <Rectangle.RenderTransform>
+                                        <RotateTransform Angle="45" />
+                                    </Rectangle.RenderTransform>
+                                </Rectangle>
+                            </Grid>
+                            <TextBlock Text="Legendary" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,1">
+                            <Grid Style="{StaticResource Swatch}">
+                                <Ellipse Width="13" Height="13" Stroke="{StaticResource SocketNodeBrush}" StrokeThickness="3" />
+                            </Grid>
+                            <TextBlock Text="Glyph socket" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,1">
+                            <Grid Style="{StaticResource Swatch}">
+                                <Rectangle Width="12" Height="12" Stroke="{StaticResource GateNodeBrush}" StrokeThickness="2" />
+                            </Grid>
+                            <TextBlock Text="Gate" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,1">
+                            <Grid Style="{StaticResource Swatch}">
+                                <Rectangle Width="10" Height="10" Fill="{StaticResource StartNodeBrush}"
+                                           RenderTransformOrigin="0.5,0.5">
+                                    <Rectangle.RenderTransform>
+                                        <RotateTransform Angle="45" />
+                                    </Rectangle.RenderTransform>
+                                </Rectangle>
+                            </Grid>
+                            <TextBlock Text="Start" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,1">
+                            <Grid Style="{StaticResource Swatch}">
+                                <Ellipse Width="14" Height="14" Stroke="White" StrokeThickness="2" />
+                            </Grid>
+                            <TextBlock Text="Target (click)" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,1">
+                            <Grid Style="{StaticResource Swatch}">
+                                <Ellipse Width="14" Height="14" Stroke="#7CCB5A" StrokeThickness="2.5" />
+                            </Grid>
+                            <TextBlock Text="Purchased path" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,1">
+                            <Grid Style="{StaticResource Swatch}">
+                                <Ellipse Width="14" Height="14" Stroke="#E8A33D" StrokeThickness="2" StrokeDashArray="1.6 1.6" />
+                            </Grid>
+                            <TextBlock Text="Avoid (right-click)" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,1">
+                            <Grid Style="{StaticResource Swatch}">
+                                <Ellipse Width="14" Height="14" Stroke="#C0392B" StrokeThickness="2" />
+                                <Path Stroke="#C0392B" StrokeThickness="1.6" Data="M 5,5 L 13,13 M 13,5 L 5,13" />
+                            </Grid>
+                            <TextBlock Text="Exclude (right-click ×2)" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,1">
+                            <Grid Style="{StaticResource Swatch}">
+                                <Rectangle Width="14" Height="14" Fill="#4A5BB8A8" />
+                            </Grid>
+                            <TextBlock Text="Glyph radius" />
+                        </StackPanel>
+                    </UniformGrid>
+                </Border>
+            </Expander>
+        </Border>
+
+        <!-- Busy overlay: dims the board and blocks clicks while the solver or an import runs -->
+        <Border Background="#59141210" Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}">
+            <Border Background="#E5262220" CornerRadius="6" Padding="16,10"
+                    HorizontalAlignment="Center" VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal">
+                    <ProgressBar IsIndeterminate="True" Width="110" Height="6" VerticalAlignment="Center"
+                                 Foreground="#7CCB5A" />
+                    <TextBlock Text="{Binding StatusText}" Foreground="#DDD" FontSize="12" Margin="10,0,0,0"
+                               VerticalAlignment="Center" MaxWidth="380" TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+            </Border>
+        </Border>
+        </Grid>
+        </Grid>
     </DockPanel>
 </Window>

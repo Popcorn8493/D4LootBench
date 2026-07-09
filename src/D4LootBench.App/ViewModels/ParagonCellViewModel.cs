@@ -30,13 +30,29 @@ public partial class ParagonCellViewModel : ObservableObject
 
     public string Kind => Node.Kind.ToString();
     public bool IsStart => Node.Kind == ParagonNodeKind.Start;
-    public string ToolTipText => Paragon.ParagonDisplay.DescribeNode(Node);
+
+    public string ToolTipText => DynamicInfo is null
+        ? Paragon.ParagonDisplay.DescribeNode(Node)
+        : Paragon.ParagonDisplay.DescribeNode(Node) + Environment.NewLine + Environment.NewLine + DynamicInfo;
+
+    /// <summary>Live extra tooltip lines: threshold math on rares, the socketed glyph on sockets.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ToolTipText))]
+    private string? _dynamicInfo;
+
+    /// <summary>Purchased and granting the stat picked in the Stat Totals panel.</summary>
+    [ObservableProperty]
+    private bool _isStatHighlighted;
 
     [ObservableProperty]
     private bool _isTarget;
 
     [ObservableProperty]
     private bool _isPurchased;
+
+    /// <summary>Inside a highlighted glyph socket's radius (see GlyphSocketViewModel.HighlightRadius).</summary>
+    [ObservableProperty]
+    private bool _isInGlyphRadius;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsAvoided))]

@@ -48,7 +48,9 @@ public static class PlanSolver
     public static PlanResult Solve(ComposedGraph graph, PlanRequest request)
     {
         var cellsByGroup = NodeGrouping.CellsByGroup(graph);
-        var displayByGroup = NodeGrouping.GroupsIn(graph).ToDictionary(g => g.Key, g => g.DisplayName);
+        var displayByGroup = NodeGrouping.GroupsIn(graph)
+            .Concat(NodeGrouping.StatGroupsIn(graph))
+            .ToDictionary(g => g.Key, g => g.DisplayName);
         var (weights, blockedCells, limitRules) = BuildSteering(request, cellsByGroup);
 
         var notes = new List<string>();
@@ -87,16 +89,19 @@ public static class PlanSolver
         }
 
         var purchased = new HashSet<CellRef>(result.PurchasedCells);
-        var outcomes = GlyphOptimizer.Extend(graph, purchased, request.GlyphGoals, constraints);
+        var outcomes = GlyphOptimizer.Extend(graph, purchased, request.GlyphGoals, constraints, limitRules, cellsByGroup);
         foreach (var outcome in outcomes.Where(o => !o.Met))
         {
             string glyph = outcome.Goal.GlyphName ?? "glyph";
+            string limitHint = outcome.LimitConstrained
+                ? " A node Limit rule kept nodes off the path — raise or clear it to activate."
+                : "";
             notes.Add($"Cannot activate {glyph}: only {outcome.AchievedTotal:0} of the required " +
                       $"{outcome.Goal.RequiredTotal:0} {ParagonDisplay.FormatAttributeName(outcome.Goal.SourceAttribute)} " +
-                      $"is reachable within radius {outcome.Goal.Radius}.");
+                      $"is reachable within radius {outcome.Goal.Radius}.{limitHint}");
         }
 
-        // Glyph extension respects avoid-weights but can still push a group past its limit.
+        // Glyph extension enforces limits itself now — this is a safety net that should not fire.
         foreach (var (rule, count) in ViolatedLimits(purchased, limitRules, cellsByGroup))
         {
             notes.Add($"Glyph activation pushed {Display(rule.GroupKey)} to {count} node(s), over the limit of {rule.Limit}.");

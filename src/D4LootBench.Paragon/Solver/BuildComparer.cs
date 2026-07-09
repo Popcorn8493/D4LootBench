@@ -19,9 +19,12 @@ public sealed record BuildSnapshot(
 public static class BuildComparer
 {
     public static string Compare(BuildSnapshot a, BuildSnapshot b, ParagonData data, double nonParagonStat = 0)
+        => Compare(a, b, data, NonParagonStats.Uniform(nonParagonStat));
+
+    public static string Compare(BuildSnapshot a, BuildSnapshot b, ParagonData data, NonParagonStats nonParagonStats)
     {
-        var summaryA = Summarize(a, data, nonParagonStat);
-        var summaryB = Summarize(b, data, nonParagonStat);
+        var summaryA = Summarize(a, data, nonParagonStats);
+        var summaryB = Summarize(b, data, nonParagonStats);
 
         var lines = new List<string>
         {
@@ -105,14 +108,14 @@ public static class BuildComparer
         int ThresholdsMet, int ThresholdCount, double GlyphDelivery,
         IReadOnlyDictionary<string, double> Stats);
 
-    private static BuildSummary Summarize(BuildSnapshot build, ParagonData data, double nonParagonStat)
+    private static BuildSummary Summarize(BuildSnapshot build, ParagonData data, NonParagonStats nonParagonStats)
     {
         var graph = ComposedGraph.Build(
             build.Layout, data.Nodes.ToDictionary(n => n.SnoId, StringComparer.OrdinalIgnoreCase));
 
         // Threshold requirements scale with each board's attachment slot; met bonuses count.
         var report = BuildStats.Compute(graph, build.AllocatedCells, data,
-            nonParagonStat, build.Layout.Boards[0].Board.ClassName);
+            nonParagonStats, build.Layout.Boards[0].Board.ClassName);
         var metCells = report.Thresholds.Where(t => t.Met).Select(t => t.Cell).ToHashSet();
 
         int points = 0, rares = 0, legendaries = 0;

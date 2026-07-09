@@ -44,6 +44,10 @@ public partial class GlyphSocketViewModel : ObservableObject
     [ObservableProperty]
     private bool _ensureActive;
 
+    /// <summary>Tints the cells within this socket's radius on the board canvas.</summary>
+    [ObservableProperty]
+    private bool _highlightRadius;
+
     public int Radius => GlyphRadius.RadiusForLevel(Level);
 
     public string? SourceAttribute => SelectedGlyph is null ? null : GlyphInfo.PrimarySourceAttribute(SelectedGlyph);

@@ -27,4 +27,16 @@ public partial class NodeRuleViewModel : ObservableObject
     private int _limit = 2;
 
     public bool IsLimit => Mode == NodeRuleMode.Limit;
+
+    /// <summary>How many nodes of this group the current allocation holds, e.g. "2 in path".</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsOverLimit))]
+    private int _usedCount;
+
+    public string UsedText => UsedCount == 0 ? "" : $"{UsedCount} in path";
+    public bool IsOverLimit => Mode == NodeRuleMode.Limit && UsedCount > Limit;
+
+    partial void OnUsedCountChanged(int value) => OnPropertyChanged(nameof(UsedText));
+    partial void OnModeChanged(NodeRuleMode value) => OnPropertyChanged(nameof(IsOverLimit));
+    partial void OnLimitChanged(int value) => OnPropertyChanged(nameof(IsOverLimit));
 }

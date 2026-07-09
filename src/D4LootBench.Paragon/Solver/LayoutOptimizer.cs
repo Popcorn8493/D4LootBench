@@ -26,6 +26,12 @@ public sealed record LayoutOptimizerRequest
 
     /// <summary>Character stat from level and gear, counted toward rare-node threshold requirements.</summary>
     public double NonParagonStat { get; init; }
+
+    /// <summary>Per-stat non-paragon offsets; when set, takes precedence over <see cref="NonParagonStat"/>.</summary>
+    public NonParagonStats? NonParagonStats { get; init; }
+
+    /// <summary>Node rules (avoid/exclude/limit by group) applied to every candidate solve.</summary>
+    public IReadOnlyList<NodeRule> NodeRules { get; init; } = [];
 }
 
 public sealed record GlyphPlacement(int BoardSlot, ParagonGlyphDef Glyph, double AttainableStat, bool CanActivate);
@@ -485,12 +491,14 @@ public static class LayoutOptimizer
                 goals.Add(new GlyphGoal(socket, attribute, request.RequiredStat, radius, placement.Glyph.Name));
         }
 
-        var plan = PlanSolver.Solve(graph, new PlanRequest { Targets = targets, GlyphGoals = goals });
+        var plan = PlanSolver.Solve(graph,
+            new PlanRequest { Targets = targets, GlyphGoals = goals, NodeRules = request.NodeRules });
         if (!plan.Success)
             return null;
 
         var stats = BuildStats.Compute(graph, plan.PurchasedCells, data,
-            request.NonParagonStat, layout.Boards[0].Board.ClassName);
+            request.NonParagonStats ?? NonParagonStats.Uniform(request.NonParagonStat),
+            layout.Boards[0].Board.ClassName);
         var score = new ArrangementScore(
             plan.GlyphOutcomes.Count(o => o.Met),
             stats.ThresholdsMet,

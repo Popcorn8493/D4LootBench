@@ -9,12 +9,49 @@ using D4LootBench.Paragon;
 using D4LootBench.Paragon.Data;
 using D4LootBench.Paragon.Import;
 using D4LootBench.Paragon.Models;
+using D4LootBench.Paragon.Serialization;
 using D4LootBench.Paragon.Solver;
+using Microsoft.Win32;
 
 namespace D4LootBench.App.ViewModels;
 
 /// <summary>A floating text label positioned on the board canvas.</summary>
 public sealed record BoardLabel(string Text, double CanvasLeft, double CanvasTop);
+
+/// <summary>A backing plate drawn behind one board, so boards read as distinct objects.</summary>
+public sealed record BoardPlate(double CanvasLeft, double CanvasTop, double Size);
+
+/// <summary>One purchased-path segment between two adjacent allocated cells (canvas coordinates).</summary>
+public sealed record PathEdge(double X1, double Y1, double X2, double Y2);
+
+/// <summary>One entry of the Recent projects menu.</summary>
+public sealed record RecentProject(string FullPath)
+{
+    public string FileName => Path.GetFileName(FullPath);
+}
+
+/// <summary>One row of the effective stat totals panel; Detail is the tooltip breakdown.
+/// Clicking a row highlights the purchased nodes granting <see cref="Attribute"/>.</summary>
+public sealed partial class StatTotalLine : ObservableObject
+{
+    public StatTotalLine(string name, string value, bool isCore, string attribute, string? detail = null)
+    {
+        Name = name;
+        Value = value;
+        IsCore = isCore;
+        Attribute = attribute;
+        Detail = detail;
+    }
+
+    public string Name { get; }
+    public string Value { get; }
+    public bool IsCore { get; }
+    public string Attribute { get; }
+    public string? Detail { get; }
+
+    [ObservableProperty]
+    private bool _isHighlighted;
+}
 
 /// <summary>
 /// Paragon planner: build a board layout (starter plus up to four attached boards with
@@ -37,8 +74,22 @@ public partial class ParagonPlannerViewModel : ObservableObject
 
     public ParagonPlannerViewModel()
     {
+        NodeRulesView = System.Windows.Data.CollectionViewSource.GetDefaultView(NodeRules);
+        NodeRulesView.Filter = o =>
+            string.IsNullOrWhiteSpace(RuleFilter)
+            || (o is NodeRuleViewModel rule
+                && rule.DisplayName.Contains(RuleFilter, StringComparison.OrdinalIgnoreCase));
         SelectedClass = Classes[0];
+        RefreshRecentProjects();
     }
+
+    /// <summary>The rules list filtered by <see cref="RuleFilter"/> (the list has ~50 rows).</summary>
+    public System.ComponentModel.ICollectionView NodeRulesView { get; }
+
+    [ObservableProperty]
+    private string _ruleFilter = "";
+
+    partial void OnRuleFilterChanged(string value) => NodeRulesView.Refresh();
 
     public IReadOnlyList<string> Classes { get; } =
         ["Barbarian", "Druid", "Necromancer", "Rogue", "Sorcerer", "Spiritborn", "Paladin", "Warlock"];
@@ -51,6 +102,13 @@ public partial class ParagonPlannerViewModel : ObservableObject
 
     public ObservableCollection<ParagonCellViewModel> Cells { get; } = [];
     public ObservableCollection<BoardLabel> BoardLabels { get; } = [];
+    public ObservableCollection<BoardPlate> BoardPlates { get; } = [];
+
+    /// <summary>Glyph names rendered at their sockets on the board canvas.</summary>
+    public ObservableCollection<BoardLabel> GlyphLabels { get; } = [];
+
+    /// <summary>Segments connecting adjacent purchased cells, drawn under the nodes as the path.</summary>
+    public ObservableCollection<PathEdge> PathEdges { get; } = [];
 
     /// <summary>One row per glyph socket in the layout: glyph, level, activation goal.</summary>
     public ObservableCollection<GlyphSocketViewModel> GlyphSockets { get; } = [];
@@ -67,16 +125,115 @@ public partial class ParagonPlannerViewModel : ObservableObject
     [ObservableProperty]
     private bool _preferRareNodes;
 
+    /// <summary>Spend Remaining Points first buys the stats unmet rare-node thresholds are short of.</summary>
+    [ObservableProperty]
+    private bool _activateThresholds;
+
     /// <summary>The player's total point pool; the maximizer spends what solve left over.</summary>
     [ObservableProperty]
     private int _totalPoints = MaxParagonPoints;
 
     /// <summary>
-    /// Character stat from level and gear (applied to each core stat) — rare-node threshold
-    /// requirements check the character TOTAL, and paragon is only part of it.
+    /// Character core stats from everything except paragon (level, gear, item bonuses) —
+    /// rare-node threshold requirements check the character TOTAL, and paragon is only part of it.
     /// </summary>
     [ObservableProperty]
-    private double _sheetStats;
+    private double _sheetStrength;
+
+    [ObservableProperty]
+    private double _sheetIntelligence;
+
+    [ObservableProperty]
+    private double _sheetWillpower;
+
+    [ObservableProperty]
+    private double _sheetDexterity;
+
+    partial void OnSheetStrengthChanged(double value) => RefreshBuildSummary();
+    partial void OnSheetIntelligenceChanged(double value) => RefreshBuildSummary();
+    partial void OnSheetWillpowerChanged(double value) => RefreshBuildSummary();
+    partial void OnSheetDexterityChanged(double value) => RefreshBuildSummary();
+    partial void OnTotalPointsChanged(int value) => RefreshBuildSummary();
+
+    private NonParagonStats SheetStatOffsets() => NonParagonStats.PerStat(new Dictionary<string, double>
+    {
+        ["Strength"] = SheetStrength,
+        ["Intelligence"] = SheetIntelligence,
+        ["Willpower"] = SheetWillpower,
+        ["Dexterity"] = SheetDexterity,
+    });
+
+    /// <summary>
+    /// Per-cell stat multipliers from "+X% to [rarity] nodes in radius" glyph buffs — only
+    /// glyphs whose socket is actually purchased buff anything.
+    /// </summary>
+    private IReadOnlyDictionary<CellRef, double> CellMultipliers(IReadOnlySet<CellRef> purchased)
+    {
+        if (_graph is null)
+            return new Dictionary<CellRef, double>();
+        var socketed = GlyphSockets
+            .Where(s => s.SelectedGlyph is not null && purchased.Contains(s.Socket))
+            .Select(s => new SocketedGlyph(s.Socket, s.SelectedGlyph!, s.Level))
+            .ToList();
+        return GlyphNodeBuffs.MultipliersFor(_graph, socketed);
+    }
+
+    /// <summary>Board canvas scale — bound to the zoom slider; Ctrl+wheel adjusts it too.</summary>
+    [ObservableProperty]
+    private double _zoom = 1.0;
+
+    /// <summary>True while a solver or import operation runs — shows the canvas busy overlay.</summary>
+    [ObservableProperty]
+    private bool _isBusy;
+
+    private int _busyDepth;
+
+    /// <summary>Nesting-safe busy flag (Combine awaits Solve inside its own scope); dispose to release.</summary>
+    private BusyScope BeginBusy()
+    {
+        _busyDepth++;
+        IsBusy = true;
+        return new BusyScope(this);
+    }
+
+    private sealed record BusyScope(ParagonPlannerViewModel Owner) : IDisposable
+    {
+        public void Dispose()
+        {
+            if (--Owner._busyDepth == 0)
+                Owner.IsBusy = false;
+        }
+    }
+
+    // ── Pinned build summary (recomputed whenever the purchase set changes) ──
+
+    [ObservableProperty]
+    private string _pointsSummary = "";
+
+    /// <summary>Spent fraction of the point pool, clamped to 1 for the progress bar.</summary>
+    [ObservableProperty]
+    private double _pointsFraction;
+
+    [ObservableProperty]
+    private bool _pointsOverBudget;
+
+    [ObservableProperty]
+    private string _nodeMixSummary = "";
+
+    [ObservableProperty]
+    private string _glyphSummary = "";
+
+    [ObservableProperty]
+    private string _thresholdSummary = "";
+
+    /// <summary>Effective stat totals of the purchase set, core stats (with sheet offsets) first.</summary>
+    public ObservableCollection<StatTotalLine> StatTotals { get; } = [];
+
+    /// <summary>
+    /// Threshold bonuses that CANNOT be met by buying more nodes — the boards can't supply
+    /// enough of the stat, so the rest must come from level/gear (Character Stats).
+    /// </summary>
+    public ObservableCollection<string> ThresholdWarnings { get; } = [];
 
     [ObservableProperty]
     private string _selectedClass = "Sorcerer";
@@ -208,8 +365,10 @@ public partial class ParagonPlannerViewModel : ObservableObject
             Glyphs = dialog.SelectedGlyphs,
             GlyphLevel = dialog.GlyphLevel,
             RequiredStat = dialog.RequiredStat,
-            NonParagonStat = SheetStats,
+            NonParagonStats = SheetStatOffsets(),
+            NodeRules = CurrentNodeRules(),
         };
+        using var busy = BeginBusy();
         SetStatus("Optimizing board arrangement, rotations, and glyph placement…");
         var result = await Task.Run(() => LayoutOptimizer.Optimize(request, ParagonDatabase.Data));
         if (!result.Success)
@@ -257,6 +416,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
             : string.Join(Environment.NewLine, result.Notes) +
               (details.Length > 0 ? Environment.NewLine + details : "");
 
+        RefreshBuildSummary();
         string boardNames = string.Join(", ", result.Layout.Boards.Skip(1).Select(p => BoardDisplayName(p.Board)));
         int activated = plan.GlyphOutcomes.Count(o => o.Met);
         SetStatus($"Planned layout: {(boardNames.Length > 0 ? boardNames : "starter only")} — " +
@@ -270,6 +430,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
         _targets.Clear();
         Cells.Clear();
         BoardLabels.Clear();
+        BoardPlates.Clear();
 
         _layout = new ParagonLayout(_placedBoards.ToList());
         _graph = ComposedGraph.Build(_layout);
@@ -289,6 +450,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
                 $"{slot} · {BoardDisplayName(_placedBoards[slot].Board)}",
                 origins[slot].Left,
                 origins[slot].Top - TopPadding + 4));
+            BoardPlates.Add(new BoardPlate(origins[slot].Left - 4, origins[slot].Top - 4, boardSpan + 8));
         }
 
         foreach (var vertex in _graph.Vertices)
@@ -318,7 +480,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
         // Keep glyph picks for board slots that survive the layout change (e.g. a rotation).
         var previousGlyphs = GlyphSockets.ToDictionary(
             s => s.Socket.BoardSlot,
-            s => (Glyph: s.SelectedGlyph?.InternalName, s.Level, s.RequiredStat, s.EnsureActive));
+            s => (Glyph: s.SelectedGlyph?.InternalName, s.Level, s.RequiredStat, s.EnsureActive, s.HighlightRadius));
         GlyphSockets.Clear();
         foreach (var vertex in _graph.Vertices
                      .Where(v => v.Node.Kind == ParagonNodeKind.GlyphSocket)
@@ -337,14 +499,17 @@ public partial class ParagonPlannerViewModel : ObservableObject
                 socket.Level = previous.Level;
                 socket.RequiredStat = previous.RequiredStat;
                 socket.EnsureActive = previous.EnsureActive && socket.SelectedGlyph is not null;
+                socket.HighlightRadius = previous.HighlightRadius;
             }
+            socket.PropertyChanged += OnGlyphSocketChanged;
             GlyphSockets.Add(socket);
         }
 
         // Keep rule settings for groups that survive the layout change (e.g. adding a board).
+        // "Any:" stat groups follow the kind groups: one row per stat that several groups grant.
         var previousRules = NodeRules.ToDictionary(r => r.Group.Key, r => (r.Mode, r.Limit));
         NodeRules.Clear();
-        foreach (var group in NodeGrouping.GroupsIn(_graph))
+        foreach (var group in NodeGrouping.GroupsIn(_graph).Concat(NodeGrouping.StatGroupsIn(_graph)))
         {
             var rule = new NodeRuleViewModel(group);
             if (previousRules.TryGetValue(group.Key, out var previous))
@@ -383,7 +548,37 @@ public partial class ParagonPlannerViewModel : ObservableObject
         RevertPlacementCommand.NotifyCanExecuteChanged();
 
         SolveDetails = "";
+        UpdateRadiusHighlights();
+        UpdateGlyphLabels();
+        RefreshBuildSummary();
         SetStatus("Click nodes to mark targets (right-click to avoid/exclude), then Solve.");
+    }
+
+    private void OnGlyphSocketChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(GlyphSocketViewModel.HighlightRadius)
+            or nameof(GlyphSocketViewModel.Level)
+            or nameof(GlyphSocketViewModel.SelectedGlyph))
+            UpdateRadiusHighlights();
+        if (e.PropertyName is nameof(GlyphSocketViewModel.SelectedGlyph)
+            or nameof(GlyphSocketViewModel.Level))
+            UpdateGlyphLabels();
+        if (e.PropertyName is nameof(GlyphSocketViewModel.SelectedGlyph)
+            or nameof(GlyphSocketViewModel.Level)
+            or nameof(GlyphSocketViewModel.RequiredStat))
+            RefreshBuildSummary();
+    }
+
+    /// <summary>Marks the cells inside every highlight-enabled socket's Manhattan diamond.</summary>
+    private void UpdateRadiusHighlights()
+    {
+        var highlighted = GlyphSockets.Where(s => s.HighlightRadius).ToList();
+        foreach (var cell in Cells)
+        {
+            cell.IsInGlyphRadius = highlighted.Any(s =>
+                s.Socket.BoardSlot == cell.Cell.BoardSlot
+                && Math.Abs(cell.Cell.X - s.Socket.X) + Math.Abs(cell.Cell.Y - s.Socket.Y) <= s.Radius);
+        }
     }
 
     // ── Import: Maxroll codes and URLs, Mobalytics pages ─────────────────
@@ -391,6 +586,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
     [RelayCommand]
     private async Task ImportBuild()
     {
+        using var busy = BeginBusy();
         if (await ImportFromClipboardAsync() is { } import)
             ApplyImportedBuild(import.Build, import.Source);
     }
@@ -600,8 +796,9 @@ public partial class ParagonPlannerViewModel : ObservableObject
 
         var imported = new BuildSnapshot(
             "Import", import.Build.Layout, import.Build.AllocatedCells, import.Build.Glyphs);
+        using var busy = BeginBusy();
         SetStatus("Comparing…");
-        double sheetStats = SheetStats;
+        var sheetStats = SheetStatOffsets();
         string report = await Task.Run(() =>
             BuildComparer.Compare(current, imported, ParagonDatabase.Data, sheetStats));
         SolveDetails = report;
@@ -616,6 +813,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
             SetStatus("Solve a path or import a build first — there is nothing to combine with.", error: true);
             return;
         }
+        using var busy = BeginBusy();
         if (await ImportFromClipboardAsync() is not { } import)
             return;
 
@@ -644,7 +842,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
                 _targets.Add(cell.Cell);
         }
         if (_targets.Count > 0 || GlyphSockets.Any(s => s.EnsureActive))
-            Solve();
+            await SolveAsync();
         if (combined.Notes.Count > 0)
         {
             SolveDetails = string.Join(Environment.NewLine, combined.Notes) +
@@ -676,6 +874,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
         var allocated = build.AllocatedCells.ToHashSet();
         foreach (var cell in Cells)
             cell.IsPurchased = allocated.Contains(cell.Cell);
+        RefreshBuildSummary();
 
         var assigned = GlyphSockets.Where(s => s.SelectedGlyph is not null).ToList();
         SolveDetails = assigned.Count == 0
@@ -707,6 +906,193 @@ public partial class ParagonPlannerViewModel : ObservableObject
         Clipboard.SetText(code);
         SetStatus($"Maxroll variant code copied to the clipboard ({allocated.Count} node(s)). " +
                   "Paste it into the Maxroll planner's Import Variant box.");
+    }
+
+    // ── Save / open the planner session as a project file ────────────────
+
+    private const string ProjectDialogFilter = "Paragon Project|*.paragon.json|All Files|*.*";
+
+    private readonly Services.RecentProjectsService _recentProjects = new();
+
+    /// <summary>Recently saved or opened projects, newest first — feeds the Recent menu.</summary>
+    public ObservableCollection<RecentProject> RecentProjects { get; } = [];
+
+    private void RefreshRecentProjects()
+    {
+        RecentProjects.Clear();
+        foreach (var path in _recentProjects.Paths)
+            RecentProjects.Add(new RecentProject(path));
+    }
+
+    private void RememberRecentProject(string path)
+    {
+        _recentProjects.Touch(path);
+        RefreshRecentProjects();
+    }
+
+    [RelayCommand]
+    private void SaveProject()
+    {
+        if (_layout is null)
+            return;
+        var dlg = new SaveFileDialog
+        {
+            Title      = "Save Paragon Project",
+            Filter     = ProjectDialogFilter,
+            DefaultExt = ".paragon.json",
+            FileName   = $"{SelectedClass.ToLowerInvariant()}-paragon",
+        };
+        if (dlg.ShowDialog() != true)
+            return;
+
+        try
+        {
+            File.WriteAllText(dlg.FileName, ParagonProjectSerializer.ToJson(CaptureProject()));
+            RememberRecentProject(dlg.FileName);
+            SetStatus($"Saved project \"{Path.GetFileName(dlg.FileName)}\".");
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            SetStatus($"Save failed: {ex.Message}", error: true);
+        }
+    }
+
+    [RelayCommand]
+    private void OpenProject()
+    {
+        var dlg = new OpenFileDialog
+        {
+            Title      = "Open Paragon Project",
+            Filter     = ProjectDialogFilter,
+            DefaultExt = ".paragon.json",
+        };
+        if (dlg.ShowDialog() != true)
+            return;
+        OpenProjectFile(dlg.FileName);
+    }
+
+    /// <summary>Opens an entry of the Recent menu directly, skipping the file dialog.</summary>
+    [RelayCommand]
+    private void OpenRecentProject(RecentProject recent) => OpenProjectFile(recent.FullPath);
+
+    private void OpenProjectFile(string path)
+    {
+        try
+        {
+            ApplyProject(ParagonProjectSerializer.FromJson(File.ReadAllText(path)));
+            RememberRecentProject(path);
+            SetStatus($"Opened project \"{Path.GetFileName(path)}\": {_placedBoards.Count} board(s), " +
+                      $"{Cells.Count(c => c.IsPurchased)} allocated node(s).");
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or FormatException
+                                       or ArgumentException or InvalidOperationException)
+        {
+            // A vanished file is stale in the Recent menu — drop it so the menu stays honest.
+            if (!File.Exists(path))
+            {
+                _recentProjects.Remove(path);
+                RefreshRecentProjects();
+            }
+            SetStatus($"Open failed: {ex.Message}", error: true);
+        }
+    }
+
+    /// <summary>The full planner session as a serializable project.</summary>
+    private ParagonProject CaptureProject() => new()
+    {
+        ClassName = SelectedClass,
+        Boards = _placedBoards.Select(b => new ParagonProjectBoard(
+            b.Board.InternalName, b.ParentSlot, b.AttachEdge, b.RotationSteps)).ToList(),
+        Targets = _targets.ToList(),
+        AvoidCells = Cells.Where(c => c.Constraint == CellConstraint.Avoid).Select(c => c.Cell).ToList(),
+        ExcludeCells = Cells.Where(c => c.Constraint == CellConstraint.Exclude).Select(c => c.Cell).ToList(),
+        PurchasedCells = Cells.Where(c => c.IsPurchased).Select(c => c.Cell).ToList(),
+        Glyphs = GlyphSockets
+            .Where(s => s.SelectedGlyph is not null)
+            .Select(s => new ParagonProjectGlyph(
+                s.Socket.BoardSlot, s.SelectedGlyph!.InternalName, s.Level, s.RequiredStat, s.EnsureActive))
+            .ToList(),
+        NodeRules = NodeRules
+            .Where(r => r.Mode != NodeRuleMode.Allow)
+            .Select(r => new ParagonProjectRule(r.Group.Key, r.Mode, r.Limit))
+            .ToList(),
+        FocusStats = FocusStats.Where(f => f.IsSelected).Select(f => f.Attribute).ToList(),
+        PreferRareNodes = PreferRareNodes,
+        ActivateThresholds = ActivateThresholds,
+        TotalPoints = TotalPoints,
+        SheetStrength = SheetStrength,
+        SheetIntelligence = SheetIntelligence,
+        SheetWillpower = SheetWillpower,
+        SheetDexterity = SheetDexterity,
+    };
+
+    /// <summary>Restores a saved session; validates everything before touching the live state.</summary>
+    private void ApplyProject(ParagonProject project)
+    {
+        if (!Classes.Contains(project.ClassName))
+            throw new FormatException($"Unknown class '{project.ClassName}'.");
+        var boardsByName = ParagonDatabase.BoardsByInternalName;
+        var placed = project.Boards.Select(b => new PlacedBoard
+        {
+            Board = boardsByName.TryGetValue(b.BoardInternalName, out var def)
+                ? def
+                : throw new FormatException($"Unknown board '{b.BoardInternalName}' — removed in a data update?"),
+            ParentSlot = b.ParentSlot,
+            AttachEdge = b.AttachEdge,
+            RotationSteps = b.RotationSteps,
+        }).ToList();
+        ComposedGraph.Build(new ParagonLayout(placed));
+
+        if (SelectedClass != project.ClassName)
+            SelectedClass = project.ClassName;
+        _placedBoards.Clear();
+        _placedBoards.AddRange(placed);
+        RebuildLayout();
+
+        if (project.TotalPoints > 0)
+            TotalPoints = project.TotalPoints;
+        SheetStrength = project.SheetStrength;
+        SheetIntelligence = project.SheetIntelligence;
+        SheetWillpower = project.SheetWillpower;
+        SheetDexterity = project.SheetDexterity;
+        PreferRareNodes = project.PreferRareNodes;
+        ActivateThresholds = project.ActivateThresholds;
+
+        foreach (var glyph in project.Glyphs)
+        {
+            var socket = GlyphSockets.FirstOrDefault(s => s.Socket.BoardSlot == glyph.BoardSlot);
+            if (socket is null)
+                continue;
+            socket.SelectedGlyph = socket.Glyphs.FirstOrDefault(g =>
+                string.Equals(g.InternalName, glyph.GlyphInternalName, StringComparison.OrdinalIgnoreCase));
+            socket.Level = glyph.Level;
+            socket.RequiredStat = glyph.RequiredStat;
+            socket.EnsureActive = glyph.EnsureActive && socket.SelectedGlyph is not null;
+        }
+
+        var ruleByKey = project.NodeRules.ToDictionary(r => r.GroupKey, StringComparer.OrdinalIgnoreCase);
+        foreach (var rule in NodeRules)
+        {
+            if (ruleByKey.TryGetValue(rule.Group.Key, out var saved))
+            {
+                rule.Mode = saved.Mode;
+                rule.Limit = saved.Limit;
+            }
+        }
+
+        RestoreCells(
+            project.Targets,
+            project.AvoidCells.Select(c => (c, CellConstraint.Avoid))
+                .Concat(project.ExcludeCells.Select(c => (c, CellConstraint.Exclude))));
+
+        var focusSet = project.FocusStats.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var focus in FocusStats)
+            focus.IsSelected = focusSet.Contains(focus.Attribute);
+
+        var purchased = project.PurchasedCells.ToHashSet();
+        foreach (var cell in Cells)
+            cell.IsPurchased = purchased.Contains(cell.Cell);
+        RefreshBuildSummary();
     }
 
     /// <summary>Per purchased glyph socket: in-radius stat totals plus activation status, then solver notes.</summary>
@@ -760,17 +1146,51 @@ public partial class ParagonPlannerViewModel : ObservableObject
                       $"{ParagonDisplay.FormatAttributeName(source)} (benefit score {GlyphInfo.DeliveredBonus(def, socket.Level, totals.GetValueOrDefault(source)):0.#})"
                     : $", boosts {GlyphInfo.DeliveryTarget(def)} (scalar {scalar:0.#} at lvl {socket.Level})";
             }
+            if (socket.SelectedGlyph is not null)
+            {
+                delivery += string.Join("", GlyphNodeBuffs.BuffsAt(socket.SelectedGlyph, socket.Level)
+                    .Select(b => $", +{b.Percent:0.#}% to {b.Kind} nodes in radius (counted in the stat totals)"));
+            }
 
             lines.Add($"Socket on {socket.BoardName} ({glyph}): " +
                       $"{(stats.Length > 0 ? stats : "no stats")} in radius {radius}{activation}{delivery}");
         }
 
+        // A Limit rule caps its GROUP, not the stat: rare nodes granting the same attribute are
+        // separate per-name groups, which reads as "the limit broke" — say so explicitly.
+        var cellsByGroup = NodeGrouping.CellsByGroup(_graph);
+        foreach (var rule in NodeRules.Where(r => r.Mode == NodeRuleMode.Limit))
+        {
+            // Magic/Normal group keys are "<Kind>:<Attribute>:<Param>".
+            var parts = rule.Group.Key.Split(':');
+            if (parts.Length < 2 || parts[0] is not ("Magic" or "Normal"))
+                continue;
+            string attribute = parts[1];
+            var groupSet = (cellsByGroup.GetValueOrDefault(rule.Group.Key) ?? []).ToHashSet();
+            var outside = _graph.Vertices
+                .Where(v => purchased.Contains(v.Cell) && !groupSet.Contains(v.Cell)
+                    && v.Node.Attributes.Any(a => a.Value is not null
+                        && string.Equals(a.Attribute, attribute, StringComparison.OrdinalIgnoreCase)))
+                .Select(v => v.Node.Name ?? v.Node.InternalName)
+                .Distinct()
+                .ToList();
+            if (outside.Count > 0)
+            {
+                string statName = ParagonDisplay.FormatAttributeName(attribute);
+                lines.Add($"Limit note: '{rule.Group.DisplayName}' held at {groupSet.Count(purchased.Contains)} " +
+                          $"of {rule.Limit}, but {outside.Count} other purchased node(s) also grant " +
+                          $"{statName}: {string.Join(", ", outside.Take(5))}{(outside.Count > 5 ? ", …" : "")} — " +
+                          $"to cap the stat across every node kind, limit the 'Any: {statName}' row instead.");
+            }
+        }
+
         // Rare-node threshold bonuses: requirements scale with the board's attachment slot.
-        var report = BuildStats.Compute(_graph, purchased, ParagonDatabase.Data, SheetStats, SelectedClass);
+        var report = BuildStats.Compute(_graph, purchased, ParagonDatabase.Data, SheetStatOffsets(), SelectedClass,
+            CellMultipliers(purchased));
         if (report.Thresholds.Count > 0)
         {
             lines.Add($"Threshold bonuses: {report.ThresholdsMet} of {report.Thresholds.Count} active " +
-                      $"(counting {SheetStats:0} sheet stat from level/gear).");
+                      "(counting the character sheet stats from level/gear).");
             foreach (var status in report.Thresholds.Where(t => !t.Met).Take(6))
             {
                 lines.Add($"  Not active: {status.NodeName} (slot {status.Cell.BoardSlot}) needs " +
@@ -801,14 +1221,17 @@ public partial class ParagonPlannerViewModel : ObservableObject
         SetStatus($"{_targets.Count} target(s) selected.");
     }
 
+    /// <summary>The active (non-Allow) node rules; group keys survive layout changes.</summary>
+    private List<NodeRule> CurrentNodeRules() => NodeRules
+        .Where(r => r.Mode != NodeRuleMode.Allow)
+        .Select(r => new NodeRule(r.Group.Key, r.Mode, r.Limit))
+        .ToList();
+
     /// <summary>Targets, rules, per-cell overrides and glyph goals as one immutable solver request.</summary>
     private PlanRequest BuildPlanRequest() => new()
     {
         Targets = _targets.ToList(),
-        NodeRules = NodeRules
-            .Where(r => r.Mode != NodeRuleMode.Allow)
-            .Select(r => new NodeRule(r.Group.Key, r.Mode, r.Limit))
-            .ToList(),
+        NodeRules = CurrentNodeRules(),
         AvoidCells = Cells.Where(c => c.Constraint == CellConstraint.Avoid).Select(c => c.Cell).ToList(),
         ExcludeCells = Cells.Where(c => c.Constraint == CellConstraint.Exclude).Select(c => c.Cell).ToList(),
         GlyphGoals = GlyphSockets
@@ -818,7 +1241,10 @@ public partial class ParagonPlannerViewModel : ObservableObject
     };
 
     [RelayCommand]
-    private void Solve()
+    private Task Solve() => SolveAsync();
+
+    /// <summary>Solve as a plain task so Combine/Apply/Revert can await it inside their busy scope.</summary>
+    private async Task SolveAsync()
     {
         if (_graph is null)
             return;
@@ -829,7 +1255,10 @@ public partial class ParagonPlannerViewModel : ObservableObject
             return;
         }
 
-        var result = PlanSolver.Solve(_graph, request);
+        using var busy = BeginBusy();
+        SetStatus("Solving the cheapest connected path…");
+        var graph = _graph;
+        var result = await Task.Run(() => PlanSolver.Solve(graph, request));
         if (!result.Success)
         {
             SetStatus(result.Error ?? "Solve failed.", error: true);
@@ -839,6 +1268,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
         var purchased = result.PurchasedCells.ToHashSet();
         foreach (var cell in Cells)
             cell.IsPurchased = purchased.Contains(cell.Cell);
+        RefreshBuildSummary();
 
         SolveDetails = BuildSolveDetails(result);
 
@@ -850,7 +1280,11 @@ public partial class ParagonPlannerViewModel : ObservableObject
         string budget = result.PointsSpent > MaxParagonPoints
             ? $" Exceeds the {MaxParagonPoints}-point cap!"
             : "";
-        SetStatus($"{result.PointsSpent} paragon points for {_targets.Count} target(s) ({quality}) — {perBoard}.{budget}",
+        string warning = result.Notes.Count == 0
+            ? ""
+            : $" ⚠ {result.Notes[0]}" +
+              (result.Notes.Count > 1 ? $" (+{result.Notes.Count - 1} more — see details below)" : "");
+        SetStatus($"{result.PointsSpent} paragon points for {_targets.Count} target(s) ({quality}) — {perBoard}.{budget}{warning}",
             error: budget.Length > 0 || result.Notes.Count > 0);
     }
 
@@ -899,6 +1333,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
 
         var layout = _layout;
         var graph = _graph;
+        using var busy = BeginBusy();
         SetStatus("Analyzing alternate board rotations and glyph placements…");
         var (baseline, suggestions) = await Task.Run(() =>
         {
@@ -986,7 +1421,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
 
     /// <summary>Applies a suggestion to the live board and re-solves, so the difference is visible.</summary>
     [RelayCommand]
-    private void ApplySuggestion(PlacementSuggestion suggestion)
+    private async Task ApplySuggestion(PlacementSuggestion suggestion)
     {
         if (_layout is null || suggestion.Change is null)
             return;
@@ -1047,14 +1482,14 @@ public partial class ParagonPlannerViewModel : ObservableObject
 
         _revertState = before;
         RevertPlacementCommand.NotifyCanExecuteChanged();
-        Solve();
+        await SolveAsync();
         int pointsAfter = Cells.Count(c => c.IsPurchased);
         SetStatus($"Applied — path re-solved at {pointsAfter} points (was {pointsBefore}). " +
                   "Revert flips back to compare.", error: StatusIsError);
     }
 
     [RelayCommand(CanExecute = nameof(CanRevertPlacement))]
-    private void RevertPlacement()
+    private async Task RevertPlacement()
     {
         if (_revertState is not PlannerState state)
             return;
@@ -1064,7 +1499,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
         RestoreCells(state.Targets, state.Constraints);
         RestoreGlyphs(state.Glyphs);
         if (_targets.Count > 0 || GlyphSockets.Any(s => s.EnsureActive))
-            Solve();
+            await SolveAsync();
         SetStatus("Reverted to the layout before the applied suggestion.");
     }
 
@@ -1091,30 +1526,41 @@ public partial class ParagonPlannerViewModel : ObservableObject
 
         var focus = new MaximizeFocus(
             FocusStats.Where(f => f.IsSelected).Select(f => f.Attribute).ToList(),
-            PreferRareNodes);
+            PreferRareNodes,
+            ActivateThresholds);
+        var context = new ThresholdContext(
+            ParagonDatabase.Data, SelectedClass, SheetStatOffsets(), CellMultipliers(purchased));
         var request = BuildPlanRequest();
         var graph = _graph;
+        using var busy = BeginBusy();
         SetStatus($"Spending up to {remaining} remaining point(s)…");
-        var outcome = await Task.Run(() => PointMaximizer.Extend(graph, purchased, remaining, focus, request));
+        var outcome = await Task.Run(() => PointMaximizer.Extend(graph, purchased, remaining, focus, request, context));
 
         if (outcome.AddedCells.Count == 0)
         {
-            SetStatus("Nothing worthwhile is reachable with the remaining points — no nodes added.", error: true);
+            SetStatus(outcome.Notes.FirstOrDefault()
+                ?? "Nothing worthwhile is reachable with the remaining points — no nodes added.", error: true);
             return;
         }
         foreach (var cell in Cells)
             cell.IsPurchased = purchased.Contains(cell.Cell);
+        RefreshBuildSummary();
 
         string gains = string.Join(", ", outcome.Gains
             .OrderByDescending(kv => kv.Value)
             .Select(kv => $"{FormatGain(kv.Value)} {ParagonDisplay.FormatAttributeName(kv.Key)}"));
         string rares = outcome.RaresAdded > 0 ? $"{outcome.RaresAdded} rare node(s), " : "";
-        string details = BuildPurchaseReport(purchased, [], []);
-        SolveDetails = $"Spent {outcome.AddedCells.Count} leftover point(s): {rares}" +
+        string thresholdsPart = outcome.ThresholdsActivated > 0
+            ? $"{outcome.ThresholdsActivated} threshold bonus(es) activated, "
+            : "";
+        string details = BuildPurchaseReport(purchased, [], outcome.Notes);
+        SolveDetails = $"Spent {outcome.AddedCells.Count} leftover point(s): {rares}{thresholdsPart}" +
                        $"{(gains.Length > 0 ? "gained " + gains : "no focused stat gains")}." +
                        (details.Length > 0 ? Environment.NewLine + details : "");
         SetStatus($"{purchased.Count} of {TotalPoints} points spent " +
-                  $"(+{outcome.AddedCells.Count} maximizing{(PreferRareNodes ? " rare nodes and" : "")} focused stats).");
+                  $"(+{outcome.AddedCells.Count} maximizing{(PreferRareNodes ? " rare nodes and" : "")} focused stats" +
+                  $"{(outcome.ThresholdsActivated > 0 ? $", {outcome.ThresholdsActivated} threshold(s) activated" : "")}).",
+            error: outcome.Notes.Count > 0);
     }
 
     /// <summary>Fractional stat values are percentages (see <see cref="ParagonDisplay.FormatAttribute"/>).</summary>
@@ -1135,6 +1581,272 @@ public partial class ParagonPlannerViewModel : ObservableObject
     {
         foreach (var cell in Cells)
             cell.IsPurchased = false;
+        RefreshBuildSummary();
+    }
+
+    /// <summary>Recomputes the pinned build summary and the effective stat totals panel.</summary>
+    private void RefreshBuildSummary()
+    {
+        StatTotals.Clear();
+        ThresholdWarnings.Clear();
+        var purchasedCells = Cells.Where(c => c.IsPurchased).ToList();
+        int spent = purchasedCells.Count;
+        PointsSummary = $"{spent} of {TotalPoints} points spent";
+        PointsFraction = TotalPoints > 0 ? Math.Min(1.0, (double)spent / TotalPoints) : 0;
+        PointsOverBudget = spent > TotalPoints;
+
+        if (_graph is null || spent == 0)
+        {
+            NodeMixSummary = "No nodes allocated yet — solve a path or import a build.";
+            GlyphSummary = "";
+            ThresholdSummary = "";
+            PathEdges.Clear();
+            foreach (var rule in NodeRules)
+                rule.UsedCount = 0;
+            UpdateStatHighlights();
+            if (_graph is not null)
+                UpdateThresholdTooltips(new Dictionary<string, double>());
+            return;
+        }
+
+        var kindCounts = purchasedCells.CountBy(c => c.Node.Kind).ToDictionary();
+        string Mix(ParagonNodeKind kind, string label) =>
+            kindCounts.TryGetValue(kind, out int count) ? $"{count} {label}" : "";
+        NodeMixSummary = string.Join("  ·  ", new[]
+        {
+            Mix(ParagonNodeKind.Normal, "normal"),
+            Mix(ParagonNodeKind.Magic, "magic"),
+            Mix(ParagonNodeKind.Rare, "rare"),
+            Mix(ParagonNodeKind.Legendary, "legendary"),
+            Mix(ParagonNodeKind.GlyphSocket, "socket"),
+            Mix(ParagonNodeKind.Gate, "gate"),
+        }.Where(part => part.Length > 0));
+
+        var purchased = purchasedCells.Select(c => c.Cell).ToHashSet();
+        UpdatePathEdges(purchased);
+
+        // Per-rule usage, so a Limit row shows the rule held (or by how much it couldn't).
+        var cellsByGroup = NodeGrouping.CellsByGroup(_graph);
+        foreach (var rule in NodeRules)
+        {
+            rule.UsedCount = cellsByGroup.TryGetValue(rule.Group.Key, out var groupCells)
+                ? groupCells.Count(purchased.Contains)
+                : 0;
+        }
+
+        int socketsBought = 0, glyphsAssigned = 0, glyphsActive = 0;
+        foreach (var socket in GlyphSockets)
+        {
+            if (!purchased.Contains(socket.Socket))
+                continue;
+            socketsBought++;
+            if (socket.SelectedGlyph is null)
+                continue;
+            glyphsAssigned++;
+            if (socket.SourceAttribute is string source)
+            {
+                double have = GlyphRadius.AttributeTotalsInRange(
+                        _graph, socket.Socket, purchased, socket.Radius, GlyphRadius.GameMetric)
+                    .GetValueOrDefault(source);
+                if (have >= socket.RequiredStat)
+                    glyphsActive++;
+            }
+        }
+        GlyphSummary = socketsBought == 0
+            ? "No glyph sockets on the path."
+            : $"{socketsBought} socket(s) on the path, {glyphsAssigned} glyph(s) socketed, {glyphsActive} activated";
+
+        var multipliers = CellMultipliers(purchased);
+        var report = BuildStats.Compute(
+            _graph, purchased, ParagonDatabase.Data, SheetStatOffsets(), SelectedClass, multipliers);
+        ThresholdSummary = report.Thresholds.Count == 0
+            ? ""
+            : $"{report.ThresholdsMet} of {report.Thresholds.Count} rare-node threshold bonus(es) active";
+
+        // Warn when a threshold can't be met even by buying every remaining stat node — the
+        // missing amount has to come from level/gear (the Character Stats inputs).
+        ThresholdWarnings.Clear();
+        foreach (var status in report.Thresholds.Where(t => !t.Met).OrderBy(t => t.Requirement - t.Have))
+        {
+            string paragonKey = status.Attribute.EndsWith("_Total", StringComparison.Ordinal)
+                ? status.Attribute[..^"_Total".Length] + "_Core"
+                : status.Attribute;
+            double available = _graph.Vertices
+                .Where(v => !purchased.Contains(v.Cell))
+                .Sum(v => v.Node.Attributes
+                    .Where(a => !a.IsThresholdBonus && a.Value is not null
+                        && string.Equals(a.Attribute, paragonKey, StringComparison.OrdinalIgnoreCase))
+                    .Sum(a => a.Value!.Value)
+                    * multipliers.GetValueOrDefault(v.Cell, 1.0));
+            double deficit = status.Requirement - status.Have;
+            if (available >= deficit)
+                continue;
+            if (ThresholdWarnings.Count == 4)
+            {
+                ThresholdWarnings.Add("…and more — see the solve details.");
+                break;
+            }
+            ThresholdWarnings.Add(
+                $"⚠ {status.NodeName} needs {deficit:0} more {ParagonDisplay.FormatAttributeName(status.Attribute)} " +
+                $"and the boards can only add {available:0} — enter at least {deficit - available:0} more " +
+                "from level/gear in Character Stats.");
+        }
+
+        // Core stats first, folding the sheet offset into a character total; then the rest.
+        var sheet = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Strength_Core"] = SheetStrength,
+            ["Intelligence_Core"] = SheetIntelligence,
+            ["Willpower_Core"] = SheetWillpower,
+            ["Dexterity_Core"] = SheetDexterity,
+        };
+        foreach (var core in MaximizeFocus.CoreStats)
+        {
+            double paragon = report.Totals.GetValueOrDefault(core);
+            double offset = sheet.GetValueOrDefault(core);
+            if (paragon == 0 && offset == 0)
+                continue;
+            StatTotals.Add(new StatTotalLine(
+                ParagonDisplay.FormatAttributeName(core),
+                $"{paragon + offset:0.##}",
+                isCore: true,
+                attribute: core,
+                detail: $"{paragon:0.##} from paragon + {offset:0.##} from level/gear"));
+        }
+        foreach (var (attribute, value) in report.Totals
+                     .Where(kv => kv.Value != 0
+                         && !MaximizeFocus.CoreStats.Contains(kv.Key, StringComparer.OrdinalIgnoreCase))
+                     .OrderBy(kv => ParagonDisplay.FormatAttributeName(kv.Key), StringComparer.OrdinalIgnoreCase))
+        {
+            StatTotals.Add(new StatTotalLine(
+                ParagonDisplay.FormatAttributeName(attribute), FormatGain(value), isCore: false, attribute));
+        }
+
+        UpdateStatHighlights();
+        UpdateThresholdTooltips(report.Totals);
+    }
+
+    /// <summary>
+    /// Rebuilds the line segments joining adjacent purchased cells (the start node counts as
+    /// purchased), so the allocation reads as a connected route instead of scattered rings.
+    /// </summary>
+    private void UpdatePathEdges(IReadOnlySet<CellRef> purchased)
+    {
+        PathEdges.Clear();
+        if (_graph is null || purchased.Count == 0)
+            return;
+
+        var cellByRef = Cells.ToDictionary(c => c.Cell);
+        bool InPath(int vertex) =>
+            vertex == _graph.StartVertex || purchased.Contains(_graph.Vertices[vertex].Cell);
+        const double half = CellSize / 2;
+        for (int i = 0; i < _graph.Vertices.Count; i++)
+        {
+            if (!InPath(i))
+                continue;
+            foreach (int j in _graph.Adjacency[i])
+            {
+                if (j <= i || !InPath(j))
+                    continue;
+                if (!cellByRef.TryGetValue(_graph.Vertices[i].Cell, out var a)
+                    || !cellByRef.TryGetValue(_graph.Vertices[j].Cell, out var b))
+                    continue;
+                PathEdges.Add(new PathEdge(
+                    a.CanvasLeft + half, a.CanvasTop + half,
+                    b.CanvasLeft + half, b.CanvasTop + half));
+            }
+        }
+    }
+
+    // ── Click a Stat Totals row to light up its contributing nodes ───────
+
+    private string? _highlightedStat;
+
+    [RelayCommand]
+    private void ToggleStatHighlight(StatTotalLine line)
+    {
+        _highlightedStat = string.Equals(_highlightedStat, line.Attribute, StringComparison.OrdinalIgnoreCase)
+            ? null
+            : line.Attribute;
+        UpdateStatHighlights();
+        SetStatus(_highlightedStat is null
+            ? "Stat highlight cleared."
+            : $"Highlighting allocated nodes granting {line.Name} — click the row again to clear.");
+    }
+
+    private void UpdateStatHighlights()
+    {
+        foreach (var line in StatTotals)
+            line.IsHighlighted = string.Equals(_highlightedStat, line.Attribute, StringComparison.OrdinalIgnoreCase);
+        foreach (var cell in Cells)
+        {
+            cell.IsStatHighlighted = _highlightedStat is not null && cell.IsPurchased
+                && cell.Node.Attributes.Any(a => a.Value is not null
+                    && string.Equals(a.Attribute, _highlightedStat, StringComparison.OrdinalIgnoreCase));
+        }
+    }
+
+    // ── Live tooltips: threshold math on rares, socketed glyph on sockets ─
+
+    private static readonly Dictionary<string, ParagonThresholdDef> ThresholdsBySno =
+        ParagonDatabase.Data.Thresholds.ToDictionary(t => t.SnoId, StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Puts the exact requirement-vs-have math on every threshold rare's tooltip.</summary>
+    private void UpdateThresholdTooltips(IReadOnlyDictionary<string, double> totals)
+    {
+        var sheet = SheetStatOffsets();
+        foreach (var cell in Cells)
+        {
+            if (cell.Node.Thresholds.Count == 0)
+                continue;
+            var defs = cell.Node.Thresholds
+                .Select(sno => ThresholdsBySno.GetValueOrDefault(sno))
+                .Where(def => def is not null)
+                .ToList();
+            var def = defs.FirstOrDefault(d =>
+                    d!.Classes.Count == 0 || d.Classes.Contains(SelectedClass, StringComparer.OrdinalIgnoreCase))
+                ?? defs.FirstOrDefault();
+            if (def?.Requirements.FirstOrDefault() is not ThresholdRequirement requirement)
+                continue;
+
+            double required = BuildStats.RequirementAt(requirement, cell.Cell.BoardSlot);
+            string attribute = requirement.Attribute;
+            string paragonKey = attribute.EndsWith("_Total", StringComparison.Ordinal)
+                ? attribute[..^"_Total".Length] + "_Core"
+                : attribute;
+            double paragonPart = totals.GetValueOrDefault(paragonKey) + totals.GetValueOrDefault(attribute);
+            double sheetPart = attribute.EndsWith("_Total", StringComparison.Ordinal) ? sheet.For(attribute) : 0;
+            double have = paragonPart + sheetPart;
+            string status = have >= required
+                ? cell.IsPurchased ? "ACTIVE" : "would activate if purchased"
+                : $"{required - have:0} short";
+            cell.DynamicInfo =
+                $"Threshold at this board slot: needs {required:0} {ParagonDisplay.FormatAttributeName(attribute)}" +
+                Environment.NewLine +
+                $"Character total: {have:0} ({paragonPart:0} paragon + {sheetPart:0} level/gear) — {status}";
+        }
+    }
+
+    /// <summary>Renders each socketed glyph's name at its socket, and on the socket's tooltip.</summary>
+    private void UpdateGlyphLabels()
+    {
+        GlyphLabels.Clear();
+        var cellByRef = Cells.ToDictionary(c => c.Cell);
+        foreach (var socket in GlyphSockets)
+        {
+            if (!cellByRef.TryGetValue(socket.Socket, out var cell))
+                continue;
+            if (socket.SelectedGlyph is null)
+            {
+                cell.DynamicInfo = null;
+                continue;
+            }
+            cell.DynamicInfo = $"Socketed: {socket.SelectedGlyph.Name} (lvl {socket.Level}, radius {socket.Radius})";
+            GlyphLabels.Add(new BoardLabel(
+                socket.SelectedGlyph.Name ?? "",
+                cell.CanvasLeft + CellSize / 2 - 60,
+                cell.CanvasTop + CellSize - 3));
+        }
     }
 
     private void SetStatus(string text, bool error = false)

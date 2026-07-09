@@ -77,8 +77,9 @@ public static class GlyphInfo
             return ParagonDisplay.FormatAttributeName(map.DestinationAttribute);
         return affix?.AffectedNodeRarity switch
         {
-            1 => "Magic node bonuses in radius",
-            2 => "Rare node bonuses in radius",
+            1 => "Normal node bonuses in radius",
+            2 => "Magic node bonuses in radius",
+            3 => "Rare node bonuses in radius",
             _ => "node bonuses in radius",
         };
     }
