@@ -23,6 +23,29 @@ public sealed record BoardSwapChange(int Slot, ParagonBoardDef NewBoard, int Rot
 public sealed record PlacementSuggestion(string Description, int PointsSaved, PlacementChange? Change = null);
 
 /// <summary>
+/// Everything needed to judge a placement candidate by the FINISHED build instead of the bare
+/// solve: the point pool and the maximizer settings (focus stats + weights, rare preference,
+/// threshold activation, sheet stats). When supplied, each candidate is solved, fully spent,
+/// and compared on final activated glyphs → thresholds met → focused stat value → points.
+/// </summary>
+public sealed record PlacementPipeline(int TotalPoints, MaximizeFocus Focus, ThresholdContext? Thresholds);
+
+/// <summary>A candidate's end state after solve + full spend.</summary>
+public sealed record PipelineResult(int GlyphsActive, int ThresholdsMet, int PointsUsed, double FocusScore)
+{
+    /// <summary>Worth suggesting over the baseline: more glyphs, more thresholds, clearly more
+    /// focused stat value (>2%, to keep greedy-spend noise from spamming suggestions), or the
+    /// same build for fewer points.</summary>
+    public bool BeatsForSuggestion(PipelineResult baseline) =>
+        GlyphsActive > baseline.GlyphsActive
+        || (GlyphsActive == baseline.GlyphsActive
+            && (ThresholdsMet > baseline.ThresholdsMet
+                || (ThresholdsMet == baseline.ThresholdsMet
+                    && (FocusScore > baseline.FocusScore * 1.02 + 1e-9
+                        || (FocusScore >= baseline.FocusScore - 1e-9 && PointsUsed < baseline.PointsUsed)))));
+}
+
+/// <summary>
 /// Answers "could this be laid out better?": re-solves the plan under alternate board rotations,
 /// evaluates whether the socketed glyphs would see more of their stat at a different socket, and
 /// checks whether an unused board would beat one in the layout outright. Rotation analysis is
@@ -32,10 +55,15 @@ public sealed record PlacementSuggestion(string Description, int PointsSaved, Pl
 public static class PlacementAnalyzer
 {
     public static IReadOnlyList<PlacementSuggestion> SuggestRotations(
-        ParagonLayout layout, PlanRequest request, PlanResult baseline)
+        ParagonLayout layout, PlanRequest request, PlanResult baseline, PlacementPipeline? pipeline = null)
     {
         var suggestions = new List<PlacementSuggestion>();
         int baselineMet = baseline.GlyphOutcomes.Count(o => o.Met);
+        // Full-pipeline mode: candidates are judged by the finished build (solve + full spend
+        // with the user's maximizer settings), not by the bare solve.
+        var baselineEval = pipeline is null
+            ? null
+            : EvaluatePipeline(ComposedGraph.Build(layout), request, pipeline, baseline);
 
         for (int slot = 1; slot < layout.Boards.Count; slot++)
         {
@@ -88,12 +116,26 @@ public static class PlacementAnalyzer
                 if (!variant.Success)
                     continue;
 
+                string boardName = placed.Board.Name ?? placed.Board.InternalName;
+
+                if (baselineEval is not null)
+                {
+                    var eval = EvaluatePipeline(variantGraph, variantRequest, pipeline!, variant);
+                    if (eval is null || !eval.BeatsForSuggestion(baselineEval))
+                        continue;
+                    suggestions.Add(new PlacementSuggestion(
+                        $"Rotate slot {slot} ({boardName}) to {rotation * 90}°: " +
+                        $"{DescribeGain(eval, baselineEval, request.GlyphGoals.Count)}.",
+                        Math.Max(0, baselineEval.PointsUsed - eval.PointsUsed),
+                        new RotationChange(slot, rotation)));
+                    continue;
+                }
+
                 int saved = baseline.PointsSpent - variant.PointsSpent;
                 int variantMet = variant.GlyphOutcomes.Count(o => o.Met);
                 if (saved <= 0 && variantMet <= baselineMet)
                     continue;
 
-                string boardName = placed.Board.Name ?? placed.Board.InternalName;
                 string gain = saved > 0
                     ? $"{baseline.PointsSpent} → {variant.PointsSpent} points"
                     : $"same points, activates {variantMet} glyph(s) instead of {baselineMet}";
@@ -223,7 +265,8 @@ public static class PlacementAnalyzer
     /// </summary>
     public static IReadOnlyList<PlacementSuggestion> SuggestBoardSwaps(
         ParagonLayout layout, PlanRequest request, PlanResult baseline,
-        IReadOnlyList<ParagonBoardDef> candidates, int maxCandidatesPerSlot = 3, int maxSuggestions = 3)
+        IReadOnlyList<ParagonBoardDef> candidates, int maxCandidatesPerSlot = 3, int maxSuggestions = 3,
+        PlacementPipeline? pipeline = null)
     {
         if (request.GlyphGoals.Count == 0)
             return [];
@@ -238,6 +281,9 @@ public static class PlacementAnalyzer
             return [];
 
         int baselineMet = baseline.GlyphOutcomes.Count(o => o.Met);
+        var baselineEval = pipeline is null
+            ? null
+            : EvaluatePipeline(ComposedGraph.Build(layout), request, pipeline, baseline);
         var suggestions = new List<(PlacementSuggestion Suggestion, int MetGain)>();
 
         for (int slot = 1; slot < layout.Boards.Count; slot++)
@@ -256,7 +302,7 @@ public static class PlacementAnalyzer
 
             foreach (var (candidate, _) in ranked)
             {
-                (PlanResult Plan, int Rotation, int Met)? bestVariant = null;
+                (PlanResult Plan, int Rotation, int Met, ComposedGraph Graph, PlanRequest Request)? bestVariant = null;
                 for (int rotation = 0; rotation < 4; rotation++)
                 {
                     var boards = layout.Boards.ToList();
@@ -306,17 +352,34 @@ public static class PlacementAnalyzer
                     int met = variant.GlyphOutcomes.Count(o => o.Met);
                     if (bestVariant is null || met > bestVariant.Value.Met
                         || (met == bestVariant.Value.Met && variant.PointsSpent < bestVariant.Value.Plan.PointsSpent))
-                        bestVariant = (variant, rotation, met);
+                        bestVariant = (variant, rotation, met, graph, variantRequest);
                 }
 
-                if (bestVariant is not var (plan, steps, variantMet))
-                    continue;
-                int saved = baseline.PointsSpent - plan.PointsSpent;
-                if (variantMet <= baselineMet && (variantMet < baselineMet || saved <= 0))
+                if (bestVariant is not var (plan, steps, variantMet, bestGraph, bestRequest))
                     continue;
 
                 string oldName = placed.Board.Name ?? placed.Board.InternalName;
                 string newName = candidate.Name ?? candidate.InternalName;
+
+                if (baselineEval is not null)
+                {
+                    var eval = EvaluatePipeline(bestGraph, bestRequest, pipeline!, plan);
+                    if (eval is null || !eval.BeatsForSuggestion(baselineEval))
+                        continue;
+                    suggestions.Add((new PlacementSuggestion(
+                        $"Swap slot {slot} ({oldName}) for the unused board {newName} at {steps * 90}°: " +
+                        $"{DescribeGain(eval, baselineEval, request.GlyphGoals.Count)} " +
+                        $"(the slot's targets move to {newName}'s legendary).",
+                        Math.Max(0, baselineEval.PointsUsed - eval.PointsUsed),
+                        new BoardSwapChange(slot, candidate, steps)),
+                        eval.GlyphsActive - baselineEval.GlyphsActive));
+                    continue;
+                }
+
+                int saved = baseline.PointsSpent - plan.PointsSpent;
+                if (variantMet <= baselineMet && (variantMet < baselineMet || saved <= 0))
+                    continue;
+
                 string gain = variantMet > baselineMet
                     ? $"activates {variantMet} glyph goal(s) instead of {baselineMet}, " +
                       $"{baseline.PointsSpent} → {plan.PointsSpent} points"
@@ -335,6 +398,96 @@ public static class PlacementAnalyzer
             .Take(maxSuggestions)
             .Select(s => s.Suggestion)
             .ToList();
+    }
+
+    // ── Full-pipeline evaluation ─────────────────────────────────────────
+
+    /// <summary>
+    /// Runs a candidate through the whole planning pipeline — solve, then spend the entire
+    /// remaining pool with the user's maximizer settings — and measures the finished build.
+    /// Null when the candidate can't be solved.
+    /// </summary>
+    public static PipelineResult? EvaluatePipeline(
+        ComposedGraph graph, PlanRequest request, PlacementPipeline pipeline, PlanResult? solved = null)
+    {
+        var solve = solved ?? PlanSolver.Solve(graph, request);
+        if (!solve.Success)
+            return null;
+        var purchased = solve.PurchasedCells.ToHashSet();
+        int budget = Math.Max(0, pipeline.TotalPoints - purchased.Count);
+        if (budget > 0 || (pipeline.Focus.ActivateThresholds && pipeline.Thresholds is not null))
+            PointMaximizer.Extend(graph, purchased, budget, pipeline.Focus, request, pipeline.Thresholds);
+
+        int glyphsActive = 0;
+        foreach (var goal in request.GlyphGoals)
+        {
+            double have = GlyphRadius.AttributeTotalsInRange(
+                    graph, goal.Socket, purchased.ToList(), goal.Radius, GlyphRadius.GameMetric)
+                .GetValueOrDefault(goal.SourceAttribute);
+            if (have >= goal.RequiredTotal - 1e-9)
+                glyphsActive++;
+        }
+
+        int thresholdsMet = 0;
+        if (pipeline.Thresholds is ThresholdContext context)
+        {
+            thresholdsMet = BuildStats.Compute(graph, purchased, context.Data,
+                context.NonParagonStats, context.ClassName, context.CellMultipliers).ThresholdsMet;
+        }
+
+        return new PipelineResult(glyphsActive, thresholdsMet, purchased.Count,
+            FocusScoreOf(graph, purchased, pipeline.Focus));
+    }
+
+    /// <summary>
+    /// Weighted, unit-normalized value the purchase set holds in the focused stats — the same
+    /// scoring the maximizer chases, so candidates are judged by what the user asked for.
+    /// </summary>
+    private static double FocusScoreOf(ComposedGraph graph, ISet<CellRef> purchased, MaximizeFocus focus)
+    {
+        var attributes = focus.Attributes.Count > 0 ? focus.Attributes : MaximizeFocus.CoreStats;
+        var attributeSet = new HashSet<string>(attributes, StringComparer.OrdinalIgnoreCase);
+        var mean = new Dictionary<string, (double Sum, int Count)>(StringComparer.OrdinalIgnoreCase);
+        foreach (var vertex in graph.Vertices)
+        {
+            foreach (var a in vertex.Node.Attributes)
+            {
+                if (a.IsThresholdBonus || a.Value is not double value || !attributeSet.Contains(a.Attribute))
+                    continue;
+                var (sum, count) = mean.GetValueOrDefault(a.Attribute);
+                mean[a.Attribute] = (sum + Math.Abs(value), count + 1);
+            }
+        }
+
+        double score = 0;
+        foreach (var vertex in graph.Vertices)
+        {
+            if (!purchased.Contains(vertex.Cell))
+                continue;
+            foreach (var a in vertex.Node.Attributes)
+            {
+                if (a.IsThresholdBonus || a.Value is not double value || !attributeSet.Contains(a.Attribute))
+                    continue;
+                var (sum, count) = mean[a.Attribute];
+                score += value / (sum / count) * (focus.Weights?.GetValueOrDefault(a.Attribute, 1.0) ?? 1.0);
+            }
+        }
+        return score;
+    }
+
+    /// <summary>Human-readable delta between a candidate's end state and the baseline's.</summary>
+    private static string DescribeGain(PipelineResult variant, PipelineResult baseline, int goalCount)
+    {
+        var parts = new List<string>();
+        if (variant.GlyphsActive != baseline.GlyphsActive)
+            parts.Add($"activates {variant.GlyphsActive} of {goalCount} glyph(s) instead of {baseline.GlyphsActive}");
+        if (variant.ThresholdsMet != baseline.ThresholdsMet)
+            parts.Add($"{variant.ThresholdsMet} threshold bonus(es) instead of {baseline.ThresholdsMet}");
+        if (baseline.FocusScore > 1e-9 && Math.Abs(variant.FocusScore - baseline.FocusScore) > baseline.FocusScore * 0.005)
+            parts.Add($"{(variant.FocusScore - baseline.FocusScore) / baseline.FocusScore:+0.#%;-0.#%} focused stat value");
+        if (variant.PointsUsed != baseline.PointsUsed)
+            parts.Add($"{baseline.PointsUsed} → {variant.PointsUsed} points");
+        return parts.Count > 0 ? "at full spend " + string.Join(", ", parts) : "equivalent at full spend";
     }
 
     /// <summary>The candidate board's total of the attribute within radius of its own socket.</summary>

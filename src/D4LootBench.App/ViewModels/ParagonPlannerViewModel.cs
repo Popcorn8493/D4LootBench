@@ -899,8 +899,38 @@ public partial class ParagonPlannerViewModel : ObservableObject
         RefreshRecentProjects();
     }
 
+    /// <summary>The file Ctrl+S writes to; null until the session is saved or opened once.</summary>
+    private string? _currentProjectPath;
+
+    /// <summary>Window title — carries the current project file name once one exists.</summary>
+    [ObservableProperty]
+    private string _windowTitle = "Paragon Planner — D4LootBench";
+
+    private void SetCurrentProject(string? path)
+    {
+        _currentProjectPath = path;
+        WindowTitle = path is null
+            ? "Paragon Planner — D4LootBench"
+            : $"Paragon Planner — {Path.GetFileName(path)}";
+    }
+
+    /// <summary>Ctrl+S: saves straight to the current file; falls back to Save As the first time.</summary>
     [RelayCommand]
     private void SaveProject()
+    {
+        if (_layout is null)
+            return;
+        if (_currentProjectPath is null)
+        {
+            SaveProjectAs();
+            return;
+        }
+        WriteProject(_currentProjectPath);
+    }
+
+    /// <summary>Ctrl+Shift+S: always asks where to save, then becomes the Ctrl+S target.</summary>
+    [RelayCommand]
+    private void SaveProjectAs()
     {
         if (_layout is null)
             return;
@@ -909,16 +939,23 @@ public partial class ParagonPlannerViewModel : ObservableObject
             Title      = "Save Paragon Project",
             Filter     = ProjectDialogFilter,
             DefaultExt = ".paragon.json",
-            FileName   = $"{SelectedClass.ToLowerInvariant()}-paragon",
+            FileName   = _currentProjectPath is null
+                ? $"{SelectedClass.ToLowerInvariant()}-paragon"
+                : Path.GetFileName(_currentProjectPath),
         };
         if (dlg.ShowDialog() != true)
             return;
+        WriteProject(dlg.FileName);
+    }
 
+    private void WriteProject(string path)
+    {
         try
         {
-            File.WriteAllText(dlg.FileName, ParagonProjectSerializer.ToJson(CaptureProject()));
-            RememberRecentProject(dlg.FileName);
-            SetStatus($"Saved project \"{Path.GetFileName(dlg.FileName)}\".");
+            File.WriteAllText(path, ParagonProjectSerializer.ToJson(CaptureProject()));
+            SetCurrentProject(path);
+            RememberRecentProject(path);
+            SetStatus($"Saved project \"{Path.GetFileName(path)}\".");
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -949,6 +986,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
         try
         {
             ApplyProject(ParagonProjectSerializer.FromJson(File.ReadAllText(path)));
+            SetCurrentProject(path);
             RememberRecentProject(path);
             SetStatus($"Opened project \"{Path.GetFileName(path)}\": {_placedBoards.Count} board(s), " +
                       $"{Cells.Count(c => c.IsPurchased)} allocated node(s).");
@@ -1235,7 +1273,8 @@ public partial class ParagonPlannerViewModel : ObservableObject
         using var busy = BeginBusy();
         if (!await SolveAsync())
             return;
-        if (TotalPoints - Cells.Count(c => c.IsPurchased) > 0)
+        // With thresholds on, a full pool still gets the reallocation check.
+        if (TotalPoints - Cells.Count(c => c.IsPurchased) > 0 || ActivateThresholds)
             await MaximizePointsAsync();
     }
 
@@ -1337,17 +1376,23 @@ public partial class ParagonPlannerViewModel : ObservableObject
         var spareBoards = ParagonDatabase.BoardsForClass(SelectedClass)
             .Where(b => b.BoardIndex != 0 && !placedNames.Contains(b.InternalName))
             .ToList();
+        // Candidates are judged by the FINISHED build: solve + full spend of the point pool
+        // with the current Optimize settings, compared on glyphs → thresholds → focus value.
+        var pipeline = new PlacementPipeline(
+            TotalPoints,
+            CurrentMaximizeFocus(),
+            new ThresholdContext(ParagonDatabase.Data, SelectedClass, SheetStatOffsets()));
         using var busy = BeginBusy();
-        SetStatus("Analyzing alternate board rotations, glyph placements, and board swaps…");
+        SetStatus("Analyzing rotations, glyph placements, and board swaps at full point spend…");
         var (baseline, suggestions) = await Task.Run(() =>
         {
             var solved = PlanSolver.Solve(graph, request);
             if (!solved.Success)
                 return (solved, (IReadOnlyList<PlacementSuggestion>)Array.Empty<PlacementSuggestion>());
-            var found = PlacementAnalyzer.SuggestRotations(layout, request, solved)
+            var found = PlacementAnalyzer.SuggestRotations(layout, request, solved, pipeline)
                 .Take(3)
                 .Concat(PlacementAnalyzer.SuggestGlyphPlacements(graph, layout, solved.PurchasedCells, request.GlyphGoals))
-                .Concat(PlacementAnalyzer.SuggestBoardSwaps(layout, request, solved, spareBoards))
+                .Concat(PlacementAnalyzer.SuggestBoardSwaps(layout, request, solved, spareBoards, pipeline: pipeline))
                 .ToList();
             return (solved, (IReadOnlyList<PlacementSuggestion>)found);
         });
@@ -1546,35 +1591,36 @@ public partial class ParagonPlannerViewModel : ObservableObject
             return;
         var purchased = Cells.Where(c => c.IsPurchased).Select(c => c.Cell).ToHashSet();
         int remaining = TotalPoints - purchased.Count;
-        if (remaining <= 0)
+        // With thresholds on, a zero budget still runs the reallocation pass — it trades
+        // already-spent points for small threshold deficits without needing new ones.
+        if (remaining <= 0 && !ActivateThresholds)
         {
             SetStatus($"No points left — {purchased.Count} of {TotalPoints} are already spent.", error: true);
             return;
         }
+        remaining = Math.Max(0, remaining);
 
-        var weights = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
-        foreach (var stat in FocusStats.Where(f => f.IsSelected && Math.Abs(f.Weight - 1.0) > 1e-9))
-            weights[stat.Attribute] = stat.Weight;
-        var focus = new MaximizeFocus(
-            FocusStats.Where(f => f.IsSelected).Select(f => f.Attribute).ToList(),
-            PreferRareNodes,
-            ActivateThresholds)
-        {
-            Weights = weights.Count > 0 ? weights : null,
-            RealisticRares = RealisticRares,
-        };
+        var focus = CurrentMaximizeFocus();
         var context = new ThresholdContext(
             ParagonDatabase.Data, SelectedClass, SheetStatOffsets(), CellMultipliers(purchased));
         var request = BuildPlanRequest();
         var graph = _graph;
         using var busy = BeginBusy();
-        SetStatus($"Spending up to {remaining} remaining point(s)…");
+        int countBefore = purchased.Count;
+        SetStatus(remaining > 0
+            ? $"Spending up to {remaining} remaining point(s)…"
+            : "No points left — checking whether reallocating any closes a threshold…");
         var outcome = await Task.Run(() => PointMaximizer.Extend(graph, purchased, remaining, focus, request, context));
 
-        if (outcome.AddedCells.Count == 0)
+        int spent = purchased.Count - countBefore;
+        bool reallocated = outcome.Notes.Any(n => n.StartsWith("Reallocated", StringComparison.Ordinal));
+        if (outcome.AddedCells.Count == 0 && !reallocated)
         {
             SetStatus(outcome.Notes.FirstOrDefault()
-                ?? "Nothing worthwhile is reachable with the remaining points — no nodes added.", error: true);
+                ?? (remaining > 0
+                    ? "Nothing worthwhile is reachable with the remaining points — no nodes added."
+                    : $"No points left and no beneficial reallocation found — {purchased.Count} of {TotalPoints} spent."),
+                error: true);
             return;
         }
         foreach (var cell in Cells)
@@ -1582,6 +1628,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
         RefreshBuildSummary();
 
         string gains = string.Join(", ", outcome.Gains
+            .Where(kv => kv.Value > 0)
             .OrderByDescending(kv => kv.Value)
             .Select(kv => $"{FormatGain(kv.Value)} {ParagonDisplay.FormatAttributeName(kv.Key)}"));
         string rares = outcome.RaresAdded > 0 ? $"{outcome.RaresAdded} rare node(s), " : "";
@@ -1589,13 +1636,30 @@ public partial class ParagonPlannerViewModel : ObservableObject
             ? $"{outcome.ThresholdsActivated} threshold bonus(es) activated, "
             : "";
         string details = BuildPurchaseReport(purchased, [], outcome.Notes);
-        SolveDetails = $"Spent {outcome.AddedCells.Count} leftover point(s): {rares}{thresholdsPart}" +
+        SolveDetails = $"Spent {spent} leftover point(s): {rares}{thresholdsPart}" +
                        $"{(gains.Length > 0 ? "gained " + gains : "no focused stat gains")}." +
                        (details.Length > 0 ? Environment.NewLine + details : "");
         SetStatus($"{purchased.Count} of {TotalPoints} points spent " +
-                  $"(+{outcome.AddedCells.Count} maximizing{(PreferRareNodes ? " rare nodes and" : "")} focused stats" +
-                  $"{(outcome.ThresholdsActivated > 0 ? $", {outcome.ThresholdsActivated} threshold(s) activated" : "")}).",
-            error: outcome.Notes.Count > 0);
+                  $"(+{spent} maximizing{(PreferRareNodes ? " rare nodes and" : "")} focused stats" +
+                  $"{(outcome.ThresholdsActivated > 0 ? $", {outcome.ThresholdsActivated} threshold(s) activated" : "")}" +
+                  $"{(reallocated ? ", some points reallocated to thresholds" : "")}).",
+            error: outcome.Notes.Any(n => !n.StartsWith("Reallocated", StringComparison.Ordinal)));
+    }
+
+    /// <summary>The Optimize-tab settings as one maximizer focus (stats, weights, rare/threshold flags).</summary>
+    private MaximizeFocus CurrentMaximizeFocus()
+    {
+        var weights = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+        foreach (var stat in FocusStats.Where(f => f.IsSelected && Math.Abs(f.Weight - 1.0) > 1e-9))
+            weights[stat.Attribute] = stat.Weight;
+        return new MaximizeFocus(
+            FocusStats.Where(f => f.IsSelected).Select(f => f.Attribute).ToList(),
+            PreferRareNodes,
+            ActivateThresholds)
+        {
+            Weights = weights.Count > 0 ? weights : null,
+            RealisticRares = RealisticRares,
+        };
     }
 
     /// <summary>Fractional stat values are percentages (see <see cref="ParagonDisplay.FormatAttribute"/>).</summary>

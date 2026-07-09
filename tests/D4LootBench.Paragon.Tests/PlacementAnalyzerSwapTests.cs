@@ -102,6 +102,90 @@ public class PlacementAnalyzerSwapTests
     }
 
     [Fact]
+    public void Pipeline_evaluation_measures_the_finished_build()
+    {
+        var layout = new ParagonLayout([new PlacedBoard { Board = Starter }]);
+        var graph = ComposedGraph.Build(layout);
+        var target = graph.Vertices.First(v => v.Node.Kind == ParagonNodeKind.Rare).Cell;
+        var request = new PlanRequest { Targets = [target] };
+
+        var pipeline = new PlacementPipeline(
+            60,
+            new MaximizeFocus([], PreferRare: true, ActivateThresholds: true),
+            new ThresholdContext(ParagonDatabase.Data, "Sorcerer", NonParagonStats.Uniform(0)));
+        var result = PlacementAnalyzer.EvaluatePipeline(graph, request, pipeline);
+
+        result.ShouldNotBeNull();
+        // Full spend: far more points used than the bare solve needs, capped by the pool.
+        result.PointsUsed.ShouldBeGreaterThan(PlanSolver.Solve(graph, request).PointsSpent);
+        result.PointsUsed.ShouldBeLessThanOrEqualTo(60);
+        result.FocusScore.ShouldBeGreaterThan(0);
+    }
+
+    [Fact]
+    public void Pipeline_mode_swap_suggestions_report_full_spend_outcomes()
+    {
+        // Reuse the weak-board scenario: with the pipeline, the suggestion text must speak in
+        // finished-build terms ("at full spend"), not bare solve points.
+        string attribute = GlyphInfo.PrimarySourceAttribute(Enchanter)!;
+        int radius = GlyphRadius.RadiusForLevel(100);
+        var boards = ParagonDatabase.BoardsForClass("Sorcerer")
+            .Where(b => b.BoardIndex != 0)
+            .Select(b => (Board: b, Fit: Fit(b, attribute, radius)))
+            .Where(b => b.Fit > 0)
+            .OrderBy(b => b.Fit)
+            .ToList();
+        var weak = boards[0];
+        var strong = boards[^1];
+
+        ParagonLayout? layout = null;
+        for (int rotation = 0; rotation < 4 && layout is null; rotation++)
+        {
+            try
+            {
+                var candidate = new ParagonLayout(
+                [
+                    new PlacedBoard { Board = Starter },
+                    new PlacedBoard
+                    {
+                        Board = weak.Board, ParentSlot = 0,
+                        AttachEdge = BoardEdge.Top, RotationSteps = rotation,
+                    },
+                ]);
+                ComposedGraph.Build(candidate);
+                layout = candidate;
+            }
+            catch (Exception ex) when (ex is ArgumentException or InvalidOperationException) { }
+        }
+        var graph = ComposedGraph.Build(layout!);
+        var socket = graph.Vertices.Single(v =>
+            v.Cell.BoardSlot == 1 && v.Node.Kind == ParagonNodeKind.GlyphSocket).Cell;
+        var targets = graph.Vertices
+            .Where(v => v.Cell.BoardSlot == 1 && v.Node.Kind == ParagonNodeKind.Legendary)
+            .Select(v => v.Cell)
+            .ToList();
+        var request = new PlanRequest
+        {
+            Targets = targets,
+            GlyphGoals = [new GlyphGoal(socket, attribute, (weak.Fit + strong.Fit) / 2, radius, "Enchanter")],
+        };
+        var baseline = PlanSolver.Solve(graph, request);
+        baseline.Success.ShouldBeTrue(baseline.Error);
+
+        var pipeline = new PlacementPipeline(
+            150,
+            new MaximizeFocus([], PreferRare: true),
+            new ThresholdContext(ParagonDatabase.Data, "Sorcerer", NonParagonStats.Uniform(0)));
+        var suggestions = PlacementAnalyzer.SuggestBoardSwaps(
+            layout!, request, baseline, ParagonDatabase.BoardsForClass("Sorcerer").ToList(),
+            pipeline: pipeline);
+
+        suggestions.ShouldNotBeEmpty();
+        suggestions[0].Description.ShouldContain("at full spend");
+        suggestions[0].Description.ShouldContain("glyph");
+    }
+
+    [Fact]
     public void No_swaps_are_suggested_without_glyph_goals()
     {
         var layout = new ParagonLayout([new PlacedBoard { Board = Starter }]);

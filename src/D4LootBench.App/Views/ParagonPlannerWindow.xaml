@@ -7,7 +7,7 @@
     xmlns:vm="clr-namespace:D4LootBench.App.ViewModels"
     mc:Ignorable="d"
     d:DataContext="{d:DesignInstance Type=vm:ParagonPlannerViewModel, IsDesignTimeCreatable=False}"
-    Title="Paragon Planner — D4LootBench"
+    Title="{Binding WindowTitle}"
     Height="780" Width="1160"
     MinHeight="500" MinWidth="900"
     WindowStartupLocation="CenterScreen"
@@ -49,6 +49,7 @@
         <KeyBinding Key="F5" Command="{Binding SolveCommand}" />
         <KeyBinding Key="F6" Command="{Binding ReanalyzeCommand}" />
         <KeyBinding Key="S" Modifiers="Control" Command="{Binding SaveProjectCommand}" />
+        <KeyBinding Key="S" Modifiers="Control+Shift" Command="{Binding SaveProjectAsCommand}" />
         <KeyBinding Key="O" Modifiers="Control" Command="{Binding OpenProjectCommand}" />
         <KeyBinding Key="I" Modifiers="Control" Command="{Binding ImportBuildCommand}" />
     </Window.InputBindings>
@@ -99,13 +100,15 @@
                             ToolTip="Copy the current allocation as a Maxroll planner variant code" />
 
                     <Border Style="{StaticResource ToolbarDivider}" />
-                    <Button Command="{Binding SaveProjectCommand}" Padding="10,3" Margin="0,0,6,0"
-                            ToolTip="Save the whole planner session to a file: boards, targets, solved path, glyphs, node rules, and character stats (Ctrl+S)">
+                    <Button Command="{Binding SaveProjectCommand}" Padding="10,3" Margin="0,0,4,0"
+                            ToolTip="Save the planner session straight to the current file — no dialog after the first save (Ctrl+S). The window title shows which file. Use Save As for a new file.">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="&#xE74E;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,5,0" />
                             <TextBlock Text="Save" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
+                    <Button Command="{Binding SaveProjectAsCommand}" Content="Save As" Padding="8,3" Margin="0,0,6,0"
+                            ToolTip="Save the session to a new file, which then becomes the Ctrl+S target (Ctrl+Shift+S)" />
                     <Button Command="{Binding OpenProjectCommand}" Padding="10,3"
                             ToolTip="Load a previously saved planner session (Ctrl+O)">
                         <StackPanel Orientation="Horizontal">

@@ -376,8 +376,6 @@ public static class PointMaximizer
                               $"({ParagonDisplay.FormatAttributeName(next.Attribute)}).");
                 }
             }
-            metAfter = BuildStats.Compute(graph, purchased, thresholds.Data,
-                thresholds.NonParagonStats, thresholds.ClassName, thresholds.CellMultipliers).ThresholdsMet;
         }
 
         // Phase 2: focused stats by value-per-point.
@@ -416,7 +414,234 @@ public static class PointMaximizer
             Absorb(best);
         }
 
+        // Phase R: reallocation. The greedy spend is one-way, so the budget can die a few stat
+        // points short of a threshold that a single node would flip. Trade the least valuable
+        // expendable purchases (normal/magic/gate leaves that feed nothing important) 1:1 for
+        // the deficit stat until the threshold activates; failed attempts roll back.
+        if (focus.ActivateThresholds && thresholds is not null)
+        {
+            ReallocateForThresholds(
+                graph, purchased, tree, request, thresholds, limits, blocked,
+                added, gains, gainSet, ref raresAdded, notes, NormValue);
+            metAfter = BuildStats.Compute(graph, purchased, thresholds.Data,
+                thresholds.NonParagonStats, thresholds.ClassName, thresholds.CellMultipliers).ThresholdsMet;
+        }
+
         return new MaximizeOutcome(added, raresAdded, gains, notes, Math.Max(0, metAfter - metBefore));
+    }
+
+    /// <summary>Kinds the reallocation pass may drop: cheap connectors and filler stat nodes.</summary>
+    private static bool IsExpendableKind(ParagonNodeKind kind) =>
+        kind is ParagonNodeKind.Normal or ParagonNodeKind.Magic or ParagonNodeKind.Gate;
+
+    private static void ReallocateForThresholds(
+        ComposedGraph graph, ISet<CellRef> purchased, HashSet<int> tree, PlanRequest request,
+        ThresholdContext thresholds, LimitTracker limits, bool[] blocked,
+        List<CellRef> added, Dictionary<string, double> gains, HashSet<string> gainSet,
+        ref int raresAdded, List<string> notes, Func<int, double> normValue)
+    {
+        const int MaxSwaps = 40;
+        int n = graph.Vertices.Count;
+        int swaps = 0;
+        var protectedTargets = request.Targets.ToHashSet();
+        var failedThresholds = new HashSet<CellRef>();
+
+        double MultiplierOf(int v) =>
+            thresholds.CellMultipliers?.GetValueOrDefault(graph.Vertices[v].Cell, 1.0) ?? 1.0;
+
+        double GrantOf(int v, string attribute) => graph.Vertices[v].Node.Attributes
+            .Where(a => !a.IsThresholdBonus && a.Value is not null
+                && string.Equals(a.Attribute, attribute, StringComparison.OrdinalIgnoreCase))
+            .Sum(a => a.Value!.Value) * MultiplierOf(v);
+
+        // Removal must keep the purchase set connected to the start node.
+        bool StaysConnectedWithout(int candidate)
+        {
+            var seen = new HashSet<int> { graph.StartVertex };
+            var queue = new Queue<int>();
+            queue.Enqueue(graph.StartVertex);
+            while (queue.Count > 0)
+            {
+                int v = queue.Dequeue();
+                foreach (int u in graph.Adjacency[v])
+                {
+                    if (u != candidate && tree.Contains(u) && seen.Add(u))
+                        queue.Enqueue(u);
+                }
+            }
+            return seen.Count == tree.Count - 1;
+        }
+
+        while (swaps < MaxSwaps)
+        {
+            var report = BuildStats.Compute(graph, purchased, thresholds.Data,
+                thresholds.NonParagonStats, thresholds.ClassName, thresholds.CellMultipliers);
+            var next = report.Thresholds
+                .Where(t => !t.Met && !failedThresholds.Contains(t.Cell))
+                .OrderBy(t => t.Requirement - t.Have)
+                .FirstOrDefault();
+            if (next is null)
+                break;
+
+            string targetAttribute = next.Attribute.EndsWith("_Total", StringComparison.Ordinal)
+                ? next.Attribute[..^"_Total".Length] + "_Core"
+                : next.Attribute;
+            double needed = next.Requirement - next.Have;
+
+            double gained = 0;
+            var swapped = new List<(int Freed, int Bought)>();
+            var droppedNames = new List<string>();
+            while (gained < needed - 1e-9 && swaps + swapped.Count < MaxSwaps)
+            {
+                // Met bonuses may not lose more of their stat than their slack, or they flip off.
+                var slackByAttribute = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+                foreach (var met in report.Thresholds.Where(t => t.Met))
+                {
+                    string coreKey = met.Attribute.EndsWith("_Total", StringComparison.Ordinal)
+                        ? met.Attribute[..^"_Total".Length] + "_Core"
+                        : met.Attribute;
+                    double slack = met.Have - met.Requirement;
+                    slackByAttribute[coreKey] = Math.Min(
+                        slackByAttribute.GetValueOrDefault(coreKey, double.MaxValue), slack);
+                }
+                // Active glyph goals may not lose more in-radius source stat than their slack.
+                var goalSlack = new List<(GlyphGoal Goal, double Slack)>();
+                foreach (var goal in request.GlyphGoals)
+                {
+                    double have = GlyphRadius.AttributeTotalsInRange(
+                            graph, goal.Socket, purchased.ToList(), goal.Radius, GlyphRadius.GameMetric)
+                        .GetValueOrDefault(goal.SourceAttribute);
+                    goalSlack.Add((goal, have - goal.RequiredTotal));
+                }
+
+                // Buy candidate: the most deficit stat one point can add next to the tree.
+                int buy = -1;
+                double buyValue = 0;
+                for (int v = 0; v < n; v++)
+                {
+                    if (tree.Contains(v) || (blocked[v] && !limits.IsLimitBlocked(v)) || limits.WouldViolate(v))
+                        continue;
+                    double value = GrantOf(v, targetAttribute);
+                    if (value <= buyValue)
+                        continue;
+                    if (!graph.Adjacency[v].Any(u => tree.Contains(u)))
+                        continue;
+                    buy = v;
+                    buyValue = value;
+                }
+                if (buy < 0)
+                    break;
+
+                // Free candidate: the least valuable expendable purchase that nothing depends on.
+                int free = -1;
+                double freeLoss = double.MaxValue;
+                foreach (int v in tree)
+                {
+                    if (v == graph.StartVertex || !IsExpendableKind(graph.Vertices[v].Node.Kind))
+                        continue;
+                    var cell = graph.Vertices[v].Cell;
+                    if (protectedTargets.Contains(cell))
+                        continue;
+                    if (GrantOf(v, targetAttribute) > 0)
+                        continue; // dropping it would eat the very stat being bought
+                    bool unsafeGrant = graph.Vertices[v].Node.Attributes.Any(a =>
+                        !a.IsThresholdBonus && a.Value is not null
+                        && slackByAttribute.TryGetValue(a.Attribute, out double slack)
+                        && a.Value.Value * MultiplierOf(v) > slack);
+                    if (unsafeGrant)
+                        continue; // would flip a met threshold bonus back off
+                    bool breaksGoal = goalSlack.Any(g => g.Slack >= 0
+                        && cell.BoardSlot == g.Goal.Socket.BoardSlot
+                        && Math.Abs(cell.X - g.Goal.Socket.X) + Math.Abs(cell.Y - g.Goal.Socket.Y) <= g.Goal.Radius
+                        && GrantOf(v, g.Goal.SourceAttribute) / MultiplierOf(v) > g.Slack);
+                    if (breaksGoal)
+                        continue; // would deactivate a met glyph
+                    // The buy must still touch the tree once this vertex is gone.
+                    if (!graph.Adjacency[buy].Any(u => u != v && tree.Contains(u)))
+                        continue;
+                    if (!StaysConnectedWithout(v))
+                        continue;
+                    double loss = normValue(v);
+                    if (loss < freeLoss)
+                    {
+                        free = v;
+                        freeLoss = loss;
+                    }
+                }
+                if (free < 0)
+                    break;
+
+                // Execute the 1:1 swap.
+                var freedCell = graph.Vertices[free].Cell;
+                tree.Remove(free);
+                purchased.Remove(freedCell);
+                added.Remove(freedCell);
+                limits.OnRemoved(free);
+                foreach (var a in graph.Vertices[free].Node.Attributes)
+                {
+                    if (!a.IsThresholdBonus && a.Value is not null && gainSet.Contains(a.Attribute))
+                        gains[a.Attribute] = gains.GetValueOrDefault(a.Attribute) - a.Value.Value;
+                }
+
+                var boughtCell = graph.Vertices[buy].Cell;
+                tree.Add(buy);
+                purchased.Add(boughtCell);
+                added.Add(boughtCell);
+                limits.OnAbsorbed(buy);
+                foreach (var a in graph.Vertices[buy].Node.Attributes)
+                {
+                    if (!a.IsThresholdBonus && a.Value is not null && gainSet.Contains(a.Attribute))
+                        gains[a.Attribute] = gains.GetValueOrDefault(a.Attribute) + a.Value.Value;
+                }
+                if (graph.Vertices[buy].Node.Kind == ParagonNodeKind.Rare)
+                    raresAdded++;
+
+                swapped.Add((free, buy));
+                droppedNames.Add(graph.Vertices[free].Node.Name ?? graph.Vertices[free].Node.InternalName);
+                gained += buyValue;
+                report = BuildStats.Compute(graph, purchased, thresholds.Data,
+                    thresholds.NonParagonStats, thresholds.ClassName, thresholds.CellMultipliers);
+            }
+
+            if (gained >= needed - 1e-9 && swapped.Count > 0)
+            {
+                swaps += swapped.Count;
+                notes.Add($"Reallocated {swapped.Count} point(s) to activate {next.NodeName} " +
+                          $"(dropped {string.Join(", ", droppedNames.Distinct().Take(3))}" +
+                          $"{(droppedNames.Distinct().Count() > 3 ? ", …" : "")}).");
+                continue;
+            }
+
+            // Couldn't close this deficit — undo any partial swaps and skip the threshold.
+            for (int i = swapped.Count - 1; i >= 0; i--)
+            {
+                var (freed, bought) = swapped[i];
+                var boughtCell = graph.Vertices[bought].Cell;
+                tree.Remove(bought);
+                purchased.Remove(boughtCell);
+                added.Remove(boughtCell);
+                limits.OnRemoved(bought);
+                if (graph.Vertices[bought].Node.Kind == ParagonNodeKind.Rare)
+                    raresAdded--;
+                foreach (var a in graph.Vertices[bought].Node.Attributes)
+                {
+                    if (!a.IsThresholdBonus && a.Value is not null && gainSet.Contains(a.Attribute))
+                        gains[a.Attribute] = gains.GetValueOrDefault(a.Attribute) - a.Value.Value;
+                }
+
+                var freedCell = graph.Vertices[freed].Cell;
+                tree.Add(freed);
+                purchased.Add(freedCell);
+                added.Add(freedCell);
+                limits.OnAbsorbed(freed);
+                foreach (var a in graph.Vertices[freed].Node.Attributes)
+                {
+                    if (!a.IsThresholdBonus && a.Value is not null && gainSet.Contains(a.Attribute))
+                        gains[a.Attribute] = gains.GetValueOrDefault(a.Attribute) + a.Value.Value;
+                }
+            }
+            failedThresholds.Add(next.Cell);
+        }
     }
 
     private static void RunDijkstra(

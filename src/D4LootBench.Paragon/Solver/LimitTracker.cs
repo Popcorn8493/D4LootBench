@@ -111,4 +111,18 @@ internal sealed class LimitTracker
         foreach (var key in keys)
             _counts[key]++;
     }
+
+    /// <summary>Un-counts a removed vertex (the reallocation pass swaps purchases out).</summary>
+    public void OnRemoved(int vertex)
+    {
+        if (!_groupsOfVertex.TryGetValue(vertex, out var keys))
+            return;
+        foreach (var key in keys)
+            _counts[key]--;
+    }
+
+    /// <summary>Whether adding this single vertex would push any of its groups past its cap.</summary>
+    public bool WouldViolate(int vertex) =>
+        _groupsOfVertex.TryGetValue(vertex, out var keys)
+        && keys.Any(key => _counts[key] + 1 > _limits[key]);
 }

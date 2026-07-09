@@ -127,6 +127,63 @@ public class PointMaximizerTests
     }
 
     [Fact]
+    public void Reallocation_respects_budget_connectivity_and_never_loses_thresholds()
+    {
+        // Two boards, tight budget, thresholds on — conditions where the greedy spend runs dry
+        // mid-threshold and the reallocation pass kicks in.
+        var layout = new ParagonLayout(
+        [
+            new PlacedBoard { Board = ParagonDatabase.Data.Boards.Single(b => b.InternalName == "Paragon_Barb_00") },
+            new PlacedBoard
+            {
+                Board = ParagonDatabase.Data.Boards.Single(b => b.InternalName == "Paragon_Barb_03"),
+                ParentSlot = 0, AttachEdge = BoardEdge.Top,
+            },
+        ]);
+        var graph = ComposedGraph.Build(layout);
+        var target = graph.Vertices.First(v => v.Node.Kind == ParagonNodeKind.Legendary).Cell;
+        var request = new PlanRequest { Targets = [target] };
+        var solve = PlanSolver.Solve(graph, request);
+        solve.Success.ShouldBeTrue(solve.Error);
+
+        var context = new ThresholdContext(ParagonDatabase.Data, "Barbarian",
+            NonParagonStats.PerStat(new Dictionary<string, double> { ["Strength"] = 400 }));
+        var purchased = solve.PurchasedCells.ToHashSet();
+        int before = purchased.Count;
+        int metBefore = BuildStats.Compute(graph, purchased, ParagonDatabase.Data,
+            context.NonParagonStats, "Barbarian").ThresholdsMet;
+
+        const int budget = 30;
+        var outcome = PointMaximizer.Extend(graph, purchased, budget,
+            new MaximizeFocus([], PreferRare: true, ActivateThresholds: true), request, context);
+
+        // Swaps are strictly 1:1 — the total spend can never exceed the budget.
+        (purchased.Count - before).ShouldBeLessThanOrEqualTo(budget);
+        AssertConnected(graph, purchased);
+        BuildStats.Compute(graph, purchased, ParagonDatabase.Data, context.NonParagonStats, "Barbarian")
+            .ThresholdsMet.ShouldBeGreaterThanOrEqualTo(metBefore);
+        // Protected cells survive any swapping.
+        purchased.ShouldContain(target);
+    }
+
+    [Fact]
+    public void Zero_budget_with_thresholds_can_still_reallocate()
+    {
+        var graph = StarterGraph();
+        var purchased = new HashSet<CellRef>();
+        // Fill the starter board substantially, then hand the maximizer a zero budget.
+        PointMaximizer.Extend(graph, purchased, 40, new MaximizeFocus([], true), EmptyRequest);
+        int count = purchased.Count;
+
+        var context = new ThresholdContext(ParagonDatabase.Data, "Barbarian", NonParagonStats.Uniform(0));
+        var outcome = PointMaximizer.Extend(graph, purchased, 0,
+            new MaximizeFocus([], PreferRare: true, ActivateThresholds: true), EmptyRequest, context);
+
+        purchased.Count.ShouldBe(count); // zero budget: only 1:1 swaps are allowed
+        AssertConnected(graph, purchased);
+    }
+
+    [Fact]
     public void Prefer_rare_buys_rare_nodes_first()
     {
         var graph = StarterGraph();
