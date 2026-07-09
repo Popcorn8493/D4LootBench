@@ -15,6 +15,21 @@ public sealed record MaximizeFocus(
 {
     public static readonly IReadOnlyList<string> CoreStats =
         ["Strength_Core", "Intelligence_Core", "Willpower_Core", "Dexterity_Core"];
+
+    /// <summary>
+    /// Per-attribute priority multipliers (attribute → weight, missing = 1). Weights scale the
+    /// normalized per-point value, so a weight-3 stat is chased three times as hard as a
+    /// weight-1 stat of equal magnitude.
+    /// </summary>
+    public IReadOnlyDictionary<string, double>? Weights { get; init; }
+
+    /// <summary>
+    /// With <see cref="PreferRare"/>: buy rares by threshold attainability first — bonuses
+    /// already met, then realistically meetable (the boards can still supply the deficit),
+    /// then plain rares, and unattainable-threshold rares last. Needs a
+    /// <see cref="ThresholdContext"/>; without one the cheapest-first order is kept.
+    /// </summary>
+    public bool RealisticRares { get; init; }
 }
 
 /// <summary>What threshold checks need beyond the graph: requirements scale with attachment
@@ -126,6 +141,9 @@ public static class PointMaximizer
             }
         }
 
+        double WeightOf(string attribute) =>
+            focus.Weights?.GetValueOrDefault(attribute, 1.0) ?? 1.0;
+
         double NormValue(int v)
         {
             double total = glyphBonus[v];
@@ -134,7 +152,7 @@ public static class PointMaximizer
                 if (a.IsThresholdBonus || a.Value is not double value || !attributeSet.Contains(a.Attribute))
                     continue;
                 var (sum, count) = attributeMean[a.Attribute];
-                total += value / (sum / count);
+                total += value / (sum / count) * WeightOf(a.Attribute);
             }
             return total;
         }
@@ -177,17 +195,59 @@ public static class PointMaximizer
             limits.BlockFullGroups(blocked, tree);
         }
 
-        // Phase 1: rare nodes, cheapest first (ties: more focused stat value).
+        // Phase 1: rare nodes. Default order is cheapest first (ties: more focused stat value).
+        // With RealisticRares, threshold attainability leads instead: bonuses already met, then
+        // ones the boards can realistically still supply, then plain rares, and rares whose
+        // bonus is out of reach last — so points chase "good" rares, not just near ones.
         if (focus.PreferRare)
         {
+            bool realistic = focus.RealisticRares && thresholds is not null;
             while (remaining > 0)
             {
+                Func<int, int> rank = _ => 0;
+                if (realistic)
+                {
+                    // Recomputed each round: an absorbed rare changes both Have and supply.
+                    var report = BuildStats.Compute(graph, purchased, thresholds!.Data,
+                        thresholds.NonParagonStats, thresholds.ClassName, thresholds.CellMultipliers);
+                    var statusByCell = report.Thresholds
+                        .GroupBy(t => t.Cell)
+                        .ToDictionary(g => g.Key, g => g.OrderBy(t => t.Requirement - t.Have).First());
+                    var supply = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+                    for (int v = 0; v < n; v++)
+                    {
+                        if (tree.Contains(v))
+                            continue;
+                        double multiplier = thresholds.CellMultipliers
+                            ?.GetValueOrDefault(graph.Vertices[v].Cell, 1.0) ?? 1.0;
+                        foreach (var a in graph.Vertices[v].Node.Attributes)
+                        {
+                            if (a.IsThresholdBonus || a.Value is not double value)
+                                continue;
+                            supply[a.Attribute] = supply.GetValueOrDefault(a.Attribute) + value * multiplier;
+                        }
+                    }
+                    rank = v =>
+                    {
+                        if (!statusByCell.TryGetValue(graph.Vertices[v].Cell, out var status))
+                            return 2; // no threshold bonus — plain stat rare
+                        if (status.Met)
+                            return 0; // bonus turns on the moment it's bought
+                        string coreKey = status.Attribute.EndsWith("_Total", StringComparison.Ordinal)
+                            ? status.Attribute[..^"_Total".Length] + "_Core"
+                            : status.Attribute;
+                        double deficit = status.Requirement - status.Have;
+                        return supply.GetValueOrDefault(coreKey) >= deficit ? 1 : 3;
+                    };
+                }
+
                 RunDijkstra(graph, tree, weights, blocked, dist, from);
                 var rejected = new HashSet<int>();
                 int best;
                 while (true)
                 {
                     best = -1;
+                    int bestRank = 0;
                     int bestCost = 0;
                     double bestValue = 0;
                     for (int v = 0; v < n; v++)
@@ -198,10 +258,13 @@ public static class PointMaximizer
                         int cost = PathCost(v);
                         if (cost > remaining)
                             continue;
+                        int nodeRank = rank(v);
                         double value = NormValue(v);
-                        if (best < 0 || cost < bestCost || (cost == bestCost && value > bestValue))
+                        if (best < 0 || nodeRank < bestRank
+                            || (nodeRank == bestRank && (cost < bestCost || (cost == bestCost && value > bestValue))))
                         {
                             best = v;
+                            bestRank = nodeRank;
                             bestCost = cost;
                             bestValue = value;
                         }

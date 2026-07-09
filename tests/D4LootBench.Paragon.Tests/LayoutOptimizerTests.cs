@@ -63,6 +63,84 @@ public class LayoutOptimizerTests
     }
 
     [Fact]
+    public void Competing_pool_subsets_are_compared_under_the_full_solve()
+    {
+        var result = LayoutOptimizer.Optimize(new LayoutOptimizerRequest
+        {
+            StarterBoard = Starter,
+            PoolBoards =
+            [
+                Board("Paragon_Sorc_01"), Board("Paragon_Sorc_02"), Board("Paragon_Sorc_03"),
+                Board("Paragon_Sorc_04"), Board("Paragon_Sorc_05"),
+            ],
+            MaxBoards = 3,
+            Glyphs = [Glyph("Enchanter"), Glyph("Unleash")],
+        }, ParagonDatabase.Data);
+
+        result.Success.ShouldBeTrue(result.Error);
+        result.Layout!.Boards.Count.ShouldBe(3);
+        result.Notes.ShouldContain(n => n.StartsWith("Compared"));
+        result.Notes.Count(n => n.StartsWith("Added")).ShouldBe(2);
+        result.Plan!.Success.ShouldBeTrue();
+    }
+
+    /// <summary>What the legacy pre-selection saw: the board's best in-radius stat for any glyph.</summary>
+    private static double GreedyFit(ParagonBoardDef board, IEnumerable<ParagonGlyphDef> glyphs, int radius)
+    {
+        var nodes = ParagonDatabase.NodesBySnoId;
+        var socket = board.Nodes.FirstOrDefault(p => nodes[p.Node].Kind == ParagonNodeKind.GlyphSocket);
+        if (socket is null)
+            return 0;
+        return glyphs.Max(glyph =>
+        {
+            if (GlyphInfo.PrimarySourceAttribute(glyph) is not string attribute)
+                return 0;
+            return board.Nodes
+                .Where(p => (p.X, p.Y) != (socket.X, socket.Y)
+                    && Math.Abs(p.X - socket.X) + Math.Abs(p.Y - socket.Y) <= radius)
+                .Sum(p => nodes[p.Node].Attributes
+                    .Where(a => !a.IsThresholdBonus && a.Attribute == attribute && a.Value is double)
+                    .Sum(a => a.Value!.Value));
+        });
+    }
+
+    [Fact]
+    public void Subset_exploration_never_does_worse_than_the_greedy_pick()
+    {
+        var pool = new[]
+        {
+            Board("Paragon_Sorc_01"), Board("Paragon_Sorc_02"), Board("Paragon_Sorc_03"),
+            Board("Paragon_Sorc_04"), Board("Paragon_Sorc_05"),
+        };
+        var glyphs = new[] { Glyph("Enchanter"), Glyph("Unleash") };
+        int radius = GlyphRadius.RadiusForLevel(100);
+
+        var explored = LayoutOptimizer.Optimize(new LayoutOptimizerRequest
+        {
+            StarterBoard = Starter,
+            PoolBoards = pool,
+            MaxBoards = 3,
+            Glyphs = glyphs,
+        }, ParagonDatabase.Data);
+        explored.Success.ShouldBeTrue(explored.Error);
+
+        // Replay what the legacy one-shot pre-selection would have chosen: the two boards with
+        // the best single-glyph fit, forced as must-use so no subset exploration happens.
+        var greedy = pool.OrderByDescending(b => GreedyFit(b, glyphs, radius)).Take(2).ToArray();
+        var forced = LayoutOptimizer.Optimize(new LayoutOptimizerRequest
+        {
+            StarterBoard = Starter,
+            MustUseBoards = greedy,
+            MaxBoards = 3,
+            Glyphs = glyphs,
+        }, ParagonDatabase.Data);
+        forced.Success.ShouldBeTrue(forced.Error);
+
+        explored.Plan!.GlyphOutcomes.Count(o => o.Met)
+            .ShouldBeGreaterThanOrEqualTo(forced.Plan!.GlyphOutcomes.Count(o => o.Met));
+    }
+
+    [Fact]
     public void Too_many_must_boards_fail_clearly()
     {
         var result = LayoutOptimizer.Optimize(new LayoutOptimizerRequest

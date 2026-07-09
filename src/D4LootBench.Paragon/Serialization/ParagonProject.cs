@@ -30,7 +30,16 @@ public sealed record ParagonProject
     public IReadOnlyList<ParagonProjectGlyph> Glyphs { get; init; } = [];
     public IReadOnlyList<ParagonProjectRule> NodeRules { get; init; } = [];
     public IReadOnlyList<string> FocusStats { get; init; } = [];
+
+    /// <summary>Per-stat priority weights for the maximizer (attribute → weight, missing = 1).</summary>
+    public IReadOnlyDictionary<string, double> FocusWeights { get; init; } =
+        new Dictionary<string, double>();
+
     public bool PreferRareNodes { get; init; }
+
+    /// <summary>Buy rares by threshold attainability first (see MaximizeFocus.RealisticRares).</summary>
+    public bool RealisticRares { get; init; }
+
     public bool ActivateThresholds { get; init; }
     public int TotalPoints { get; init; }
     public double SheetStrength { get; init; }

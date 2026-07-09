@@ -95,6 +95,14 @@
                         <TextBlock Text="Paragon" VerticalAlignment="Center" />
                     </StackPanel>
                 </Button>
+                <Button Command="{Binding OpenItemCompareCommand}"
+                        ToolTip="Compare two candidate drops against your build: the loaded filter's affix wish list per slot, target uniques, and the open paragon build's unmet threshold deficits"
+                        Padding="8,2">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#xE9D5;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,5,0" />
+                        <TextBlock Text="Compare Items" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
 
                 <Separator />
 

@@ -89,24 +89,73 @@ public sealed class NameResolver(IFilterDataService data)
         return false;
     }
 
-    // Returns true only when the fuzzy pass yields exactly one candidate — unambiguous auto-resolve.
+    /// <summary>
+    /// The auto-resolve ladder, tried in order of confidence; each step must be unambiguous:
+    /// 1. punctuation-insensitive equality — "+Armor" == "armor", "Paingorger's" == "paingorgers",
+    ///    and re-released duplicates ("Azurewrath" vs "Azurewrath (Crucible)") pick the exact base;
+    /// 2. containment with exactly one distinct match (duplicate catalog names collapse first);
+    /// 3. token cover with exactly one distinct match — "+Heartseeker" from "ranks to heartseeker".
+    /// </summary>
     private static bool TryFuzzyResolve(string query, IEnumerable<string> candidates, out string resolved)
     {
-        var matches = FuzzyMatch(query, candidates).Take(2).ToList();
-        if (matches.Count == 1) { resolved = matches[0]; return true; }
+        var unique = candidates.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        string queryNorm = Normalize(query);
+
+        var exact = unique.FirstOrDefault(c => Normalize(c) == queryNorm);
+        if (exact is not null) { resolved = exact; return true; }
+
+        var contains = unique
+            .Where(c =>
+            {
+                string cn = Normalize(c);
+                return cn.Contains(queryNorm, StringComparison.Ordinal)
+                    || queryNorm.Contains(cn, StringComparison.Ordinal);
+            })
+            .Take(2).ToList();
+        if (contains.Count == 1) { resolved = contains[0]; return true; }
+
+        var queryTokens = Tokens(queryNorm);
+        var covered = unique
+            .Where(c => Tokens(Normalize(c)) is { Count: > 0 } tokens && tokens.IsSubsetOf(queryTokens))
+            .Take(2).ToList();
+        if (covered.Count == 1) { resolved = covered[0]; return true; }
+
         resolved = ""; return false;
     }
 
-    private static IEnumerable<string> FuzzyMatch(string query, IEnumerable<string> candidates)
+    /// <summary>Lowercase, punctuation dropped ('+', apostrophes, parentheses), spacing collapsed.</summary>
+    private static string Normalize(string name)
     {
-        var lower = query.ToLowerInvariant();
-        return candidates.Where(c =>
+        var sb = new System.Text.StringBuilder(name.Length);
+        foreach (char c in name.ToLowerInvariant())
         {
-            var cl = c.ToLowerInvariant();
-            return cl.Contains(lower) || lower.Contains(cl);
-        });
+            if (char.IsLetterOrDigit(c)) sb.Append(c);
+            else if (c is ' ' or '-' or '_' or '/') sb.Append(' ');
+        }
+        return string.Join(' ', sb.ToString().Split(' ', StringSplitOptions.RemoveEmptyEntries));
     }
 
+    /// <summary>Meaning-bearing words of a normalized name (filler like "of"/"to"/"ranks" dropped).</summary>
+    private static HashSet<string> Tokens(string normalized) =>
+        normalized.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Where(t => !TokenStopwords.Contains(t))
+            .ToHashSet(StringComparer.Ordinal);
+
+    private static readonly HashSet<string> TokenStopwords =
+        new(StringComparer.Ordinal) { "of", "to", "the", "a", "an", "rank", "ranks" };
+
     private static IReadOnlyList<string> FindSuggestions(string query, IEnumerable<string> candidates, int max = 5)
-        => FuzzyMatch(query, candidates).Take(max).ToList();
+    {
+        string queryNorm = Normalize(query);
+        return candidates
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Where(c =>
+            {
+                string cn = Normalize(c);
+                return cn.Contains(queryNorm, StringComparison.Ordinal)
+                    || queryNorm.Contains(cn, StringComparison.Ordinal);
+            })
+            .Take(max)
+            .ToList();
+    }
 }

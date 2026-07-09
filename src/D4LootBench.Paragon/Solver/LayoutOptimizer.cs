@@ -60,14 +60,25 @@ public sealed class LayoutOptimizerResult
 /// then solves the cheapest path reaching every board's legendary node and activating every
 /// placed glyph. Key decomposition: a glyph's attainable stat around a socket is
 /// rotation-independent (the radius neighborhood rotates with the board), so glyphs are assigned
-/// to boards before any arrangement is chosen. Arrangements are ranked by a cheap internal-cost
-/// heuristic (entry gate → legendary/socket distance plus depth), and the best few get a full
-/// <see cref="PlanSolver"/> evaluation.
+/// to boards before any arrangement is chosen. When the pool offers a real choice, several
+/// candidate board subsets are compared under the full evaluation (not just the greedy best-fit
+/// pick), so a pool board that only shines in combination still wins. Arrangements are ranked by
+/// a cheap internal-cost heuristic (entry gate → legendary/socket distance plus depth), and the
+/// best few per subset get a full <see cref="PlanSolver"/> evaluation.
 /// </summary>
 public static class LayoutOptimizer
 {
     /// <summary>Arrangements that survive the heuristic ranking and get a full solve.</summary>
     private const int RerankCount = 25;
+
+    /// <summary>Arrangements fully solved per subset when several pool subsets compete.</summary>
+    private const int RerankPerSubset = 10;
+
+    /// <summary>Pool subsets that get the full arrangement evaluation.</summary>
+    private const int MaxSubsets = 4;
+
+    /// <summary>Pool boards kept for subset enumeration (top per glyph, then best overall).</summary>
+    private const int ReducedPoolSize = 10;
 
     public static LayoutOptimizerResult Optimize(LayoutOptimizerRequest request, ParagonData data)
     {
@@ -78,79 +89,88 @@ public static class LayoutOptimizer
                 $"{must.Count} must-use boards don't fit — a layout holds {maxBoards - 1} besides the starter.");
 
         var nodesBySnoId = data.Nodes.ToDictionary(n => n.SnoId, StringComparer.OrdinalIgnoreCase);
-        var notes = new List<string>();
         int radius = GlyphRadius.RadiusForLevel(request.GlyphLevel);
 
-        // 1. Fill open slots from the pool, ranked by how well any desired glyph activates there.
-        var chosen = new List<ParagonBoardDef>(must);
         var pool = request.PoolBoards
             .DistinctBy(b => b.InternalName)
             .Where(b => must.All(m => m.InternalName != b.InternalName)
                         && b.InternalName != request.StarterBoard.InternalName)
             .ToList();
-        if (chosen.Count < maxBoards - 1 && pool.Count > 0)
+
+        // 1. Candidate pool fills. With glyphs in play there are usually several subsets worth
+        //    trying — each goes through the full pipeline below and the best final score wins.
+        var fills = CandidateFills(must, pool, maxBoards - 1 - must.Count, request, radius, nodesBySnoId);
+        int rerank = fills.Count > 1 ? RerankPerSubset : RerankCount;
+
+        (LayoutOptimizerResult Result, ArrangementScore Score)? best = null;
+        List<string> bestNotes = [];
+        foreach (var fill in fills)
         {
-            var ranked = pool
-                .Select(board => (Board: board, Fit: request.Glyphs.Count == 0
+            var notes = new List<string>();
+            foreach (var board in fill)
+            {
+                double fit = request.Glyphs.Count == 0
                     ? 0
-                    : request.Glyphs.Max(g => AttainableStat(board, g, radius, nodesBySnoId))))
-                .OrderByDescending(c => c.Fit)
-                .ToList();
-            foreach (var candidate in ranked.TakeWhile(_ => chosen.Count < maxBoards - 1))
-            {
-                chosen.Add(candidate.Board);
-                notes.Add($"Added {BoardName(candidate.Board)} from the pool" +
-                          (candidate.Fit > 0 ? $" (up to {candidate.Fit:0} glyph stat in radius)." : "."));
+                    : request.Glyphs.Max(g => AttainableStat(board, g, radius, nodesBySnoId));
+                notes.Add($"Added {BoardName(board)} from the pool" +
+                          (fit > 0 ? $" (up to {fit:0} glyph stat in radius)." : "."));
             }
-        }
+            var chosen = must.Concat(fill).ToList();
 
-        // 2. Assign glyphs to boards (slot 0 = starter) — rotation-independent, so done up front.
-        var slotBoards = new List<ParagonBoardDef> { request.StarterBoard };
-        slotBoards.AddRange(chosen);
-        var placements = AssignGlyphs(slotBoards, request, radius, nodesBySnoId, notes);
+            // 2. Assign glyphs to boards (slot 0 = starter) — rotation-independent, so done up front.
+            var slotBoards = new List<ParagonBoardDef> { request.StarterBoard };
+            slotBoards.AddRange(chosen);
+            var placements = AssignGlyphs(slotBoards, request, radius, nodesBySnoId, notes);
 
-        // 3. Enumerate arrangements: position sets grown from the starter's single gate,
-        //    boards permuted across positions, rotations picked per board by internal cost.
-        var profiles = slotBoards.Select(b => new BoardProfile(b, nodesBySnoId)).ToList();
-        var glyphSlots = placements.Select(p => p.BoardSlot).ToHashSet();
+            // 3. Enumerate arrangements: position sets grown from the starter's single gate,
+            //    boards permuted across positions, rotations picked per board by internal cost.
+            var profiles = slotBoards.Select(b => new BoardProfile(b, nodesBySnoId)).ToList();
+            var glyphSlots = placements.Select(p => p.BoardSlot).ToHashSet();
 
-        var candidates = new List<(double PreScore, List<PlacedBoard> Boards, List<int> SlotByPosition)>();
-        if (chosen.Count == 0)
-        {
-            candidates.Add((0, [new PlacedBoard { Board = request.StarterBoard }], [0]));
-        }
-        else
-        {
-            foreach (var positions in EnumeratePositionSets(chosen.Count))
+            var candidates = new List<(double PreScore, List<PlacedBoard> Boards, List<int> SlotByPosition)>();
+            if (chosen.Count == 0)
             {
-                foreach (var order in Permutations(Enumerable.Range(1, chosen.Count).ToArray()))
+                candidates.Add((0, [new PlacedBoard { Board = request.StarterBoard }], [0]));
+            }
+            else
+            {
+                foreach (var positions in EnumeratePositionSets(chosen.Count))
                 {
-                    var combo = BuildCombo(positions, order, profiles, glyphSlots);
-                    if (combo is not null)
-                        candidates.Add(combo.Value);
+                    foreach (var order in Permutations(Enumerable.Range(1, chosen.Count).ToArray()))
+                    {
+                        var combo = BuildCombo(positions, order, profiles, glyphSlots);
+                        if (combo is not null)
+                            candidates.Add(combo.Value);
+                    }
                 }
             }
-        }
-        if (candidates.Count == 0)
-            return LayoutOptimizerResult.Failed("No valid arrangement found for the chosen boards.");
 
-        // 4. Full evaluation of the best-ranked arrangements. Ranking: activated glyphs, then
-        //    active threshold bonuses (slot order changes their requirements), then fewest
-        //    points, then total stat delivered into glyph radii.
-        (LayoutOptimizerResult Result, ArrangementScore Score)? best = null;
-        foreach (var candidate in candidates.OrderBy(c => c.PreScore).Take(RerankCount))
-        {
-            var evaluated = Evaluate(candidate.Boards, slotBoards, placements, request, radius, nodesBySnoId, data);
-            if (evaluated is null)
-                continue;
-            var (result, score) = evaluated.Value;
-            if (best is null || score.Beats(best.Value.Score))
-                best = (result, score);
+            // 4. Full evaluation of the best-ranked arrangements. Ranking: activated glyphs, then
+            //    active threshold bonuses (slot order changes their requirements), then fewest
+            //    points, then total stat delivered into glyph radii.
+            foreach (var candidate in candidates.OrderBy(c => c.PreScore).Take(rerank))
+            {
+                var evaluated = Evaluate(candidate.Boards, slotBoards, placements, request, radius, nodesBySnoId, data);
+                if (evaluated is null)
+                    continue;
+                var (result, score) = evaluated.Value;
+                if (best is null || score.Beats(best.Value.Score))
+                {
+                    best = (result, score);
+                    bestNotes = notes;
+                }
+            }
         }
         if (best is null)
             return LayoutOptimizerResult.Failed("No arrangement of the chosen boards could be solved.");
 
         var final = best.Value.Result;
+        var allNotes = new List<string>();
+        if (fills.Count > 1)
+            allNotes.Add($"Compared {fills.Count} pool board combinations under the full solve " +
+                         "(ranked by activated glyphs, thresholds, then points) — kept the best.");
+        allNotes.AddRange(bestNotes);
+        allNotes.AddRange(final.Notes);
         return new LayoutOptimizerResult
         {
             Success = true,
@@ -158,8 +178,111 @@ public static class LayoutOptimizer
             GlyphPlacements = final.GlyphPlacements,
             Plan = final.Plan,
             Targets = final.Targets,
-            Notes = notes.Concat(final.Notes).ToList(),
+            Notes = allNotes,
         };
+    }
+
+    // ── Pool subset selection ────────────────────────────────────────────
+
+    /// <summary>
+    /// The pool subsets worth a full evaluation. The legacy greedy pick (best single-glyph fit
+    /// first) is always among them; when glyphs are selected and the pool offers alternatives,
+    /// subsets are enumerated over a reduced pool (top boards per glyph, then best overall) and
+    /// pre-ranked by the injective glyph-assignment score, so a board that only pays off in
+    /// combination (e.g. the sole activator of a second glyph) still gets its shot.
+    /// </summary>
+    private static List<List<ParagonBoardDef>> CandidateFills(
+        IReadOnlyList<ParagonBoardDef> must, IReadOnlyList<ParagonBoardDef> pool, int openSlots,
+        LayoutOptimizerRequest request, int radius, IReadOnlyDictionary<string, ParagonNodeDef> nodesBySnoId)
+    {
+        if (openSlots <= 0 || pool.Count == 0)
+            return [[]];
+
+        var glyphs = request.Glyphs.DistinctBy(g => g.InternalName).ToList();
+        int fillCount = Math.Min(openSlots, pool.Count);
+        var greedy = pool
+            .Select(board => (Board: board, Fit: glyphs.Count == 0
+                ? 0
+                : glyphs.Max(g => AttainableStat(board, g, radius, nodesBySnoId))))
+            .OrderByDescending(c => c.Fit)
+            .Take(fillCount)
+            .Select(c => c.Board)
+            .ToList();
+        if (glyphs.Count == 0 || pool.Count <= fillCount)
+            return [greedy]; // no signal (or no choice) — nothing to compare
+
+        // Reduced pool: the strongest few boards per glyph, topped up with the best overall.
+        var reduced = new List<ParagonBoardDef>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var glyph in glyphs)
+        {
+            foreach (var board in pool
+                         .Select(b => (Board: b, Fit: AttainableStat(b, glyph, radius, nodesBySnoId)))
+                         .Where(c => c.Fit > 0)
+                         .OrderByDescending(c => c.Fit)
+                         .Take(2))
+            {
+                if (reduced.Count < ReducedPoolSize && seen.Add(board.Board.InternalName))
+                    reduced.Add(board.Board);
+            }
+        }
+        foreach (var board in greedy.Concat(pool))
+        {
+            if (reduced.Count >= ReducedPoolSize)
+                break;
+            if (seen.Add(board.InternalName))
+                reduced.Add(board);
+        }
+
+        // Pre-rank subsets by the same score the glyph assignment maximizes.
+        var scored = new List<(List<ParagonBoardDef> Fill, (int Active, int Assigned, double Total) Score)>();
+        foreach (var fill in Combinations(reduced, fillCount))
+        {
+            var slotBoards = new List<ParagonBoardDef> { request.StarterBoard };
+            slotBoards.AddRange(must);
+            slotBoards.AddRange(fill);
+            var attainable = AttainableMatrix(glyphs, slotBoards, radius, nodesBySnoId);
+            scored.Add((fill, BestAssignment(attainable, glyphs.Count, slotBoards.Count, request.RequiredStat).Score));
+        }
+
+        var fills = scored
+            .OrderByDescending(s => s.Score.Active)
+            .ThenByDescending(s => s.Score.Assigned)
+            .ThenByDescending(s => s.Score.Total)
+            .Take(MaxSubsets)
+            .Select(s => s.Fill)
+            .ToList();
+
+        // Keep the legacy greedy subset in the running for continuity.
+        string Key(IEnumerable<ParagonBoardDef> boards) =>
+            string.Join("|", boards.Select(b => b.InternalName).OrderBy(n => n, StringComparer.OrdinalIgnoreCase));
+        if (fills.All(f => Key(f) != Key(greedy)))
+        {
+            if (fills.Count >= MaxSubsets)
+                fills.RemoveAt(fills.Count - 1);
+            fills.Add(greedy);
+        }
+        return fills;
+    }
+
+    private static IEnumerable<List<ParagonBoardDef>> Combinations(List<ParagonBoardDef> boards, int size)
+    {
+        var indices = new int[size];
+        IEnumerable<List<ParagonBoardDef>> Grow(int position, int from)
+        {
+            if (position == size)
+            {
+                yield return indices.Select(i => boards[i]).ToList();
+                yield break;
+            }
+            for (int i = from; i <= boards.Count - (size - position); i++)
+            {
+                indices[position] = i;
+                foreach (var combo in Grow(position + 1, i + 1))
+                    yield return combo;
+            }
+        }
+        return Grow(0, 0);
     }
 
     // ── Glyph assignment ─────────────────────────────────────────────────
@@ -196,42 +319,44 @@ public static class LayoutOptimizer
         return total;
     }
 
-    /// <summary>
-    /// Brute-force injective glyph→slot assignment maximizing (activatable count, assigned count,
-    /// total attainable stat). Glyphs that fit no free socket are dropped with a note.
-    /// </summary>
-    private static List<GlyphPlacement> AssignGlyphs(
-        IReadOnlyList<ParagonBoardDef> slotBoards, LayoutOptimizerRequest request, int radius,
-        IReadOnlyDictionary<string, ParagonNodeDef> nodesBySnoId, List<string> notes)
+    /// <summary>Attainable stat per (glyph, board slot), the input of the assignment search.</summary>
+    private static double[,] AttainableMatrix(
+        IReadOnlyList<ParagonGlyphDef> glyphs, IReadOnlyList<ParagonBoardDef> slotBoards, int radius,
+        IReadOnlyDictionary<string, ParagonNodeDef> nodesBySnoId)
     {
-        var glyphs = request.Glyphs.DistinctBy(g => g.InternalName).ToList();
-        if (glyphs.Count == 0)
-            return [];
-
         var attainable = new double[glyphs.Count, slotBoards.Count];
         for (int g = 0; g < glyphs.Count; g++)
         {
             for (int s = 0; s < slotBoards.Count; s++)
                 attainable[g, s] = AttainableStat(slotBoards[s], glyphs[g], radius, nodesBySnoId);
         }
+        return attainable;
+    }
 
+    /// <summary>
+    /// Brute-force injective glyph→slot assignment maximizing (activatable count, assigned count,
+    /// total attainable stat). Slot -1 means the glyph stays unplaced.
+    /// </summary>
+    private static (int[] Assignment, (int Active, int Assigned, double Total) Score) BestAssignment(
+        double[,] attainable, int glyphCount, int slotCount, double requiredStat)
+    {
         int[]? best = null;
         (int Active, int Assigned, double Total) bestScore = default;
-        var assignment = new int[glyphs.Count]; // slot index, or -1 for unplaced
-        var used = new bool[slotBoards.Count];
+        var assignment = new int[glyphCount]; // slot index, or -1 for unplaced
+        var used = new bool[slotCount];
         void Search(int g)
         {
-            if (g == glyphs.Count)
+            if (g == glyphCount)
             {
                 int active = 0, assigned = 0;
                 double total = 0;
-                for (int i = 0; i < glyphs.Count; i++)
+                for (int i = 0; i < glyphCount; i++)
                 {
                     if (assignment[i] < 0)
                         continue;
                     assigned++;
                     total += attainable[i, assignment[i]];
-                    if (attainable[i, assignment[i]] >= request.RequiredStat - 1e-9)
+                    if (attainable[i, assignment[i]] >= requiredStat - 1e-9)
                         active++;
                 }
                 var score = (active, assigned, total);
@@ -244,7 +369,7 @@ public static class LayoutOptimizer
             }
             assignment[g] = -1;
             Search(g + 1);
-            for (int s = 0; s < slotBoards.Count; s++)
+            for (int s = 0; s < slotCount; s++)
             {
                 if (used[s])
                     continue;
@@ -255,11 +380,25 @@ public static class LayoutOptimizer
             }
         }
         Search(0);
+        return (best!, bestScore);
+    }
+
+    /// <summary>Runs the assignment search and turns the winner into placements plus notes.</summary>
+    private static List<GlyphPlacement> AssignGlyphs(
+        IReadOnlyList<ParagonBoardDef> slotBoards, LayoutOptimizerRequest request, int radius,
+        IReadOnlyDictionary<string, ParagonNodeDef> nodesBySnoId, List<string> notes)
+    {
+        var glyphs = request.Glyphs.DistinctBy(g => g.InternalName).ToList();
+        if (glyphs.Count == 0)
+            return [];
+
+        var attainable = AttainableMatrix(glyphs, slotBoards, radius, nodesBySnoId);
+        var (best, _) = BestAssignment(attainable, glyphs.Count, slotBoards.Count, request.RequiredStat);
 
         var placements = new List<GlyphPlacement>();
         for (int g = 0; g < glyphs.Count; g++)
         {
-            if (best![g] < 0)
+            if (best[g] < 0)
             {
                 notes.Add($"No socket left for {glyphs[g].Name} — the layout has {slotBoards.Count} board(s).");
                 continue;

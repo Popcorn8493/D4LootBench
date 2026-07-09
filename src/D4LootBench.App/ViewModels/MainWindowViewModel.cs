@@ -108,6 +108,12 @@ public partial class MainWindowViewModel : ObservableObject
     [RelayCommand]
     private void OpenParagonPlanner() => ShowParagonPlannerRequested?.Invoke();
 
+    /// <summary>Raised when the Item Compare window should be opened. Handler must show the window.</summary>
+    public event Action? ShowItemCompareRequested;
+
+    [RelayCommand]
+    private void OpenItemCompare() => ShowItemCompareRequested?.Invoke();
+
     [RelayCommand]
     private void OpenHelp(string? topic) => OpenHelpRequested?.Invoke(topic ?? "GettingStarted");
 

@@ -13,6 +13,11 @@ public partial class BuildGuideImportDialog : Window
     {
         InitializeComponent();
         Vm = new BuildGuideImportViewModel(importer, generator);
+        Vm.PickOption = labels =>
+        {
+            var picker = new MobalyticsVariantPickerWindow(labels) { Owner = this };
+            return picker.ShowDialog() == true ? picker.SelectedIndex : -1;
+        };
         DataContext = Vm;
         Vm.ImportSucceeded += () => DialogResult = true;
     }

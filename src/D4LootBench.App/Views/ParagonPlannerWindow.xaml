@@ -47,6 +47,7 @@
 
     <Window.InputBindings>
         <KeyBinding Key="F5" Command="{Binding SolveCommand}" />
+        <KeyBinding Key="F6" Command="{Binding ReanalyzeCommand}" />
         <KeyBinding Key="S" Modifiers="Control" Command="{Binding SaveProjectCommand}" />
         <KeyBinding Key="O" Modifiers="Control" Command="{Binding OpenProjectCommand}" />
         <KeyBinding Key="I" Modifiers="Control" Command="{Binding ImportBuildCommand}" />
@@ -76,6 +77,13 @@
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="&#xE9D2;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,5,0" />
                             <TextBlock Text="Solve Path" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                    <Button Command="{Binding ReanalyzeCommand}" Padding="10,3" Margin="0,0,6,0"
+                            ToolTip="Re-run everything after a change: solve the path fresh, then spend ALL remaining points of the pool with the Optimize-tab settings (focused stats, rare/threshold preferences) (F6)">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" Margin="0,0,5,0" />
+                            <TextBlock Text="Re-analyze" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
                     <Button Command="{Binding ClearTargetsCommand}" Content="Clear Targets" Padding="10,3" />
@@ -355,9 +363,13 @@
                                                             <Grid.ColumnDefinitions>
                                                                 <ColumnDefinition Width="*" />
                                                                 <ColumnDefinition Width="Auto" />
+                                                                <ColumnDefinition Width="Auto" />
                                                             </Grid.ColumnDefinitions>
                                                             <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
                                                             <TextBlock Grid.Column="1" Text="{Binding Value}" Margin="8,0,0,0" />
+                                                            <!-- ceiling if every remaining node granting the stat were bought -->
+                                                            <TextBlock Grid.Column="2" Text="{Binding Possible}" Margin="4,0,0,0"
+                                                                       FontSize="11" Foreground="#999" FontWeight="Normal" />
                                                         </Grid>
                                                     </Button>
                                                 </DataTemplate>
@@ -446,14 +458,27 @@
                                         <ItemsControl ItemsSource="{Binding FocusStats}" Margin="4,2">
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate DataType="{x:Type vm:FocusStatViewModel}">
-                                                    <CheckBox IsChecked="{Binding IsSelected}" Content="{Binding DisplayName}"
-                                                              FontSize="11" Margin="0,1" />
+                                                    <Grid Margin="0,1">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*" />
+                                                            <ColumnDefinition Width="Auto" />
+                                                        </Grid.ColumnDefinitions>
+                                                        <CheckBox IsChecked="{Binding IsSelected}" Content="{Binding DisplayName}"
+                                                                  FontSize="11" VerticalAlignment="Center" />
+                                                        <ComboBox Grid.Column="1" ItemsSource="{x:Static vm:FocusStatViewModel.Priorities}"
+                                                                  SelectedItem="{Binding Priority}" Width="66" FontSize="11"
+                                                                  Visibility="{Binding IsSelected, Converter={StaticResource BoolToVis}}"
+                                                                  ToolTip="How hard the maximizer chases this stat: High weighs 3×, Low 0.3× a Normal stat" />
+                                                    </Grid>
                                                 </DataTemplate>
                                             </ItemsControl.ItemTemplate>
                                         </ItemsControl>
                                 </Border>
                                 <CheckBox IsChecked="{Binding PreferRareNodes}" Content="Prefer rare (yellow) nodes first" FontSize="11" Margin="0,0,0,4"
-                                          ToolTip="Buy reachable rare nodes cheapest-first before spending the rest on the focused stats" />
+                                          ToolTip="Buy reachable rare nodes before spending the rest on the focused stats" />
+                                <CheckBox IsChecked="{Binding RealisticRares}" Content="Rank rares by attainable thresholds" FontSize="11" Margin="18,0,0,4"
+                                          IsEnabled="{Binding PreferRareNodes}"
+                                          ToolTip="Buy 'good' rares first: threshold bonuses already met, then ones the boards can realistically still supply the stat for, then plain rares — rares whose bonus is out of reach come last. Requirements count your Character Stats (level/gear)." />
                                 <CheckBox IsChecked="{Binding ActivateThresholds}" Content="Activate rare-node thresholds" FontSize="11" Margin="0,0,0,4"
                                           ToolTip="Buy whatever core stat unmet rare-node threshold bonuses are short of (smallest deficit first) before spending on focused stats. Requirements check the character TOTAL — enter your level/gear stats under Character Stats. Warns when the boards can't supply enough." />
                                 <Button Command="{Binding MaximizePointsCommand}" Content="Spend Remaining Points" Padding="10,3" Margin="0,2,0,0"
@@ -669,6 +694,14 @@
                                             <Setter TargetName="Shape" Property="Width" Value="18" />
                                             <Setter TargetName="Shape" Property="Height" Value="18" />
                                         </DataTrigger>
+                                        <!-- A socketed glyph fills its socket solid (name in the board label and tooltip) -->
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding Kind}" Value="GlyphSocket" />
+                                                <Condition Binding="{Binding HasSocketedGlyph}" Value="True" />
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter TargetName="Shape" Property="Background" Value="{StaticResource SocketNodeBrush}" />
+                                        </MultiDataTrigger>
                                         <DataTrigger Binding="{Binding Kind}" Value="Gate">
                                             <Setter TargetName="Shape" Property="BorderBrush" Value="{StaticResource GateNodeBrush}" />
                                             <Setter TargetName="Shape" Property="BorderThickness" Value="2.5" />
@@ -689,30 +722,6 @@
                                 </ControlTemplate>
                             </Button.Template>
                         </Button>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-            <!-- Socketed glyph names, anchored under their sockets -->
-            <ItemsControl ItemsSource="{Binding GlyphLabels}" IsHitTestVisible="False">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <Canvas />
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemContainerStyle>
-                    <Style TargetType="ContentPresenter">
-                        <Setter Property="Canvas.Left" Value="{Binding CanvasLeft}" />
-                        <Setter Property="Canvas.Top" Value="{Binding CanvasTop}" />
-                    </Style>
-                </ItemsControl.ItemContainerStyle>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate DataType="{x:Type vm:BoardLabel}">
-                        <TextBlock Text="{Binding Text}" Width="120" TextAlignment="Center"
-                                   Foreground="#8FE3D2" FontSize="10" FontWeight="SemiBold">
-                            <TextBlock.Effect>
-                                <DropShadowEffect Color="Black" BlurRadius="3" ShadowDepth="0" Opacity="0.9" />
-                            </TextBlock.Effect>
-                        </TextBlock>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
@@ -789,7 +798,13 @@
                             <Grid Style="{StaticResource Swatch}">
                                 <Ellipse Width="13" Height="13" Stroke="{StaticResource SocketNodeBrush}" StrokeThickness="3" />
                             </Grid>
-                            <TextBlock Text="Glyph socket" />
+                            <TextBlock Text="Empty glyph socket" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,1">
+                            <Grid Style="{StaticResource Swatch}">
+                                <Ellipse Width="13" Height="13" Fill="{StaticResource SocketNodeBrush}" />
+                            </Grid>
+                            <TextBlock Text="Socketed glyph" />
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,1">
                             <Grid Style="{StaticResource Swatch}">

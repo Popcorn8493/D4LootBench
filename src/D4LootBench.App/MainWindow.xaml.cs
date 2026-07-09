@@ -3,6 +3,8 @@ using System.Windows;
 using D4LootBench.App.Services;
 using D4LootBench.App.ViewModels;
 using D4LootBench.App.Views;
+using D4LootBench.Core.Compare;
+using D4LootBench.Core.Data;
 
 namespace D4LootBench.App;
 
@@ -10,18 +12,22 @@ public partial class MainWindow
 {
     private readonly MainWindowViewModel  _vm;
     private readonly WindowSettingsService _windowSettings;
+    private readonly IFilterDataService _data;
     private double _savedPanelHeight = 220;
     private HelpWindow? _helpWindow;
     private ParagonPlannerWindow? _paragonWindow;
 
-    public MainWindow(MainWindowViewModel vm, WindowSettingsService windowSettings)
+    public MainWindow(
+        MainWindowViewModel vm, WindowSettingsService windowSettings, IFilterDataService data)
     {
         InitializeComponent();
         _vm             = vm;
         _windowSettings = windowSettings;
+        _data           = data;
         DataContext     = _vm;
         _vm.ShowRawEditorRequested += OnShowRawEditorRequested;
         _vm.ShowParagonPlannerRequested += OnShowParagonPlannerRequested;
+        _vm.ShowItemCompareRequested += OnShowItemCompareRequested;
         _vm.OpenHelpRequested     += OnOpenHelpRequested;
         _vm.ShowAboutRequested    += OnShowAboutRequested;
         _vm.PropertyChanged       += OnVmPropertyChanged;
@@ -111,6 +117,33 @@ public partial class MainWindow
         {
             _paragonWindow.Activate();
         }
+    }
+
+    /// <summary>
+    /// Opens Item Compare seeded with the loaded filter (the guide's wish list) and, when the
+    /// paragon planner is open, its unmet threshold deficits mapped to core-stat gear affixes.
+    /// </summary>
+    private void OnShowItemCompareRequested()
+    {
+        var reference = _vm.Editor?.BuildRuleset();
+
+        var needs = new List<StatNeed>();
+        if (_paragonWindow?.DataContext is ParagonPlannerViewModel paragon)
+        {
+            foreach (var need in paragon.UnmetThresholdNeeds)
+            {
+                // "Willpower_Total" → every "+Willpower"/"Willpower" gear affix variant, so the
+                // need matches whichever entry the user picks in the affix combo.
+                string coreStat = need.Attribute.Split('_')[0];
+                foreach (var affix in _data.Affixes.All)
+                {
+                    if (affix.Name.TrimStart('+', ' ').Equals(coreStat, StringComparison.OrdinalIgnoreCase))
+                        needs.Add(new StatNeed(affix.Hash, need.StatName, need.Deficit, need.NodeName));
+                }
+            }
+        }
+
+        new ItemCompareWindow(new ItemCompareViewModel(_data, reference, needs)) { Owner = this }.Show();
     }
 
     private void OnOpenHelpRequested(string topic)

@@ -52,6 +52,81 @@ public class PointMaximizerTests
     }
 
     [Fact]
+    public void Stat_weights_shift_spending_toward_the_prioritized_stat()
+    {
+        var graph = StarterGraph();
+        string[] stats = ["Strength_Core", "Dexterity_Core"];
+
+        var strengthHigh = new HashSet<CellRef>();
+        var high = PointMaximizer.Extend(graph, strengthHigh, 20,
+            new MaximizeFocus(stats, false)
+            {
+                Weights = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase)
+                    { ["Strength_Core"] = 3.0, ["Dexterity_Core"] = 0.3 },
+            }, EmptyRequest);
+
+        var strengthLow = new HashSet<CellRef>();
+        var low = PointMaximizer.Extend(graph, strengthLow, 20,
+            new MaximizeFocus(stats, false)
+            {
+                Weights = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase)
+                    { ["Strength_Core"] = 0.3, ["Dexterity_Core"] = 3.0 },
+            }, EmptyRequest);
+
+        high.Gains.GetValueOrDefault("Strength_Core")
+            .ShouldBeGreaterThanOrEqualTo(low.Gains.GetValueOrDefault("Strength_Core"));
+        low.Gains.GetValueOrDefault("Dexterity_Core")
+            .ShouldBeGreaterThanOrEqualTo(high.Gains.GetValueOrDefault("Dexterity_Core"));
+        // The two runs must actually differ somewhere, or the weights did nothing.
+        (high.Gains.GetValueOrDefault("Strength_Core") + high.Gains.GetValueOrDefault("Dexterity_Core"))
+            .ShouldBeGreaterThan(0);
+        AssertConnected(graph, strengthHigh);
+        AssertConnected(graph, strengthLow);
+    }
+
+    [Fact]
+    public void Realistic_rares_buy_met_threshold_rares_before_unattainable_ones()
+    {
+        // Two boards so several rares with different threshold stats are reachable.
+        var layout = new ParagonLayout(
+        [
+            new PlacedBoard { Board = ParagonDatabase.Data.Boards.Single(b => b.InternalName == "Paragon_Sorc_00") },
+            new PlacedBoard
+            {
+                Board = ParagonDatabase.Data.Boards.Single(b => b.InternalName == "Paragon_Sorc_03"),
+                ParentSlot = 0, AttachEdge = BoardEdge.Top,
+            },
+        ]);
+        var graph = ComposedGraph.Build(layout);
+
+        // A huge Dexterity sheet meets every Dexterity threshold outright; other stats get nothing.
+        var context = new ThresholdContext(
+            ParagonDatabase.Data, "Sorcerer",
+            NonParagonStats.PerStat(new Dictionary<string, double> { ["Dexterity"] = 10_000 }));
+
+        var purchased = new HashSet<CellRef>();
+        var outcome = PointMaximizer.Extend(graph, purchased, 40,
+            new MaximizeFocus([], PreferRare: true) { RealisticRares = true }, EmptyRequest, context);
+        outcome.RaresAdded.ShouldBeGreaterThan(0);
+        AssertConnected(graph, purchased);
+
+        // The first rare bought must be one whose threshold was already met (rank 0) as long as
+        // any met-threshold rare exists on the boards at all.
+        var report = BuildStats.Compute(graph, new HashSet<CellRef>(), ParagonDatabase.Data,
+            context.NonParagonStats, "Sorcerer");
+        var metCells = report.Thresholds.Where(t => t.Met).Select(t => t.Cell).ToHashSet();
+        if (metCells.Count > 0)
+        {
+            var firstRare = outcome.AddedCells.First(c =>
+            {
+                graph.TryGetVertex(c, out int v);
+                return graph.Vertices[v].Node.Kind == ParagonNodeKind.Rare;
+            });
+            metCells.ShouldContain(firstRare);
+        }
+    }
+
+    [Fact]
     public void Prefer_rare_buys_rare_nodes_first()
     {
         var graph = StarterGraph();

@@ -54,6 +54,10 @@ public partial class ParagonCellViewModel : ObservableObject
     [ObservableProperty]
     private bool _isInGlyphRadius;
 
+    /// <summary>A glyph socket cell with a glyph assigned — rendered solid instead of hollow.</summary>
+    [ObservableProperty]
+    private bool _hasSocketedGlyph;
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsAvoided))]
     [NotifyPropertyChangedFor(nameof(IsExcluded))]
