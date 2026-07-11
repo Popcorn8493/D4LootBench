@@ -30,6 +30,31 @@ public sealed record MaximizeFocus(
     /// <see cref="ThresholdContext"/>; without one the cheapest-first order is kept.
     /// </summary>
     public bool RealisticRares { get; init; }
+
+    /// <summary>
+    /// Fraction (0–1) of the leftover budget reserved for survivability: a dedicated phase buys
+    /// the best defensive value available (life, armor, resists, dodge, healing…) BEFORE the
+    /// focused-stat spend, defensive rares pass the focus filter, and the reallocation pass
+    /// treats defensive purchases as valuable instead of free fodder.
+    /// </summary>
+    public double DefenseShare { get; init; }
+
+    /// <summary>Attributes that keep the character alive — the defense basket's membership.</summary>
+    public static bool IsDefensive(string attribute)
+    {
+        foreach (var marker in DefensiveMarkers)
+        {
+            if (attribute.Contains(marker, StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+        return false;
+    }
+
+    private static readonly string[] DefensiveMarkers =
+    [
+        "Hitpoints", "Armor", "Resist", "Dodge", "Healing", "Regen",
+        "Fortify", "Barrier", "Damage_Reduction", "CC_Duration", "Life",
+    ];
 }
 
 /// <summary>What threshold checks need beyond the graph: requirements scale with attachment
@@ -91,6 +116,10 @@ public static class PointMaximizer
             if (graph.TryGetVertex(cell, out int v))
                 tree.Add(v);
         }
+
+        // User excludes only — snapshotted before limit-blocking mutates the shared array, so
+        // the reallocation pass can tell "never touch" apart from "group currently at cap".
+        var userBlocked = (bool[])blocked.Clone();
 
         // Limit groups: full groups become off-limits, routing detours around group members
         // (the penalty keeps traversal from burning the allowance), and candidate paths that
@@ -157,6 +186,39 @@ public static class PointMaximizer
             return total;
         }
 
+        // The defense basket: its own normalization (per defensive attribute across the layout),
+        // independent of which stats are focused — survivability is measured, not opted into.
+        var defenseMean = new Dictionary<string, (double Sum, int Count)>(StringComparer.OrdinalIgnoreCase);
+        if (focus.DefenseShare > 0)
+        {
+            foreach (var vertex in graph.Vertices)
+            {
+                foreach (var a in vertex.Node.Attributes)
+                {
+                    if (a.IsThresholdBonus || a.Value is not double value || !MaximizeFocus.IsDefensive(a.Attribute))
+                        continue;
+                    var (sum, count) = defenseMean.GetValueOrDefault(a.Attribute);
+                    defenseMean[a.Attribute] = (sum + Math.Abs(value), count + 1);
+                    gainSet.Add(a.Attribute); // report defensive gains too
+                }
+            }
+        }
+
+        double DefenseValue(int v)
+        {
+            if (focus.DefenseShare <= 0)
+                return 0;
+            double total = 0;
+            foreach (var a in graph.Vertices[v].Node.Attributes)
+            {
+                if (a.IsThresholdBonus || a.Value is not double value
+                    || !defenseMean.TryGetValue(a.Attribute, out var mean))
+                    continue;
+                total += value / (mean.Sum / mean.Count);
+            }
+            return total;
+        }
+
         var dist = new int[n];
         var from = new int[n];
         var added = new List<CellRef>();
@@ -199,9 +261,17 @@ public static class PointMaximizer
         // With RealisticRares, threshold attainability leads instead: bonuses already met, then
         // ones the boards can realistically still supply, then plain rares, and rares whose
         // bonus is out of reach last — so points chase "good" rares, not just near ones.
+        // When the user picked explicit focus stats, a rare that DIRECTLY grants none of them is
+        // skipped outright — no points, and crucially no Limit-group allowance, get spent pathing
+        // to a rare the build doesn't want. Threshold bonuses deliberately don't qualify a rare:
+        // nearly every rare's bonus touches some common stat (resists, armor), which would let
+        // off-build life rares sneak back in. Target such a rare manually if its bonus matters.
         if (focus.PreferRare)
         {
             bool realistic = focus.RealisticRares && thresholds is not null;
+            bool explicitFocus = focus.Attributes.Count > 0;
+            bool WantedRare(int v) => !explicitFocus || NormValue(v) > 1e-9
+                || DefenseValue(v) > 1e-9; // with a defense share, survivability rares are wanted
             while (remaining > 0)
             {
                 Func<int, int> rank = _ => 0;
@@ -253,7 +323,7 @@ public static class PointMaximizer
                     for (int v = 0; v < n; v++)
                     {
                         if (tree.Contains(v) || blocked[v] || dist[v] >= Infinity || rejected.Contains(v)
-                            || graph.Vertices[v].Node.Kind != ParagonNodeKind.Rare)
+                            || graph.Vertices[v].Node.Kind != ParagonNodeKind.Rare || !WantedRare(v))
                             continue;
                         int cost = PathCost(v);
                         if (cost > remaining)
@@ -378,6 +448,50 @@ public static class PointMaximizer
             }
         }
 
+        // Phase D: the guaranteed survivability slice. A fraction of what's left buys the best
+        // defensive value reachable, regardless of the (usually offense-heavy) focus weights —
+        // "balance in toughness where available" as an explicit budget, not a hope.
+        if (focus.DefenseShare > 0 && remaining > 0)
+        {
+            int defenseBudget = Math.Max(1, (int)Math.Round(remaining * focus.DefenseShare));
+            while (defenseBudget > 0 && remaining > 0)
+            {
+                RunDijkstra(graph, tree, weights, blocked, dist, from);
+                var rejected = new HashSet<int>();
+                int best;
+                while (true)
+                {
+                    best = -1;
+                    double bestRatio = 0;
+                    for (int v = 0; v < n; v++)
+                    {
+                        if (tree.Contains(v) || blocked[v] || dist[v] >= Infinity || rejected.Contains(v))
+                            continue;
+                        double value = DefenseValue(v);
+                        if (value <= 0)
+                            continue;
+                        int cost = PathCost(v);
+                        if (cost > remaining)
+                            continue;
+                        double ratio = value / cost;
+                        if (best < 0 || ratio > bestRatio)
+                        {
+                            best = v;
+                            bestRatio = ratio;
+                        }
+                    }
+                    if (best < 0 || !limits.PathWouldViolate(best, from, tree))
+                        break;
+                    rejected.Add(best);
+                }
+                if (best < 0)
+                    break;
+                int costOfBest = PathCost(best);
+                Absorb(best);
+                defenseBudget -= costOfBest;
+            }
+        }
+
         // Phase 2: focused stats by value-per-point.
         while (remaining > 0)
         {
@@ -420,9 +534,12 @@ public static class PointMaximizer
         // the deficit stat until the threshold activates; failed attempts roll back.
         if (focus.ActivateThresholds && thresholds is not null)
         {
+            // Defensive purchases count as valuable, or the reallocation would treat the
+            // defense slice as free fodder and trade it straight back into thresholds.
             ReallocateForThresholds(
-                graph, purchased, tree, request, thresholds, limits, blocked,
-                added, gains, gainSet, ref raresAdded, notes, NormValue);
+                graph, purchased, tree, request, thresholds, limits, userBlocked,
+                added, gains, gainSet, ref raresAdded, notes,
+                v => NormValue(v) + DefenseValue(v) * focus.DefenseShare * 2);
             metAfter = BuildStats.Compute(graph, purchased, thresholds.Data,
                 thresholds.NonParagonStats, thresholds.ClassName, thresholds.CellMultipliers).ThresholdsMet;
         }
@@ -436,7 +553,7 @@ public static class PointMaximizer
 
     private static void ReallocateForThresholds(
         ComposedGraph graph, ISet<CellRef> purchased, HashSet<int> tree, PlanRequest request,
-        ThresholdContext thresholds, LimitTracker limits, bool[] blocked,
+        ThresholdContext thresholds, LimitTracker limits, bool[] userBlocked,
         List<CellRef> added, Dictionary<string, double> gains, HashSet<string> gainSet,
         ref int raresAdded, List<string> notes, Func<int, double> normValue)
     {
@@ -519,7 +636,7 @@ public static class PointMaximizer
                 double buyValue = 0;
                 for (int v = 0; v < n; v++)
                 {
-                    if (tree.Contains(v) || (blocked[v] && !limits.IsLimitBlocked(v)) || limits.WouldViolate(v))
+                    if (tree.Contains(v) || userBlocked[v] || limits.WouldViolate(v))
                         continue;
                     double value = GrantOf(v, targetAttribute);
                     if (value <= buyValue)

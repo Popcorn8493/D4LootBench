@@ -31,18 +31,32 @@ public partial class ParagonCellViewModel : ObservableObject
     public string Kind => Node.Kind.ToString();
     public bool IsStart => Node.Kind == ParagonNodeKind.Start;
 
-    public string ToolTipText => DynamicInfo is null
-        ? Paragon.ParagonDisplay.DescribeNode(Node)
-        : Paragon.ParagonDisplay.DescribeNode(Node) + Environment.NewLine + Environment.NewLine + DynamicInfo;
+    public string ToolTipText => string.Join(
+        Environment.NewLine + Environment.NewLine,
+        new[] { Paragon.ParagonDisplay.DescribeNode(Node), BuffInfo, DynamicInfo }
+            .Where(part => !string.IsNullOrEmpty(part)));
 
     /// <summary>Live extra tooltip lines: threshold math on rares, the socketed glyph on sockets.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ToolTipText))]
     private string? _dynamicInfo;
 
+    /// <summary>Effective values under "+X% to [rarity] nodes in radius" glyph buffs.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ToolTipText))]
+    private string? _buffInfo;
+
     /// <summary>Purchased and granting the stat picked in the Stat Totals panel.</summary>
     [ObservableProperty]
     private bool _isStatHighlighted;
+
+    /// <summary>Added by the last purchase-changing action — "here go your new points".</summary>
+    [ObservableProperty]
+    private bool _isNewlyAdded;
+
+    /// <summary>Dropped by the last purchase-changing action — "refund this one in game".</summary>
+    [ObservableProperty]
+    private bool _isRemoved;
 
     [ObservableProperty]
     private bool _isTarget;

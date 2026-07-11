@@ -172,10 +172,13 @@ public class PlacementAnalyzerSwapTests
         var baseline = PlanSolver.Solve(graph, request);
         baseline.Success.ShouldBeTrue(baseline.Error);
 
+        // Occupy every socket so the assignment search can't sidestep the swap by just moving
+        // the glyph to a free socket (that escape is exactly what it's supposed to find).
         var pipeline = new PlacementPipeline(
             150,
             new MaximizeFocus([], PreferRare: true),
-            new ThresholdContext(ParagonDatabase.Data, "Sorcerer", NonParagonStats.Uniform(0)));
+            new ThresholdContext(ParagonDatabase.Data, "Sorcerer", NonParagonStats.Uniform(0)),
+            SocketedGlyphs: [new PipelineGlyph(0, Enchanter, 100), new PipelineGlyph(1, Enchanter, 100)]);
         var suggestions = PlacementAnalyzer.SuggestBoardSwaps(
             layout!, request, baseline, ParagonDatabase.BoardsForClass("Sorcerer").ToList(),
             pipeline: pipeline);
@@ -183,6 +186,134 @@ public class PlacementAnalyzerSwapTests
         suggestions.ShouldNotBeEmpty();
         suggestions[0].Description.ShouldContain("at full spend");
         suggestions[0].Description.ShouldContain("glyph");
+    }
+
+    [Fact]
+    public void Pipeline_assignment_moves_a_glyph_to_a_socket_that_activates_it()
+    {
+        string attribute = GlyphInfo.PrimarySourceAttribute(Enchanter)!;
+        int radius = GlyphRadius.RadiusForLevel(100);
+        var weak = ParagonDatabase.BoardsForClass("Sorcerer")
+            .Where(b => b.BoardIndex != 0)
+            .Select(b => (Board: b, Fit: Fit(b, attribute, radius)))
+            .Where(b => b.Fit > 0)
+            .OrderBy(b => b.Fit)
+            .First();
+        double starterFit = Fit(Starter, attribute, radius);
+        if (starterFit <= weak.Fit)
+            return; // data no longer offers the free stronger socket this test needs
+
+        ParagonLayout? layout = null;
+        for (int rotation = 0; rotation < 4 && layout is null; rotation++)
+        {
+            try
+            {
+                var candidate = new ParagonLayout(
+                [
+                    new PlacedBoard { Board = Starter },
+                    new PlacedBoard
+                    {
+                        Board = weak.Board, ParentSlot = 0,
+                        AttachEdge = BoardEdge.Top, RotationSteps = rotation,
+                    },
+                ]);
+                ComposedGraph.Build(candidate);
+                layout = candidate;
+            }
+            catch (Exception ex) when (ex is ArgumentException or InvalidOperationException) { }
+        }
+        var graph = ComposedGraph.Build(layout!);
+        var socket = graph.Vertices.Single(v =>
+            v.Cell.BoardSlot == 1 && v.Node.Kind == ParagonNodeKind.GlyphSocket).Cell;
+        var request = new PlanRequest
+        {
+            Targets = graph.Vertices
+                .Where(v => v.Cell.BoardSlot == 1 && v.Node.Kind == ParagonNodeKind.Legendary)
+                .Select(v => v.Cell).ToList(),
+            // Unreachable on the weak board, attainable on the starter's free socket.
+            GlyphGoals = [new GlyphGoal(socket, attribute, (weak.Fit + starterFit) / 2, radius, "Enchanter")],
+        };
+
+        var pipeline = new PlacementPipeline(
+            150,
+            new MaximizeFocus([], PreferRare: true),
+            new ThresholdContext(ParagonDatabase.Data, "Sorcerer", NonParagonStats.Uniform(0)),
+            SocketedGlyphs: [new PipelineGlyph(1, Enchanter, 100)]);
+        var result = PlacementAnalyzer.EvaluatePipeline(graph, request, pipeline);
+
+        result.ShouldNotBeNull();
+        result.GlyphMoves.ShouldContain(m => m.FromSlot == 1 && m.ToSlot == 0);
+        result.GlyphsActive.ShouldBe(1);
+
+        // The same gain must surface as an applyable suggestion — a baseline-absorbed move the
+        // user never sees is exactly the bug this suggester exists to prevent.
+        var baseline = PlanSolver.Solve(graph, request);
+        baseline.Success.ShouldBeTrue(baseline.Error);
+        var suggestions = PlacementAnalyzer.SuggestGlyphAssignment(graph, request, baseline, pipeline);
+        var suggestion = suggestions.ShouldHaveSingleItem();
+        suggestion.Description.ShouldContain("Re-socket glyphs");
+        suggestion.Description.ShouldContain("Enchanter");
+        var change = suggestion.Change.ShouldBeOfType<GlyphSlotReassignment>();
+        change.Moves.ShouldContain(m => m.FromSlot == 1 && m.ToSlot == 0);
+    }
+
+    [Fact]
+    public void Reattachment_suggestions_are_wellformed_and_applicable()
+    {
+        // A three-board chain gives the leaf board somewhere else to go.
+        var boards = ParagonDatabase.BoardsForClass("Sorcerer").Where(b => b.BoardIndex != 0).ToList();
+        ParagonLayout? layout = null;
+        foreach (var second in boards.Take(4))
+        {
+            for (int r1 = 0; r1 < 4 && layout is null; r1++)
+            {
+                for (int r2 = 0; r2 < 4 && layout is null; r2++)
+                {
+                    try
+                    {
+                        var candidate = new ParagonLayout(
+                        [
+                            new PlacedBoard { Board = Starter },
+                            new PlacedBoard { Board = boards[0], ParentSlot = 0, AttachEdge = BoardEdge.Top, RotationSteps = r1 },
+                            new PlacedBoard { Board = second == boards[0] ? boards[1] : second, ParentSlot = 1, AttachEdge = BoardEdge.Top, RotationSteps = r2 },
+                        ]);
+                        ComposedGraph.Build(candidate);
+                        layout = candidate;
+                    }
+                    catch (Exception ex) when (ex is ArgumentException or InvalidOperationException) { }
+                }
+            }
+            if (layout is not null)
+                break;
+        }
+        layout.ShouldNotBeNull();
+        var graph = ComposedGraph.Build(layout);
+        var request = new PlanRequest
+        {
+            Targets = graph.Vertices
+                .Where(v => v.Node.Kind == ParagonNodeKind.Legendary)
+                .Select(v => v.Cell).ToList(),
+        };
+        var baseline = PlanSolver.Solve(graph, request);
+        baseline.Success.ShouldBeTrue(baseline.Error);
+
+        var suggestions = PlacementAnalyzer.SuggestReattachments(layout, request, baseline);
+        foreach (var suggestion in suggestions)
+        {
+            suggestion.Description.ShouldContain("Re-attach");
+            var change = suggestion.Change.ShouldBeOfType<ReattachChange>();
+            // The suggested placement must build into a valid layout.
+            var moved = layout.Boards.ToList();
+            var placed = moved[change.Slot];
+            moved[change.Slot] = new PlacedBoard
+            {
+                Board = placed.Board,
+                ParentSlot = change.ParentSlot,
+                AttachEdge = change.Edge,
+                RotationSteps = change.RotationSteps,
+            };
+            Should.NotThrow(() => ComposedGraph.Build(new ParagonLayout(moved)));
+        }
     }
 
     [Fact]

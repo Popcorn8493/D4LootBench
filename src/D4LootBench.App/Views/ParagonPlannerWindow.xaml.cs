@@ -11,14 +11,33 @@ public partial class ParagonPlannerWindow : Window
         InitializeComponent();
     }
 
+    /// <summary>Right-click on a node: an explicit menu instead of blind state cycling.</summary>
     private void Cell_MouseRightButtonUp(object sender, MouseButtonEventArgs e)
     {
-        if (sender is FrameworkElement { DataContext: ParagonCellViewModel cell } &&
-            DataContext is ParagonPlannerViewModel viewModel)
+        if (sender is not FrameworkElement { DataContext: ParagonCellViewModel cell } element
+            || DataContext is not ParagonPlannerViewModel viewModel || cell.IsStart)
+            return;
+        e.Handled = true;
+
+        var menu = new System.Windows.Controls.ContextMenu { PlacementTarget = element };
+        void Add(string header, bool isChecked, Action action)
         {
-            viewModel.CycleCellConstraintCommand.Execute(cell);
-            e.Handled = true;
+            var item = new System.Windows.Controls.MenuItem { Header = header, IsChecked = isChecked };
+            item.Click += (_, _) => action();
+            menu.Items.Add(item);
         }
+
+        Add(cell.IsTarget ? "Remove target" : "Mark as target", cell.IsTarget,
+            () => viewModel.ToggleTargetCommand.Execute(cell));
+        menu.Items.Add(new System.Windows.Controls.Separator());
+        Add("Avoid — cross only when it saves several nodes", cell.Constraint == CellConstraint.Avoid,
+            () => viewModel.SetCellConstraint(cell, CellConstraint.Avoid));
+        Add("Off-limits — never path through or buy", cell.Constraint == CellConstraint.Exclude,
+            () => viewModel.SetCellConstraint(cell, CellConstraint.Exclude));
+        if (cell.Constraint != CellConstraint.None)
+            Add("Clear mark", false, () => viewModel.SetCellConstraint(cell, CellConstraint.None));
+
+        menu.IsOpen = true;
     }
 
     /// <summary>Drops the Recent-projects menu below its button on left-click.</summary>

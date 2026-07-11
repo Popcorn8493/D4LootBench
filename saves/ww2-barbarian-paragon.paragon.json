@@ -12,51 +12,57 @@
       "boardInternalName": "Paragon_Barb_03",
       "parentSlot": 0,
       "attachEdge": "Top",
-      "rotationSteps": 0
-    },
-    {
-      "boardInternalName": "Paragon_Barb_02",
-      "parentSlot": 1,
-      "attachEdge": "Top",
       "rotationSteps": 1
-    },
-    {
-      "boardInternalName": "Paragon_Barb_07",
-      "parentSlot": 1,
-      "attachEdge": "Left",
-      "rotationSteps": 2
     },
     {
       "boardInternalName": "Paragon_Barb_06",
       "parentSlot": 1,
       "attachEdge": "Right",
-      "rotationSteps": 0
+      "rotationSteps": 3
+    },
+    {
+      "boardInternalName": "Paragon_Barb_02",
+      "parentSlot": 1,
+      "attachEdge": "Top",
+      "rotationSteps": 2
+    },
+    {
+      "boardInternalName": "Paragon_Barb_07",
+      "parentSlot": 3,
+      "attachEdge": "Right",
+      "rotationSteps": 3
     }
   ],
   "targets": [
     {
       "boardSlot": 1,
+      "x": 10,
+      "y": 6
+    },
+    {
+      "boardSlot": 3,
+      "x": 11,
+      "y": 11
+    },
+    {
+      "boardSlot": 2,
       "x": 6,
       "y": 10
     },
     {
-      "boardSlot": 2,
-      "x": 11,
-      "y": 9
-    },
-    {
-      "boardSlot": 3,
-      "x": 12,
-      "y": 8
-    },
-    {
       "boardSlot": 4,
-      "x": 10,
-      "y": 6
+      "x": 12,
+      "y": 12
     }
   ],
   "avoidCells": [],
-  "excludeCells": [],
+  "excludeCells": [
+    {
+      "boardSlot": 0,
+      "x": 8,
+      "y": 11
+    }
+  ],
   "purchasedCells": [
     {
       "boardSlot": 0,
@@ -65,6 +71,11 @@
     },
     {
       "boardSlot": 0,
+      "x": 9,
+      "y": 1
+    },
+    {
+      "boardSlot": 0,
       "x": 10,
       "y": 1
     },
@@ -85,8 +96,8 @@
     },
     {
       "boardSlot": 0,
-      "x": 9,
-      "y": 4
+      "x": 12,
+      "y": 3
     },
     {
       "boardSlot": 0,
@@ -95,22 +106,27 @@
     },
     {
       "boardSlot": 0,
-      "x": 9,
+      "x": 12,
+      "y": 4
+    },
+    {
+      "boardSlot": 0,
+      "x": 11,
       "y": 5
     },
     {
       "boardSlot": 0,
-      "x": 11,
+      "x": 13,
+      "y": 5
+    },
+    {
+      "boardSlot": 0,
+      "x": 14,
       "y": 5
     },
     {
       "boardSlot": 0,
       "x": 8,
-      "y": 6
-    },
-    {
-      "boardSlot": 0,
-      "x": 9,
       "y": 6
     },
     {
@@ -121,6 +137,16 @@
     {
       "boardSlot": 0,
       "x": 11,
+      "y": 6
+    },
+    {
+      "boardSlot": 0,
+      "x": 12,
+      "y": 6
+    },
+    {
+      "boardSlot": 0,
+      "x": 13,
       "y": 6
     },
     {
@@ -135,17 +161,17 @@
     },
     {
       "boardSlot": 0,
+      "x": 8,
+      "y": 7
+    },
+    {
+      "boardSlot": 0,
       "x": 9,
       "y": 7
     },
     {
       "boardSlot": 0,
       "x": 10,
-      "y": 7
-    },
-    {
-      "boardSlot": 0,
-      "x": 11,
       "y": 7
     },
     {
@@ -165,13 +191,38 @@
     },
     {
       "boardSlot": 0,
+      "x": 8,
+      "y": 8
+    },
+    {
+      "boardSlot": 0,
       "x": 9,
+      "y": 8
+    },
+    {
+      "boardSlot": 0,
+      "x": 10,
       "y": 8
     },
     {
       "boardSlot": 0,
       "x": 11,
       "y": 8
+    },
+    {
+      "boardSlot": 0,
+      "x": 12,
+      "y": 8
+    },
+    {
+      "boardSlot": 0,
+      "x": 8,
+      "y": 9
+    },
+    {
+      "boardSlot": 0,
+      "x": 9,
+      "y": 9
     },
     {
       "boardSlot": 0,
@@ -182,6 +233,16 @@
       "boardSlot": 0,
       "x": 12,
       "y": 9
+    },
+    {
+      "boardSlot": 0,
+      "x": 9,
+      "y": 10
+    },
+    {
+      "boardSlot": 0,
+      "x": 11,
+      "y": 10
     },
     {
       "boardSlot": 0,
@@ -190,38 +251,13 @@
     },
     {
       "boardSlot": 0,
-      "x": 8,
-      "y": 11
-    },
-    {
-      "boardSlot": 0,
       "x": 12,
       "y": 11
     },
     {
       "boardSlot": 0,
-      "x": 8,
-      "y": 12
-    },
-    {
-      "boardSlot": 0,
       "x": 12,
       "y": 12
-    },
-    {
-      "boardSlot": 0,
-      "x": 8,
-      "y": 13
-    },
-    {
-      "boardSlot": 0,
-      "x": 9,
-      "y": 13
-    },
-    {
-      "boardSlot": 0,
-      "x": 10,
-      "y": 13
     },
     {
       "boardSlot": 0,
@@ -232,6 +268,276 @@
       "boardSlot": 0,
       "x": 12,
       "y": 13
+    },
+    {
+      "boardSlot": 0,
+      "x": 11,
+      "y": 14
+    },
+    {
+      "boardSlot": 1,
+      "x": 20,
+      "y": 10
+    },
+    {
+      "boardSlot": 1,
+      "x": 19,
+      "y": 10
+    },
+    {
+      "boardSlot": 1,
+      "x": 19,
+      "y": 11
+    },
+    {
+      "boardSlot": 1,
+      "x": 19,
+      "y": 12
+    },
+    {
+      "boardSlot": 1,
+      "x": 19,
+      "y": 13
+    },
+    {
+      "boardSlot": 1,
+      "x": 18,
+      "y": 10
+    },
+    {
+      "boardSlot": 1,
+      "x": 18,
+      "y": 12
+    },
+    {
+      "boardSlot": 1,
+      "x": 17,
+      "y": 10
+    },
+    {
+      "boardSlot": 1,
+      "x": 16,
+      "y": 10
+    },
+    {
+      "boardSlot": 1,
+      "x": 16,
+      "y": 11
+    },
+    {
+      "boardSlot": 1,
+      "x": 15,
+      "y": 10
+    },
+    {
+      "boardSlot": 1,
+      "x": 15,
+      "y": 13
+    },
+    {
+      "boardSlot": 1,
+      "x": 14,
+      "y": 4
+    },
+    {
+      "boardSlot": 1,
+      "x": 14,
+      "y": 8
+    },
+    {
+      "boardSlot": 1,
+      "x": 14,
+      "y": 9
+    },
+    {
+      "boardSlot": 1,
+      "x": 14,
+      "y": 10
+    },
+    {
+      "boardSlot": 1,
+      "x": 14,
+      "y": 11
+    },
+    {
+      "boardSlot": 1,
+      "x": 14,
+      "y": 12
+    },
+    {
+      "boardSlot": 1,
+      "x": 14,
+      "y": 13
+    },
+    {
+      "boardSlot": 1,
+      "x": 14,
+      "y": 14
+    },
+    {
+      "boardSlot": 1,
+      "x": 13,
+      "y": 4
+    },
+    {
+      "boardSlot": 1,
+      "x": 13,
+      "y": 5
+    },
+    {
+      "boardSlot": 1,
+      "x": 13,
+      "y": 6
+    },
+    {
+      "boardSlot": 1,
+      "x": 13,
+      "y": 7
+    },
+    {
+      "boardSlot": 1,
+      "x": 13,
+      "y": 8
+    },
+    {
+      "boardSlot": 1,
+      "x": 13,
+      "y": 10
+    },
+    {
+      "boardSlot": 1,
+      "x": 13,
+      "y": 11
+    },
+    {
+      "boardSlot": 1,
+      "x": 13,
+      "y": 12
+    },
+    {
+      "boardSlot": 1,
+      "x": 13,
+      "y": 13
+    },
+    {
+      "boardSlot": 1,
+      "x": 13,
+      "y": 14
+    },
+    {
+      "boardSlot": 1,
+      "x": 12,
+      "y": 2
+    },
+    {
+      "boardSlot": 1,
+      "x": 12,
+      "y": 3
+    },
+    {
+      "boardSlot": 1,
+      "x": 12,
+      "y": 4
+    },
+    {
+      "boardSlot": 1,
+      "x": 12,
+      "y": 7
+    },
+    {
+      "boardSlot": 1,
+      "x": 12,
+      "y": 9
+    },
+    {
+      "boardSlot": 1,
+      "x": 12,
+      "y": 10
+    },
+    {
+      "boardSlot": 1,
+      "x": 12,
+      "y": 11
+    },
+    {
+      "boardSlot": 1,
+      "x": 12,
+      "y": 12
+    },
+    {
+      "boardSlot": 1,
+      "x": 12,
+      "y": 14
+    },
+    {
+      "boardSlot": 1,
+      "x": 12,
+      "y": 15
+    },
+    {
+      "boardSlot": 1,
+      "x": 11,
+      "y": 1
+    },
+    {
+      "boardSlot": 1,
+      "x": 11,
+      "y": 2
+    },
+    {
+      "boardSlot": 1,
+      "x": 11,
+      "y": 4
+    },
+    {
+      "boardSlot": 1,
+      "x": 11,
+      "y": 7
+    },
+    {
+      "boardSlot": 1,
+      "x": 11,
+      "y": 9
+    },
+    {
+      "boardSlot": 1,
+      "x": 11,
+      "y": 10
+    },
+    {
+      "boardSlot": 1,
+      "x": 11,
+      "y": 11
+    },
+    {
+      "boardSlot": 1,
+      "x": 11,
+      "y": 14
+    },
+    {
+      "boardSlot": 1,
+      "x": 11,
+      "y": 15
+    },
+    {
+      "boardSlot": 1,
+      "x": 11,
+      "y": 16
+    },
+    {
+      "boardSlot": 1,
+      "x": 11,
+      "y": 17
+    },
+    {
+      "boardSlot": 1,
+      "x": 11,
+      "y": 18
+    },
+    {
+      "boardSlot": 1,
+      "x": 11,
+      "y": 19
     },
     {
       "boardSlot": 1,
@@ -246,677 +552,467 @@
     {
       "boardSlot": 1,
       "x": 10,
-      "y": 2
-    },
-    {
-      "boardSlot": 1,
-      "x": 10,
-      "y": 3
-    },
-    {
-      "boardSlot": 1,
-      "x": 14,
-      "y": 3
-    },
-    {
-      "boardSlot": 1,
-      "x": 15,
-      "y": 3
-    },
-    {
-      "boardSlot": 1,
-      "x": 10,
-      "y": 4
-    },
-    {
-      "boardSlot": 1,
-      "x": 11,
-      "y": 4
-    },
-    {
-      "boardSlot": 1,
-      "x": 12,
-      "y": 4
-    },
-    {
-      "boardSlot": 1,
-      "x": 13,
-      "y": 4
-    },
-    {
-      "boardSlot": 1,
-      "x": 14,
-      "y": 4
-    },
-    {
-      "boardSlot": 1,
-      "x": 10,
-      "y": 5
-    },
-    {
-      "boardSlot": 1,
-      "x": 4,
       "y": 6
     },
     {
       "boardSlot": 1,
-      "x": 8,
-      "y": 6
+      "x": 10,
+      "y": 7
+    },
+    {
+      "boardSlot": 1,
+      "x": 10,
+      "y": 8
+    },
+    {
+      "boardSlot": 1,
+      "x": 10,
+      "y": 12
+    },
+    {
+      "boardSlot": 1,
+      "x": 10,
+      "y": 13
+    },
+    {
+      "boardSlot": 1,
+      "x": 10,
+      "y": 14
+    },
+    {
+      "boardSlot": 1,
+      "x": 10,
+      "y": 15
+    },
+    {
+      "boardSlot": 1,
+      "x": 10,
+      "y": 17
+    },
+    {
+      "boardSlot": 1,
+      "x": 10,
+      "y": 19
+    },
+    {
+      "boardSlot": 1,
+      "x": 10,
+      "y": 20
     },
     {
       "boardSlot": 1,
       "x": 9,
-      "y": 6
+      "y": 1
     },
     {
       "boardSlot": 1,
-      "x": 10,
-      "y": 6
+      "x": 9,
+      "y": 12
     },
     {
       "boardSlot": 1,
-      "x": 4,
-      "y": 7
+      "x": 9,
+      "y": 13
     },
     {
       "boardSlot": 1,
-      "x": 5,
-      "y": 7
+      "x": 9,
+      "y": 14
+    },
+    {
+      "boardSlot": 1,
+      "x": 9,
+      "y": 15
+    },
+    {
+      "boardSlot": 1,
+      "x": 9,
+      "y": 17
+    },
+    {
+      "boardSlot": 1,
+      "x": 9,
+      "y": 18
+    },
+    {
+      "boardSlot": 1,
+      "x": 8,
+      "y": 10
+    },
+    {
+      "boardSlot": 1,
+      "x": 8,
+      "y": 11
+    },
+    {
+      "boardSlot": 1,
+      "x": 8,
+      "y": 12
+    },
+    {
+      "boardSlot": 1,
+      "x": 8,
+      "y": 14
+    },
+    {
+      "boardSlot": 1,
+      "x": 8,
+      "y": 15
+    },
+    {
+      "boardSlot": 1,
+      "x": 7,
+      "y": 10
+    },
+    {
+      "boardSlot": 1,
+      "x": 7,
+      "y": 12
+    },
+    {
+      "boardSlot": 1,
+      "x": 7,
+      "y": 14
     },
     {
       "boardSlot": 1,
       "x": 6,
-      "y": 7
+      "y": 14
     },
     {
-      "boardSlot": 1,
-      "x": 7,
-      "y": 7
-    },
-    {
-      "boardSlot": 1,
-      "x": 8,
-      "y": 7
-    },
-    {
-      "boardSlot": 1,
-      "x": 10,
-      "y": 7
-    },
-    {
-      "boardSlot": 1,
-      "x": 4,
-      "y": 8
-    },
-    {
-      "boardSlot": 1,
-      "x": 7,
-      "y": 8
-    },
-    {
-      "boardSlot": 1,
-      "x": 9,
-      "y": 8
-    },
-    {
-      "boardSlot": 1,
-      "x": 10,
-      "y": 8
-    },
-    {
-      "boardSlot": 1,
-      "x": 1,
-      "y": 9
-    },
-    {
-      "boardSlot": 1,
-      "x": 2,
-      "y": 9
-    },
-    {
-      "boardSlot": 1,
-      "x": 3,
-      "y": 9
-    },
-    {
-      "boardSlot": 1,
-      "x": 4,
-      "y": 9
-    },
-    {
-      "boardSlot": 1,
-      "x": 7,
-      "y": 9
-    },
-    {
-      "boardSlot": 1,
-      "x": 10,
-      "y": 9
-    },
-    {
-      "boardSlot": 1,
-      "x": 11,
-      "y": 9
-    },
-    {
-      "boardSlot": 1,
+      "boardSlot": 2,
       "x": 0,
       "y": 10
     },
     {
-      "boardSlot": 1,
+      "boardSlot": 2,
+      "x": 1,
+      "y": 11
+    },
+    {
+      "boardSlot": 2,
       "x": 1,
       "y": 10
     },
     {
-      "boardSlot": 1,
-      "x": 6,
-      "y": 10
-    },
-    {
-      "boardSlot": 1,
-      "x": 7,
-      "y": 10
-    },
-    {
-      "boardSlot": 1,
-      "x": 11,
-      "y": 10
-    },
-    {
-      "boardSlot": 1,
-      "x": 12,
-      "y": 10
-    },
-    {
-      "boardSlot": 1,
-      "x": 19,
-      "y": 10
-    },
-    {
-      "boardSlot": 1,
-      "x": 20,
-      "y": 10
-    },
-    {
-      "boardSlot": 1,
-      "x": 7,
-      "y": 11
-    },
-    {
-      "boardSlot": 1,
-      "x": 11,
-      "y": 11
-    },
-    {
-      "boardSlot": 1,
-      "x": 12,
-      "y": 11
-    },
-    {
-      "boardSlot": 1,
-      "x": 13,
-      "y": 11
-    },
-    {
-      "boardSlot": 1,
-      "x": 14,
-      "y": 11
-    },
-    {
-      "boardSlot": 1,
-      "x": 15,
-      "y": 11
-    },
-    {
-      "boardSlot": 1,
-      "x": 16,
-      "y": 11
-    },
-    {
-      "boardSlot": 1,
-      "x": 17,
-      "y": 11
-    },
-    {
-      "boardSlot": 1,
-      "x": 18,
-      "y": 11
-    },
-    {
-      "boardSlot": 1,
-      "x": 19,
-      "y": 11
-    },
-    {
-      "boardSlot": 1,
-      "x": 6,
-      "y": 12
-    },
-    {
-      "boardSlot": 1,
-      "x": 7,
-      "y": 12
-    },
-    {
-      "boardSlot": 1,
-      "x": 10,
-      "y": 12
-    },
-    {
-      "boardSlot": 1,
-      "x": 11,
-      "y": 12
-    },
-    {
-      "boardSlot": 1,
-      "x": 5,
-      "y": 13
-    },
-    {
-      "boardSlot": 1,
-      "x": 6,
-      "y": 13
-    },
-    {
-      "boardSlot": 1,
-      "x": 10,
-      "y": 13
-    },
-    {
-      "boardSlot": 1,
-      "x": 4,
-      "y": 14
-    },
-    {
-      "boardSlot": 1,
-      "x": 5,
-      "y": 14
-    },
-    {
-      "boardSlot": 1,
-      "x": 10,
-      "y": 14
-    },
-    {
-      "boardSlot": 1,
-      "x": 10,
-      "y": 15
-    },
-    {
-      "boardSlot": 1,
-      "x": 10,
-      "y": 16
-    },
-    {
-      "boardSlot": 1,
-      "x": 11,
-      "y": 16
-    },
-    {
-      "boardSlot": 1,
-      "x": 12,
-      "y": 16
-    },
-    {
-      "boardSlot": 1,
-      "x": 13,
-      "y": 16
-    },
-    {
-      "boardSlot": 1,
-      "x": 14,
-      "y": 16
-    },
-    {
-      "boardSlot": 1,
-      "x": 10,
-      "y": 17
-    },
-    {
-      "boardSlot": 1,
-      "x": 14,
-      "y": 17
-    },
-    {
-      "boardSlot": 1,
-      "x": 15,
-      "y": 17
-    },
-    {
-      "boardSlot": 1,
-      "x": 10,
-      "y": 18
-    },
-    {
-      "boardSlot": 1,
-      "x": 10,
-      "y": 19
-    },
-    {
-      "boardSlot": 1,
-      "x": 10,
-      "y": 20
+      "boardSlot": 2,
+      "x": 1,
+      "y": 9
     },
     {
       "boardSlot": 2,
-      "x": 17,
-      "y": 12
+      "x": 1,
+      "y": 8
     },
     {
       "boardSlot": 2,
-      "x": 17,
-      "y": 13
+      "x": 2,
+      "y": 8
     },
     {
       "boardSlot": 2,
-      "x": 17,
-      "y": 14
-    },
-    {
-      "boardSlot": 2,
-      "x": 16,
-      "y": 12
-    },
-    {
-      "boardSlot": 2,
-      "x": 15,
-      "y": 5
-    },
-    {
-      "boardSlot": 2,
-      "x": 15,
-      "y": 6
-    },
-    {
-      "boardSlot": 2,
-      "x": 15,
+      "x": 2,
       "y": 7
     },
     {
       "boardSlot": 2,
-      "x": 15,
-      "y": 8
-    },
-    {
-      "boardSlot": 2,
-      "x": 15,
-      "y": 12
-    },
-    {
-      "boardSlot": 2,
-      "x": 14,
-      "y": 8
-    },
-    {
-      "boardSlot": 2,
-      "x": 14,
-      "y": 9
-    },
-    {
-      "boardSlot": 2,
-      "x": 14,
-      "y": 10
-    },
-    {
-      "boardSlot": 2,
-      "x": 14,
-      "y": 11
-    },
-    {
-      "boardSlot": 2,
-      "x": 14,
-      "y": 12
-    },
-    {
-      "boardSlot": 2,
-      "x": 13,
-      "y": 8
-    },
-    {
-      "boardSlot": 2,
-      "x": 13,
-      "y": 12
-    },
-    {
-      "boardSlot": 2,
-      "x": 12,
-      "y": 8
-    },
-    {
-      "boardSlot": 2,
-      "x": 12,
-      "y": 11
-    },
-    {
-      "boardSlot": 2,
-      "x": 12,
-      "y": 12
-    },
-    {
-      "boardSlot": 2,
-      "x": 11,
-      "y": 8
-    },
-    {
-      "boardSlot": 2,
-      "x": 11,
-      "y": 9
-    },
-    {
-      "boardSlot": 2,
-      "x": 11,
-      "y": 12
-    },
-    {
-      "boardSlot": 2,
-      "x": 11,
-      "y": 13
-    },
-    {
-      "boardSlot": 2,
-      "x": 11,
-      "y": 14
-    },
-    {
-      "boardSlot": 2,
-      "x": 10,
-      "y": 11
-    },
-    {
-      "boardSlot": 2,
-      "x": 10,
-      "y": 12
-    },
-    {
-      "boardSlot": 2,
-      "x": 10,
-      "y": 13
-    },
-    {
-      "boardSlot": 2,
-      "x": 10,
-      "y": 14
-    },
-    {
-      "boardSlot": 2,
-      "x": 10,
-      "y": 16
-    },
-    {
-      "boardSlot": 2,
-      "x": 10,
-      "y": 17
-    },
-    {
-      "boardSlot": 2,
-      "x": 10,
-      "y": 18
-    },
-    {
-      "boardSlot": 2,
-      "x": 10,
-      "y": 19
-    },
-    {
-      "boardSlot": 2,
-      "x": 10,
-      "y": 20
-    },
-    {
-      "boardSlot": 2,
-      "x": 9,
-      "y": 12
-    },
-    {
-      "boardSlot": 2,
-      "x": 9,
-      "y": 14
-    },
-    {
-      "boardSlot": 2,
-      "x": 9,
-      "y": 15
-    },
-    {
-      "boardSlot": 2,
-      "x": 9,
-      "y": 16
-    },
-    {
-      "boardSlot": 2,
-      "x": 8,
-      "y": 3
-    },
-    {
-      "boardSlot": 2,
-      "x": 8,
-      "y": 4
-    },
-    {
-      "boardSlot": 2,
-      "x": 8,
-      "y": 5
-    },
-    {
-      "boardSlot": 2,
-      "x": 8,
+      "x": 2,
       "y": 6
-    },
-    {
-      "boardSlot": 2,
-      "x": 8,
-      "y": 7
-    },
-    {
-      "boardSlot": 2,
-      "x": 8,
-      "y": 8
-    },
-    {
-      "boardSlot": 2,
-      "x": 8,
-      "y": 9
-    },
-    {
-      "boardSlot": 2,
-      "x": 8,
-      "y": 10
-    },
-    {
-      "boardSlot": 2,
-      "x": 8,
-      "y": 11
-    },
-    {
-      "boardSlot": 2,
-      "x": 8,
-      "y": 12
-    },
-    {
-      "boardSlot": 2,
-      "x": 8,
-      "y": 14
-    },
-    {
-      "boardSlot": 2,
-      "x": 8,
-      "y": 16
-    },
-    {
-      "boardSlot": 2,
-      "x": 7,
-      "y": 3
-    },
-    {
-      "boardSlot": 2,
-      "x": 7,
-      "y": 16
-    },
-    {
-      "boardSlot": 2,
-      "x": 7,
-      "y": 17
-    },
-    {
-      "boardSlot": 2,
-      "x": 6,
-      "y": 3
-    },
-    {
-      "boardSlot": 2,
-      "x": 6,
-      "y": 17
-    },
-    {
-      "boardSlot": 2,
-      "x": 5,
-      "y": 17
-    },
-    {
-      "boardSlot": 2,
-      "x": 4,
-      "y": 17
     },
     {
       "boardSlot": 2,
       "x": 3,
+      "y": 6
+    },
+    {
+      "boardSlot": 2,
+      "x": 3,
+      "y": 5
+    },
+    {
+      "boardSlot": 2,
+      "x": 4,
+      "y": 16
+    },
+    {
+      "boardSlot": 2,
+      "x": 4,
+      "y": 6
+    },
+    {
+      "boardSlot": 2,
+      "x": 5,
       "y": 17
     },
     {
-      "boardSlot": 3,
-      "x": 11,
+      "boardSlot": 2,
+      "x": 5,
       "y": 16
+    },
+    {
+      "boardSlot": 2,
+      "x": 5,
+      "y": 15
+    },
+    {
+      "boardSlot": 2,
+      "x": 5,
+      "y": 14
+    },
+    {
+      "boardSlot": 2,
+      "x": 5,
+      "y": 13
+    },
+    {
+      "boardSlot": 2,
+      "x": 5,
+      "y": 12
+    },
+    {
+      "boardSlot": 2,
+      "x": 5,
+      "y": 11
+    },
+    {
+      "boardSlot": 2,
+      "x": 5,
+      "y": 8
+    },
+    {
+      "boardSlot": 2,
+      "x": 5,
+      "y": 7
+    },
+    {
+      "boardSlot": 2,
+      "x": 5,
+      "y": 6
+    },
+    {
+      "boardSlot": 2,
+      "x": 6,
+      "y": 17
+    },
+    {
+      "boardSlot": 2,
+      "x": 6,
+      "y": 12
+    },
+    {
+      "boardSlot": 2,
+      "x": 6,
+      "y": 11
+    },
+    {
+      "boardSlot": 2,
+      "x": 6,
+      "y": 10
+    },
+    {
+      "boardSlot": 2,
+      "x": 6,
+      "y": 9
+    },
+    {
+      "boardSlot": 2,
+      "x": 6,
+      "y": 8
+    },
+    {
+      "boardSlot": 2,
+      "x": 7,
+      "y": 17
+    },
+    {
+      "boardSlot": 2,
+      "x": 7,
+      "y": 16
+    },
+    {
+      "boardSlot": 2,
+      "x": 7,
+      "y": 15
+    },
+    {
+      "boardSlot": 2,
+      "x": 8,
+      "y": 17
+    },
+    {
+      "boardSlot": 2,
+      "x": 8,
+      "y": 15
+    },
+    {
+      "boardSlot": 2,
+      "x": 8,
+      "y": 14
+    },
+    {
+      "boardSlot": 2,
+      "x": 8,
+      "y": 12
+    },
+    {
+      "boardSlot": 2,
+      "x": 9,
+      "y": 14
+    },
+    {
+      "boardSlot": 2,
+      "x": 9,
+      "y": 13
+    },
+    {
+      "boardSlot": 2,
+      "x": 9,
+      "y": 12
+    },
+    {
+      "boardSlot": 2,
+      "x": 9,
+      "y": 11
+    },
+    {
+      "boardSlot": 2,
+      "x": 9,
+      "y": 10
+    },
+    {
+      "boardSlot": 2,
+      "x": 10,
+      "y": 13
+    },
+    {
+      "boardSlot": 2,
+      "x": 10,
+      "y": 9
+    },
+    {
+      "boardSlot": 2,
+      "x": 11,
+      "y": 13
+    },
+    {
+      "boardSlot": 2,
+      "x": 11,
+      "y": 12
+    },
+    {
+      "boardSlot": 2,
+      "x": 11,
+      "y": 11
+    },
+    {
+      "boardSlot": 2,
+      "x": 11,
+      "y": 10
+    },
+    {
+      "boardSlot": 2,
+      "x": 11,
+      "y": 9
+    },
+    {
+      "boardSlot": 2,
+      "x": 11,
+      "y": 7
+    },
+    {
+      "boardSlot": 2,
+      "x": 12,
+      "y": 14
+    },
+    {
+      "boardSlot": 2,
+      "x": 12,
+      "y": 13
+    },
+    {
+      "boardSlot": 2,
+      "x": 12,
+      "y": 10
+    },
+    {
+      "boardSlot": 2,
+      "x": 12,
+      "y": 9
+    },
+    {
+      "boardSlot": 2,
+      "x": 12,
+      "y": 7
+    },
+    {
+      "boardSlot": 2,
+      "x": 13,
+      "y": 14
+    },
+    {
+      "boardSlot": 2,
+      "x": 13,
+      "y": 13
+    },
+    {
+      "boardSlot": 2,
+      "x": 13,
+      "y": 9
+    },
+    {
+      "boardSlot": 2,
+      "x": 13,
+      "y": 8
+    },
+    {
+      "boardSlot": 2,
+      "x": 13,
+      "y": 7
+    },
+    {
+      "boardSlot": 2,
+      "x": 13,
+      "y": 6
     },
     {
       "boardSlot": 3,
       "x": 10,
-      "y": 16
+      "y": 20
     },
     {
       "boardSlot": 3,
-      "x": 9,
-      "y": 16
+      "x": 10,
+      "y": 19
+    },
+    {
+      "boardSlot": 3,
+      "x": 12,
+      "y": 18
     },
     {
       "boardSlot": 3,
       "x": 11,
+      "y": 18
+    },
+    {
+      "boardSlot": 3,
+      "x": 10,
+      "y": 18
+    },
+    {
+      "boardSlot": 3,
+      "x": 12,
+      "y": 17
+    },
+    {
+      "boardSlot": 3,
+      "x": 12,
+      "y": 16
+    },
+    {
+      "boardSlot": 3,
+      "x": 12,
       "y": 15
-    },
-    {
-      "boardSlot": 3,
-      "x": 9,
-      "y": 15
-    },
-    {
-      "boardSlot": 3,
-      "x": 14,
-      "y": 14
-    },
-    {
-      "boardSlot": 3,
-      "x": 13,
-      "y": 14
     },
     {
       "boardSlot": 3,
@@ -926,6 +1022,11 @@
     {
       "boardSlot": 3,
       "x": 11,
+      "y": 14
+    },
+    {
+      "boardSlot": 3,
+      "x": 10,
       "y": 14
     },
     {
@@ -940,57 +1041,77 @@
     },
     {
       "boardSlot": 3,
-      "x": 16,
+      "x": 12,
       "y": 13
     },
     {
       "boardSlot": 3,
-      "x": 15,
+      "x": 8,
       "y": 13
     },
     {
       "boardSlot": 3,
-      "x": 14,
-      "y": 13
-    },
-    {
-      "boardSlot": 3,
-      "x": 11,
-      "y": 13
-    },
-    {
-      "boardSlot": 3,
-      "x": 10,
-      "y": 13
-    },
-    {
-      "boardSlot": 3,
-      "x": 16,
-      "y": 12
-    },
-    {
-      "boardSlot": 3,
-      "x": 10,
-      "y": 12
-    },
-    {
-      "boardSlot": 3,
-      "x": 6,
+      "x": 18,
       "y": 12
     },
     {
       "boardSlot": 3,
       "x": 17,
-      "y": 11
+      "y": 12
     },
     {
       "boardSlot": 3,
       "x": 16,
+      "y": 12
+    },
+    {
+      "boardSlot": 3,
+      "x": 15,
+      "y": 12
+    },
+    {
+      "boardSlot": 3,
+      "x": 14,
+      "y": 12
+    },
+    {
+      "boardSlot": 3,
+      "x": 13,
+      "y": 12
+    },
+    {
+      "boardSlot": 3,
+      "x": 12,
+      "y": 12
+    },
+    {
+      "boardSlot": 3,
+      "x": 9,
+      "y": 12
+    },
+    {
+      "boardSlot": 3,
+      "x": 8,
+      "y": 12
+    },
+    {
+      "boardSlot": 3,
+      "x": 18,
       "y": 11
     },
     {
       "boardSlot": 3,
-      "x": 10,
+      "x": 12,
+      "y": 11
+    },
+    {
+      "boardSlot": 3,
+      "x": 11,
+      "y": 11
+    },
+    {
+      "boardSlot": 3,
+      "x": 8,
       "y": 11
     },
     {
@@ -1025,11 +1146,6 @@
     },
     {
       "boardSlot": 3,
-      "x": 11,
-      "y": 10
-    },
-    {
-      "boardSlot": 3,
       "x": 10,
       "y": 10
     },
@@ -1047,296 +1163,66 @@
       "boardSlot": 3,
       "x": 7,
       "y": 10
-    },
-    {
-      "boardSlot": 3,
-      "x": 17,
-      "y": 9
-    },
-    {
-      "boardSlot": 3,
-      "x": 16,
-      "y": 9
-    },
-    {
-      "boardSlot": 3,
-      "x": 12,
-      "y": 9
-    },
-    {
-      "boardSlot": 3,
-      "x": 11,
-      "y": 9
-    },
-    {
-      "boardSlot": 3,
-      "x": 16,
-      "y": 8
-    },
-    {
-      "boardSlot": 3,
-      "x": 15,
-      "y": 8
-    },
-    {
-      "boardSlot": 3,
-      "x": 14,
-      "y": 8
-    },
-    {
-      "boardSlot": 3,
-      "x": 12,
-      "y": 8
-    },
-    {
-      "boardSlot": 3,
-      "x": 16,
-      "y": 7
-    },
-    {
-      "boardSlot": 3,
-      "x": 15,
-      "y": 7
-    },
-    {
-      "boardSlot": 3,
-      "x": 15,
-      "y": 6
-    },
-    {
-      "boardSlot": 3,
-      "x": 7,
-      "y": 6
     },
     {
       "boardSlot": 3,
       "x": 18,
-      "y": 5
+      "y": 9
     },
     {
       "boardSlot": 3,
       "x": 17,
-      "y": 5
-    },
-    {
-      "boardSlot": 3,
-      "x": 16,
-      "y": 5
-    },
-    {
-      "boardSlot": 3,
-      "x": 15,
-      "y": 5
-    },
-    {
-      "boardSlot": 3,
-      "x": 7,
-      "y": 5
-    },
-    {
-      "boardSlot": 3,
-      "x": 15,
-      "y": 4
-    },
-    {
-      "boardSlot": 3,
-      "x": 14,
-      "y": 4
-    },
-    {
-      "boardSlot": 3,
-      "x": 13,
-      "y": 4
-    },
-    {
-      "boardSlot": 3,
-      "x": 12,
-      "y": 4
-    },
-    {
-      "boardSlot": 3,
-      "x": 11,
-      "y": 4
-    },
-    {
-      "boardSlot": 3,
-      "x": 7,
-      "y": 4
-    },
-    {
-      "boardSlot": 3,
-      "x": 15,
-      "y": 3
-    },
-    {
-      "boardSlot": 3,
-      "x": 11,
-      "y": 3
-    },
-    {
-      "boardSlot": 3,
-      "x": 10,
-      "y": 3
-    },
-    {
-      "boardSlot": 3,
-      "x": 9,
-      "y": 3
+      "y": 9
     },
     {
       "boardSlot": 3,
       "x": 8,
-      "y": 3
+      "y": 9
     },
     {
       "boardSlot": 3,
-      "x": 7,
-      "y": 3
-    },
-    {
-      "boardSlot": 3,
-      "x": 15,
-      "y": 2
-    },
-    {
-      "boardSlot": 4,
-      "x": 5,
-      "y": 3
-    },
-    {
-      "boardSlot": 4,
-      "x": 6,
-      "y": 3
-    },
-    {
-      "boardSlot": 4,
-      "x": 14,
-      "y": 3
-    },
-    {
-      "boardSlot": 4,
-      "x": 15,
-      "y": 3
-    },
-    {
-      "boardSlot": 4,
-      "x": 6,
-      "y": 4
-    },
-    {
-      "boardSlot": 4,
-      "x": 14,
-      "y": 4
-    },
-    {
-      "boardSlot": 4,
-      "x": 3,
-      "y": 5
-    },
-    {
-      "boardSlot": 4,
-      "x": 4,
-      "y": 5
-    },
-    {
-      "boardSlot": 4,
-      "x": 5,
-      "y": 5
-    },
-    {
-      "boardSlot": 4,
-      "x": 6,
-      "y": 5
-    },
-    {
-      "boardSlot": 4,
-      "x": 7,
-      "y": 5
-    },
-    {
-      "boardSlot": 4,
-      "x": 8,
-      "y": 5
-    },
-    {
-      "boardSlot": 4,
-      "x": 9,
-      "y": 5
-    },
-    {
-      "boardSlot": 4,
-      "x": 12,
-      "y": 5
-    },
-    {
-      "boardSlot": 4,
-      "x": 13,
-      "y": 5
-    },
-    {
-      "boardSlot": 4,
-      "x": 14,
-      "y": 5
-    },
-    {
-      "boardSlot": 4,
-      "x": 3,
-      "y": 6
-    },
-    {
-      "boardSlot": 4,
-      "x": 9,
-      "y": 6
-    },
-    {
-      "boardSlot": 4,
-      "x": 10,
-      "y": 6
-    },
-    {
-      "boardSlot": 4,
-      "x": 11,
-      "y": 6
-    },
-    {
-      "boardSlot": 4,
-      "x": 12,
-      "y": 6
-    },
-    {
-      "boardSlot": 4,
-      "x": 3,
-      "y": 7
-    },
-    {
-      "boardSlot": 4,
-      "x": 4,
-      "y": 7
-    },
-    {
-      "boardSlot": 4,
-      "x": 5,
-      "y": 7
-    },
-    {
-      "boardSlot": 4,
-      "x": 3,
+      "x": 18,
       "y": 8
     },
     {
-      "boardSlot": 4,
-      "x": 2,
-      "y": 9
+      "boardSlot": 3,
+      "x": 11,
+      "y": 8
     },
     {
-      "boardSlot": 4,
-      "x": 3,
-      "y": 9
-    },
-    {
-      "boardSlot": 4,
+      "boardSlot": 3,
       "x": 8,
-      "y": 9
+      "y": 8
+    },
+    {
+      "boardSlot": 3,
+      "x": 11,
+      "y": 7
+    },
+    {
+      "boardSlot": 3,
+      "x": 10,
+      "y": 7
+    },
+    {
+      "boardSlot": 3,
+      "x": 9,
+      "y": 7
+    },
+    {
+      "boardSlot": 3,
+      "x": 8,
+      "y": 7
+    },
+    {
+      "boardSlot": 3,
+      "x": 11,
+      "y": 6
+    },
+    {
+      "boardSlot": 3,
+      "x": 10,
+      "y": 6
     },
     {
       "boardSlot": 4,
@@ -1350,8 +1236,18 @@
     },
     {
       "boardSlot": 4,
+      "x": 1,
+      "y": 9
+    },
+    {
+      "boardSlot": 4,
       "x": 2,
       "y": 10
+    },
+    {
+      "boardSlot": 4,
+      "x": 3,
+      "y": 11
     },
     {
       "boardSlot": 4,
@@ -1361,32 +1257,17 @@
     {
       "boardSlot": 4,
       "x": 4,
-      "y": 10
+      "y": 11
     },
     {
       "boardSlot": 4,
       "x": 5,
-      "y": 10
+      "y": 13
     },
     {
       "boardSlot": 4,
-      "x": 7,
-      "y": 10
-    },
-    {
-      "boardSlot": 4,
-      "x": 8,
-      "y": 10
-    },
-    {
-      "boardSlot": 4,
-      "x": 11,
-      "y": 10
-    },
-    {
-      "boardSlot": 4,
-      "x": 12,
-      "y": 10
+      "x": 5,
+      "y": 12
     },
     {
       "boardSlot": 4,
@@ -1396,7 +1277,42 @@
     {
       "boardSlot": 4,
       "x": 6,
+      "y": 15
+    },
+    {
+      "boardSlot": 4,
+      "x": 6,
+      "y": 14
+    },
+    {
+      "boardSlot": 4,
+      "x": 6,
+      "y": 13
+    },
+    {
+      "boardSlot": 4,
+      "x": 6,
+      "y": 12
+    },
+    {
+      "boardSlot": 4,
+      "x": 6,
       "y": 11
+    },
+    {
+      "boardSlot": 4,
+      "x": 7,
+      "y": 17
+    },
+    {
+      "boardSlot": 4,
+      "x": 7,
+      "y": 16
+    },
+    {
+      "boardSlot": 4,
+      "x": 7,
+      "y": 15
     },
     {
       "boardSlot": 4,
@@ -1405,18 +1321,73 @@
     },
     {
       "boardSlot": 4,
+      "x": 7,
+      "y": 10
+    },
+    {
+      "boardSlot": 4,
       "x": 8,
-      "y": 11
+      "y": 17
+    },
+    {
+      "boardSlot": 4,
+      "x": 8,
+      "y": 16
+    },
+    {
+      "boardSlot": 4,
+      "x": 8,
+      "y": 10
     },
     {
       "boardSlot": 4,
       "x": 9,
-      "y": 11
+      "y": 17
+    },
+    {
+      "boardSlot": 4,
+      "x": 9,
+      "y": 10
+    },
+    {
+      "boardSlot": 4,
+      "x": 10,
+      "y": 17
     },
     {
       "boardSlot": 4,
       "x": 10,
       "y": 11
+    },
+    {
+      "boardSlot": 4,
+      "x": 10,
+      "y": 10
+    },
+    {
+      "boardSlot": 4,
+      "x": 11,
+      "y": 18
+    },
+    {
+      "boardSlot": 4,
+      "x": 11,
+      "y": 17
+    },
+    {
+      "boardSlot": 4,
+      "x": 11,
+      "y": 16
+    },
+    {
+      "boardSlot": 4,
+      "x": 11,
+      "y": 14
+    },
+    {
+      "boardSlot": 4,
+      "x": 11,
+      "y": 12
     },
     {
       "boardSlot": 4,
@@ -1426,59 +1397,99 @@
     {
       "boardSlot": 4,
       "x": 12,
-      "y": 11
+      "y": 18
     },
     {
       "boardSlot": 4,
-      "x": 13,
-      "y": 11
+      "x": 12,
+      "y": 16
     },
     {
       "boardSlot": 4,
-      "x": 6,
-      "y": 12
+      "x": 12,
+      "y": 15
     },
     {
       "boardSlot": 4,
-      "x": 7,
-      "y": 12
+      "x": 12,
+      "y": 14
     },
     {
       "boardSlot": 4,
-      "x": 10,
-      "y": 12
-    },
-    {
-      "boardSlot": 4,
-      "x": 11,
+      "x": 12,
       "y": 12
     },
     {
       "boardSlot": 4,
       "x": 13,
-      "y": 12
+      "y": 17
     },
     {
       "boardSlot": 4,
-      "x": 6,
-      "y": 13
+      "x": 13,
+      "y": 16
     },
     {
       "boardSlot": 4,
-      "x": 7,
-      "y": 13
+      "x": 13,
+      "y": 15
     },
     {
       "boardSlot": 4,
-      "x": 8,
-      "y": 13
+      "x": 14,
+      "y": 15
+    },
+    {
+      "boardSlot": 4,
+      "x": 15,
+      "y": 18
+    },
+    {
+      "boardSlot": 4,
+      "x": 15,
+      "y": 17
+    },
+    {
+      "boardSlot": 4,
+      "x": 15,
+      "y": 16
+    },
+    {
+      "boardSlot": 4,
+      "x": 15,
+      "y": 15
+    },
+    {
+      "boardSlot": 4,
+      "x": 16,
+      "y": 18
+    },
+    {
+      "boardSlot": 4,
+      "x": 16,
+      "y": 15
+    },
+    {
+      "boardSlot": 4,
+      "x": 17,
+      "y": 15
+    },
+    {
+      "boardSlot": 4,
+      "x": 18,
+      "y": 16
+    },
+    {
+      "boardSlot": 4,
+      "x": 18,
+      "y": 15
     }
   ],
   "glyphs": [
     {
       "boardSlot": 0,
       "glyphInternalName": "Rare_Str_Generic",
-      "level": 64,
+      "level": 96,
       "requiredStat": 40,
       "ensureActive": true
     },
@@ -1491,50 +1502,62 @@
     },
     {
       "boardSlot": 2,
-      "glyphInternalName": "Rare_028_Strength_Main",
-      "level": 106,
-      "requiredStat": 40,
+      "glyphInternalName": "Rare_030_Dexterity_Side",
+      "level": 103,
+      "requiredStat": 25,
       "ensureActive": true
     },
     {
       "boardSlot": 3,
-      "glyphInternalName": "Rare_016_Dexterity_Side",
-      "level": 104,
+      "glyphInternalName": "Rare_028_Strength_Main",
+      "level": 113,
       "requiredStat": 40,
       "ensureActive": true
     },
     {
       "boardSlot": 4,
-      "glyphInternalName": "Rare_030_Dexterity_Side",
-      "level": 103,
-      "requiredStat": 40,
+      "glyphInternalName": "Rare_016_Dexterity_Side",
+      "level": 104,
+      "requiredStat": 25,
       "ensureActive": true
     }
   ],
   "nodeRules": [
     {
       "groupKey": "Magic:Hitpoints_Max_Percent_Bonus:",
+      "mode": "Minimal",
+      "limit": 2
+    },
+    {
+      "groupKey": "Stat:Hitpoints_Max_Percent_Bonus",
       "mode": "Limit",
       "limit": 2
     }
   ],
   "focusStats": [
+    "Dexterity_Core",
     "Strength_Core",
     "Armor_Percent",
     "Attack_Speed_Percent_Bonus",
     "Crit_Percent_Bonus",
     "Crit_Damage_Percent",
     "Damage_Percent_All_From_Skills",
-    "Damage_Percent_Bonus_Vs_Elites",
+    "Damage_Percent_Bonus_While_Affected_By_Power",
     "Resistance_All_Bonus_Percent",
     "Resource_Max_Bonus",
     "Resource_On_Kill"
   ],
-  "focusWeights": {},
-  "preferRareNodes": true,
+  "focusWeights": {
+    "Strength_Core": 3,
+    "Crit_Damage_Percent": 3,
+    "Damage_Percent_All_From_Skills": 3,
+    "Resistance_All_Bonus_Percent": 3
+  },
+  "preferRareNodes": false,
   "realisticRares": false,
+  "defenseShare": 0,
   "activateThresholds": true,
-  "totalPoints": 283,
+  "totalPoints": 284,
   "sheetStrength": 2531,
   "sheetIntelligence": 76,
   "sheetWillpower": 76,

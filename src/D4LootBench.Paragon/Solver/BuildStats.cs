@@ -20,14 +20,67 @@ public sealed record BuildStatsReport(
 
 /// <summary>
 /// Effective stat totals of a purchase set, including rare-node threshold bonuses. A threshold's
-/// requirement scales with the board's attachment order (<c>valuesByBoardIndex[cell.BoardSlot]</c>
-/// — slot order is the order the player attaches boards), and is checked against the character
-/// total: a flat non-paragon offset (level + gear, user-supplied) plus the paragon-granted stat.
-/// Met bonuses are added iteratively to a fixpoint, since a bonus can grant the core stat that
-/// unlocks another node's threshold.
+/// requirement scales with the board's ATTACHMENT order — which in-game follows the player's
+/// gate purchases, not the planner's slot numbering (a slot's parent crossing may never be on
+/// the path; the board is then attached later, from wherever the path actually enters it). The
+/// effective tier per board is derived from the purchased path (<see cref="EffectiveAttachTiers"/>)
+/// and the requirement is checked against the character total: a flat non-paragon offset
+/// (level + gear, user-supplied) plus the paragon-granted stat. Met bonuses are added
+/// iteratively to a fixpoint, since a bonus can grant the core stat that unlocks another
+/// node's threshold.
 /// </summary>
 public static class BuildStats
 {
+    /// <summary>
+    /// The order the purchased path first enters each board — the game's attachment order.
+    /// BFS from the start over purchased cells; boards the path never enters queue up after
+    /// the entered ones, in slot order. Index = board slot, value = 0-based attach tier.
+    /// </summary>
+    public static IReadOnlyList<int> EffectiveAttachTiers(
+        ComposedGraph graph, IEnumerable<CellRef> purchased) =>
+        EffectiveAttachments(graph, purchased).Select(a => a.Tier).ToList();
+
+    /// <summary>How the purchased path actually attaches one board (see <see cref="EffectiveAttachments"/>).
+    /// <see cref="EnteredFromSlot"/>/<see cref="ParentGate"/> are null when the path never enters it.</summary>
+    public sealed record AttachEntry(int Tier, int? EnteredFromSlot, CellRef? ParentGate);
+
+    /// <summary>
+    /// Per board slot: the attach tier AND the crossing the path first enters it through — the
+    /// board it was entered from and the gate cell on that board. This is the build's REAL
+    /// attachment structure; the planner's parent/edge tree is only positional and may claim
+    /// crossings the path never buys.
+    /// </summary>
+    public static IReadOnlyList<AttachEntry> EffectiveAttachments(
+        ComposedGraph graph, IEnumerable<CellRef> purchased)
+    {
+        int slotCount = graph.Vertices.Max(v => v.Cell.BoardSlot) + 1;
+        var entries = new AttachEntry?[slotCount];
+        entries[0] = new AttachEntry(0, null, null);
+        int nextTier = 1;
+
+        var purchasedSet = purchased as ISet<CellRef> ?? purchased.ToHashSet();
+        var seen = new HashSet<int> { graph.StartVertex };
+        var queue = new Queue<int>();
+        queue.Enqueue(graph.StartVertex);
+        while (queue.Count > 0)
+        {
+            int v = queue.Dequeue();
+            int fromSlot = graph.Vertices[v].Cell.BoardSlot;
+            foreach (int u in graph.Adjacency[v])
+            {
+                if (seen.Contains(u) || !purchasedSet.Contains(graph.Vertices[u].Cell))
+                    continue;
+                seen.Add(u);
+                int slot = graph.Vertices[u].Cell.BoardSlot;
+                if (entries[slot] is null)
+                    entries[slot] = new AttachEntry(nextTier++, fromSlot, graph.Vertices[v].Cell);
+                queue.Enqueue(u);
+            }
+        }
+        for (int slot = 1; slot < slotCount; slot++)
+            entries[slot] ??= new AttachEntry(nextTier++, null, null);
+        return entries!;
+    }
     public static BuildStatsReport Compute(
         ComposedGraph graph,
         IEnumerable<CellRef> purchased,
@@ -50,6 +103,7 @@ public static class BuildStats
     {
         var thresholdsBySnoId = data.Thresholds.ToDictionary(t => t.SnoId, StringComparer.OrdinalIgnoreCase);
         var purchasedSet = purchased as ISet<CellRef> ?? purchased.ToHashSet();
+        var tiers = EffectiveAttachTiers(graph, purchasedSet);
 
         var totals = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         var candidates = new List<(GraphVertex Vertex, ParagonThresholdDef Def)>();
@@ -92,7 +146,7 @@ public static class BuildStats
                 if (met.Contains(i))
                     continue;
                 var (vertex, def) = candidates[i];
-                if (!def.Requirements.All(r => Have(r.Attribute) >= RequirementAt(r, vertex.Cell.BoardSlot)))
+                if (!def.Requirements.All(r => Have(r.Attribute) >= RequirementAt(r, tiers[vertex.Cell.BoardSlot])))
                     continue;
                 met.Add(i);
                 changed = true;
@@ -116,7 +170,7 @@ public static class BuildStats
                 vertex.Cell,
                 vertex.Node.Name ?? vertex.Node.InternalName,
                 first.Attribute,
-                RequirementAt(first, vertex.Cell.BoardSlot),
+                RequirementAt(first, tiers[vertex.Cell.BoardSlot]),
                 Have(first.Attribute),
                 met.Contains(i)));
         }

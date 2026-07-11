@@ -15,6 +15,12 @@ public enum NodeRuleMode
 
     /// <summary>Take at most <see cref="NodeRule.Limit"/> nodes of the group, avoiding the rest.</summary>
     Limit,
+
+    /// <summary>
+    /// Like <see cref="Limit"/>, but also prefer the FEWEST group nodes the optimal path allows:
+    /// among equally cheap solves, the one crossing 1 group node beats the one crossing 2.
+    /// </summary>
+    Minimal,
 }
 
 /// <summary>A user preference applied to every node of a group (see <see cref="NodeGrouping"/>).</summary>

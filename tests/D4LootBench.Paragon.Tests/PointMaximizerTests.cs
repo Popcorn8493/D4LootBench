@@ -52,6 +52,80 @@ public class PointMaximizerTests
     }
 
     [Fact]
+    public void Defense_share_reserves_points_for_survivability()
+    {
+        MaximizeFocus.IsDefensive("Hitpoints_Max_Percent_Bonus").ShouldBeTrue();
+        MaximizeFocus.IsDefensive("Resistance_All_Bonus_Percent").ShouldBeTrue();
+        MaximizeFocus.IsDefensive("Dodge_Chance_Bonus").ShouldBeTrue();
+        MaximizeFocus.IsDefensive("Crit_Damage_Percent").ShouldBeFalse();
+        MaximizeFocus.IsDefensive("Strength_Core").ShouldBeFalse();
+
+        var graph = StarterGraph();
+        double DefenseGained(double share)
+        {
+            var purchased = new HashSet<CellRef>();
+            var outcome = PointMaximizer.Extend(graph, purchased, 25,
+                new MaximizeFocus(["Strength_Core"], false) { DefenseShare = share }, EmptyRequest);
+            AssertConnected(graph, purchased);
+            return outcome.Gains
+                .Where(g => MaximizeFocus.IsDefensive(g.Key))
+                .Sum(g => g.Value);
+        }
+
+        // A pure-offense focus buys no defense; the share carves out a guaranteed slice.
+        DefenseGained(0).ShouldBe(0);
+        DefenseGained(0.3).ShouldBeGreaterThan(0);
+    }
+
+    [Fact]
+    public void Reference_emphasis_ranks_the_stats_an_allocation_actually_stacks()
+    {
+        var graph = StarterGraph();
+        // Allocate every Strength-granting cell of the board and nothing else.
+        var allocated = graph.Vertices
+            .Where(v => v.Node.Attributes.Any(a => !a.IsThresholdBonus
+                && string.Equals(a.Attribute, "Strength_Core", StringComparison.OrdinalIgnoreCase)
+                && a.Value is not null))
+            .Select(v => v.Cell)
+            .ToList();
+        allocated.Count.ShouldBeGreaterThan(0);
+
+        var emphasis = BuildReference.EmphasisOf(graph, allocated);
+
+        emphasis.ShouldNotBeEmpty();
+        emphasis[0].Attribute.ShouldBe("Strength_Core", StringCompareShould.IgnoreCase);
+        // Kind-weighted (travel normals ×0.25), so a pure-Strength allocation still scores
+        // meaningfully but well below its raw node count.
+        emphasis[0].Score.ShouldBeGreaterThan(allocated.Count * 0.1);
+    }
+
+    [Fact]
+    public void Combined_references_reward_consensus_and_dilute_outliers()
+    {
+        // Guide A and B agree on crit; only A stacks resistance; scales differ 10× to prove
+        // per-reference normalization (a bigger build must not dominate the average).
+        IReadOnlyList<ReferenceEmphasis> guideA =
+        [
+            new("Strength_Core", 100), new("Crit_Percent_Bonus", 10), new("Resistance_All_Bonus_Percent", 8),
+        ];
+        IReadOnlyList<ReferenceEmphasis> guideB =
+        [
+            new("Strength_Core", 10), new("Crit_Percent_Bonus", 1.0),
+        ];
+
+        var combined = BuildReference.Combine([guideA, guideB], MaximizeFocus.CoreStats);
+        var byName = combined.ToDictionary(e => e.Attribute, e => e.Score, StringComparer.OrdinalIgnoreCase);
+
+        byName["Strength_Core"].ShouldBe(1.0, 0.001);          // tops both core tiers
+        byName["Crit_Percent_Bonus"].ShouldBe(1.0, 0.001);     // tops both secondary tiers
+        byName["Resistance_All_Bonus_Percent"].ShouldBe(0.4, 0.001); // 0.8 in A, absent in B
+        BuildReference.AgreementCount([guideA, guideB], "Crit_Percent_Bonus", MaximizeFocus.CoreStats)
+            .ShouldBe(2);
+        BuildReference.AgreementCount([guideA, guideB], "Resistance_All_Bonus_Percent", MaximizeFocus.CoreStats)
+            .ShouldBe(1);
+    }
+
+    [Fact]
     public void Stat_weights_shift_spending_toward_the_prioritized_stat()
     {
         var graph = StarterGraph();

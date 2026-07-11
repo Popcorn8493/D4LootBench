@@ -137,6 +137,28 @@ public partial class ParagonPlannerViewModel : ObservableObject
     [ObservableProperty]
     private bool _realisticRares;
 
+    public static IReadOnlyList<string> SurvivabilityLevels { get; } = ["None", "Light", "Balanced", "Heavy"];
+
+    /// <summary>Share of leftover points reserved for defensive stats (see MaximizeFocus.DefenseShare).</summary>
+    [ObservableProperty]
+    private string _survivabilityLevel = "None";
+
+    private double DefenseShareOf() => SurvivabilityLevel switch
+    {
+        "Light" => 0.15,
+        "Balanced" => 0.30,
+        "Heavy" => 0.50,
+        _ => 0,
+    };
+
+    private static string SurvivabilityLevelFor(double share) => share switch
+    {
+        >= 0.40 => "Heavy",
+        >= 0.22 => "Balanced",
+        > 0 => "Light",
+        _ => "None",
+    };
+
     /// <summary>Spend Remaining Points first buys the stats unmet rare-node thresholds are short of.</summary>
     [ObservableProperty]
     private bool _activateThresholds;
@@ -231,6 +253,16 @@ public partial class ParagonPlannerViewModel : ObservableObject
 
     [ObservableProperty]
     private string _nodeMixSummary = "";
+
+    /// <summary>Points per board — compare against the game's per-board totals to find where a
+    /// hand-copied build diverges.</summary>
+    [ObservableProperty]
+    private string _perBoardSummary = "";
+
+    /// <summary>Shown when the path enters boards in a different order than the slot numbers —
+    /// the game prices threshold tiers by that entry (attachment) order.</summary>
+    [ObservableProperty]
+    private string _attachOrderSummary = "";
 
     [ObservableProperty]
     private string _glyphSummary = "";
@@ -424,6 +456,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
         var purchased = plan.PurchasedCells.ToHashSet();
         foreach (var cell in Cells)
             cell.IsPurchased = purchased.Contains(cell.Cell);
+        ClearDiffMarks(); // Plan Layout builds from scratch — nothing meaningful to diff against
 
         string details = BuildSolveDetails(plan);
         SolveDetails = result.Notes.Count == 0
@@ -788,6 +821,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
 
         var imported = new BuildSnapshot(
             "the import", import.Build.Layout, import.Build.AllocatedCells, import.Build.Glyphs);
+        var purchasesBefore = CurrentPurchases();
         CombinedBuild combined;
         try
         {
@@ -811,7 +845,10 @@ public partial class ParagonPlannerViewModel : ObservableObject
                 _targets.Add(cell.Cell);
         }
         if (_targets.Count > 0 || GlyphSockets.Any(s => s.EnsureActive))
+        {
             await SolveAsync();
+            MarkPurchaseDiff(purchasesBefore);
+        }
         if (combined.Notes.Count > 0)
         {
             SolveDetails = string.Join(Environment.NewLine, combined.Notes) +
@@ -843,6 +880,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
         var allocated = build.AllocatedCells.ToHashSet();
         foreach (var cell in Cells)
             cell.IsPurchased = allocated.Contains(cell.Cell);
+        ClearDiffMarks(); // a wholesale replacement — nothing meaningful to diff against
         RefreshBuildSummary();
 
         var assigned = GlyphSockets.Where(s => s.SelectedGlyph is not null).ToList();
@@ -1029,6 +1067,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
             .ToDictionary(f => f.Attribute, f => f.Weight),
         PreferRareNodes = PreferRareNodes,
         RealisticRares = RealisticRares,
+        DefenseShare = DefenseShareOf(),
         ActivateThresholds = ActivateThresholds,
         TotalPoints = TotalPoints,
         SheetStrength = SheetStrength,
@@ -1068,6 +1107,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
         SheetDexterity = project.SheetDexterity;
         PreferRareNodes = project.PreferRareNodes;
         RealisticRares = project.RealisticRares;
+        SurvivabilityLevel = SurvivabilityLevelFor(project.DefenseShare);
         ActivateThresholds = project.ActivateThresholds;
 
         foreach (var glyph in project.Glyphs)
@@ -1110,6 +1150,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
         var purchased = project.PurchasedCells.ToHashSet();
         foreach (var cell in Cells)
             cell.IsPurchased = purchased.Contains(cell.Cell);
+        ClearDiffMarks();
         RefreshBuildSummary();
     }
 
@@ -1177,7 +1218,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
         // A Limit rule caps its GROUP, not the stat: rare nodes granting the same attribute are
         // separate per-name groups, which reads as "the limit broke" — say so explicitly.
         var cellsByGroup = NodeGrouping.CellsByGroup(_graph);
-        foreach (var rule in NodeRules.Where(r => r.Mode == NodeRuleMode.Limit))
+        foreach (var rule in NodeRules.Where(r => r.Mode is NodeRuleMode.Limit or NodeRuleMode.Minimal))
         {
             // Magic/Normal group keys are "<Kind>:<Attribute>:<Param>".
             var parts = rule.Group.Key.Split(':');
@@ -1259,7 +1300,12 @@ public partial class ParagonPlannerViewModel : ObservableObject
     };
 
     [RelayCommand]
-    private Task Solve() => SolveAsync();
+    private async Task Solve()
+    {
+        var before = CurrentPurchases();
+        if (await SolveAsync())
+            MarkPurchaseDiff(before);
+    }
 
     /// <summary>
     /// One-click re-run after any change (targets, rules, glyphs, stats): solve the path fresh,
@@ -1270,12 +1316,14 @@ public partial class ParagonPlannerViewModel : ObservableObject
     {
         if (_graph is null)
             return;
+        var before = CurrentPurchases();
         using var busy = BeginBusy();
         if (!await SolveAsync())
             return;
         // With thresholds on, a full pool still gets the reallocation check.
         if (TotalPoints - Cells.Count(c => c.IsPurchased) > 0 || ActivateThresholds)
             await MaximizePointsAsync();
+        MarkPurchaseDiff(before);
     }
 
     /// <summary>Solve as a plain task so Combine/Apply/Revert can await it inside their busy scope.</summary>
@@ -1329,13 +1377,21 @@ public partial class ParagonPlannerViewModel : ObservableObject
     {
         if (cell.IsStart)
             return;
-
-        cell.Constraint = cell.Constraint switch
+        SetCellConstraint(cell, cell.Constraint switch
         {
             CellConstraint.None => CellConstraint.Avoid,
             CellConstraint.Avoid => CellConstraint.Exclude,
             _ => CellConstraint.None,
-        };
+        });
+    }
+
+    /// <summary>Marks a node avoid / off-limits (exclude) / clear — the right-click menu's verbs.</summary>
+    public void SetCellConstraint(ParagonCellViewModel cell, CellConstraint constraint)
+    {
+        if (cell.IsStart)
+            return;
+
+        cell.Constraint = constraint;
         if (cell.Constraint == CellConstraint.Exclude && cell.IsTarget)
         {
             cell.IsTarget = false;
@@ -1346,7 +1402,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
         SetStatus(cell.Constraint switch
         {
             CellConstraint.Avoid => "Node marked avoid — taken only when it saves several plain nodes.",
-            CellConstraint.Exclude => "Node excluded — the path will never go through it.",
+            CellConstraint.Exclude => "Node marked off-limits — no path or purchase will ever touch it.",
             _ => "Node constraint cleared.",
         });
     }
@@ -1378,21 +1434,28 @@ public partial class ParagonPlannerViewModel : ObservableObject
             .ToList();
         // Candidates are judged by the FINISHED build: solve + full spend of the point pool
         // with the current Optimize settings, compared on glyphs → thresholds → focus value.
+        // Socketed glyphs ride along by board slot so node buffs count per candidate.
+        var socketedGlyphs = GlyphSockets
+            .Where(s => s.SelectedGlyph is not null)
+            .Select(s => new PipelineGlyph(s.Socket.BoardSlot, s.SelectedGlyph!, s.Level))
+            .ToList();
         var pipeline = new PlacementPipeline(
             TotalPoints,
             CurrentMaximizeFocus(),
-            new ThresholdContext(ParagonDatabase.Data, SelectedClass, SheetStatOffsets()));
+            new ThresholdContext(ParagonDatabase.Data, SelectedClass, SheetStatOffsets()),
+            socketedGlyphs);
         using var busy = BeginBusy();
-        SetStatus("Analyzing rotations, glyph placements, and board swaps at full point spend…");
+        SetStatus("Analyzing rotations, re-attachments, glyph placements, and board swaps at full point spend…");
         var (baseline, suggestions) = await Task.Run(() =>
         {
             var solved = PlanSolver.Solve(graph, request);
             if (!solved.Success)
                 return (solved, (IReadOnlyList<PlacementSuggestion>)Array.Empty<PlacementSuggestion>());
-            var found = PlacementAnalyzer.SuggestRotations(layout, request, solved, pipeline)
-                .Take(3)
+            var found = PlacementAnalyzer.SuggestGlyphAssignment(graph, request, solved, pipeline)
+                .Concat(PlacementAnalyzer.SuggestRotations(layout, request, solved, pipeline).Take(3))
                 .Concat(PlacementAnalyzer.SuggestGlyphPlacements(graph, layout, solved.PurchasedCells, request.GlyphGoals))
                 .Concat(PlacementAnalyzer.SuggestBoardSwaps(layout, request, solved, spareBoards, pipeline: pipeline))
+                .Concat(PlacementAnalyzer.SuggestReattachments(layout, request, solved, pipeline))
                 .ToList();
             return (solved, (IReadOnlyList<PlacementSuggestion>)found);
         });
@@ -1476,10 +1539,84 @@ public partial class ParagonPlannerViewModel : ObservableObject
         if (_layout is null || suggestion.Change is null)
             return;
         var before = CaptureState();
-        int pointsBefore = Cells.Count(c => c.IsPurchased);
+        var purchasesBefore = CurrentPurchases();
+        int pointsBefore = purchasesBefore.Count;
 
-        switch (suggestion.Change)
+        ApplyChange(suggestion.Change, before);
+
+        _revertState = before;
+        RevertPlacementCommand.NotifyCanExecuteChanged();
+        await SolveAsync();
+        MarkPurchaseDiff(purchasesBefore);
+        int pointsAfter = Cells.Count(c => c.IsPurchased);
+        SetStatus($"Applied — path re-solved at {pointsAfter} points (was {pointsBefore}). " +
+                  "Revert flips back to compare.", error: StatusIsError);
+    }
+
+    private void ApplyChange(PlacementChange change, PlannerState before)
+    {
+        switch (change)
         {
+            case CompositeChange composite:
+            {
+                foreach (var child in composite.Changes)
+                    ApplyChange(child, before);
+                break;
+            }
+            case ReattachChange reattach:
+            {
+                var placed = _placedBoards[reattach.Slot];
+                // The board keeps its cells; only the rotation delta moves them.
+                int delta = (reattach.RotationSteps - placed.RotationSteps + 4) & 3;
+                int width = placed.Board.Width;
+                CellRef Remap(CellRef cell)
+                {
+                    if (cell.BoardSlot != reattach.Slot)
+                        return cell;
+                    var (x, y) = ParagonLayout.Rotate(cell.X, cell.Y, delta, width);
+                    return cell with { X = x, Y = y };
+                }
+                var targets = _targets.Select(Remap).ToList();
+                var constraints = before.Constraints.Select(c => (Remap(c.Cell), c.Constraint)).ToList();
+                _placedBoards[reattach.Slot] = new PlacedBoard
+                {
+                    Board = placed.Board,
+                    ParentSlot = reattach.ParentSlot,
+                    AttachEdge = reattach.Edge,
+                    RotationSteps = reattach.RotationSteps,
+                };
+                RebuildLayout(); // keeps glyph picks per board slot
+                RestoreCells(targets, constraints);
+                break;
+            }
+            case GlyphSlotReassignment slotMoves:
+            {
+                var socketBySlot = GlyphSockets.ToDictionary(s => s.Socket.BoardSlot);
+                var picks = slotMoves.Moves
+                    .Where(m => socketBySlot.ContainsKey(m.FromSlot) && socketBySlot.ContainsKey(m.ToSlot))
+                    .Select(m => (Target: socketBySlot[m.ToSlot],
+                                  socketBySlot[m.FromSlot].SelectedGlyph,
+                                  socketBySlot[m.FromSlot].Level,
+                                  socketBySlot[m.FromSlot].RequiredStat,
+                                  socketBySlot[m.FromSlot].EnsureActive))
+                    .ToList();
+                foreach (var move in slotMoves.Moves)
+                {
+                    if (socketBySlot.TryGetValue(move.FromSlot, out var from))
+                    {
+                        from.SelectedGlyph = null;
+                        from.EnsureActive = false;
+                    }
+                }
+                foreach (var (target, glyph, level, requiredStat, ensureActive) in picks)
+                {
+                    target.SelectedGlyph = glyph;
+                    target.Level = level;
+                    target.RequiredStat = requiredStat;
+                    target.EnsureActive = ensureActive && glyph is not null;
+                }
+                break;
+            }
             case RotationChange rotation:
             {
                 var placed = _placedBoards[rotation.Slot];
@@ -1550,13 +1687,6 @@ public partial class ParagonPlannerViewModel : ObservableObject
                 break;
             }
         }
-
-        _revertState = before;
-        RevertPlacementCommand.NotifyCanExecuteChanged();
-        await SolveAsync();
-        int pointsAfter = Cells.Count(c => c.IsPurchased);
-        SetStatus($"Applied — path re-solved at {pointsAfter} points (was {pointsBefore}). " +
-                  "Revert flips back to compare.", error: StatusIsError);
     }
 
     [RelayCommand(CanExecute = nameof(CanRevertPlacement))]
@@ -1564,6 +1694,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
     {
         if (_revertState is not PlannerState state)
             return;
+        var purchasesBefore = CurrentPurchases();
         _placedBoards.Clear();
         _placedBoards.AddRange(state.Boards);
         RebuildLayout(); // clears _revertState — reverting is one-shot
@@ -1571,6 +1702,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
         RestoreGlyphs(state.Glyphs);
         if (_targets.Count > 0 || GlyphSockets.Any(s => s.EnsureActive))
             await SolveAsync();
+        MarkPurchaseDiff(purchasesBefore);
         SetStatus("Reverted to the layout before the applied suggestion.");
     }
 
@@ -1583,7 +1715,12 @@ public partial class ParagonPlannerViewModel : ObservableObject
     /// (and rare nodes first, when preferred), growing the purchased tree greedily.
     /// </summary>
     [RelayCommand]
-    private Task MaximizePoints() => MaximizePointsAsync();
+    private async Task MaximizePoints()
+    {
+        var before = CurrentPurchases();
+        await MaximizePointsAsync();
+        MarkPurchaseDiff(before);
+    }
 
     private async Task MaximizePointsAsync()
     {
@@ -1642,9 +1779,230 @@ public partial class ParagonPlannerViewModel : ObservableObject
         SetStatus($"{purchased.Count} of {TotalPoints} points spent " +
                   $"(+{spent} maximizing{(PreferRareNodes ? " rare nodes and" : "")} focused stats" +
                   $"{(outcome.ThresholdsActivated > 0 ? $", {outcome.ThresholdsActivated} threshold(s) activated" : "")}" +
-                  $"{(reallocated ? ", some points reallocated to thresholds" : "")}).",
+                  $"{(reallocated ? ", some points reallocated to thresholds" : "")}) — " +
+                  "changes ringed on the board: cyan added, dashed red removed.",
             error: outcome.Notes.Any(n => !n.StartsWith("Reallocated", StringComparison.Ordinal)));
     }
+
+    /// <summary>What the reference-derived priorities came from, shown in the Optimize tab.</summary>
+    [ObservableProperty]
+    private string _referenceSummary = "";
+
+    /// <summary>Reference builds added this session; priorities derive from their consensus.</summary>
+    private readonly List<(string Source, IReadOnlyList<ReferenceEmphasis> Emphasis)> _references = [];
+
+    /// <summary>
+    /// Imports a build (clipboard: Maxroll code/URL, Mobalytics URL, or page HTML) as a REFERENCE
+    /// only: the current layout stays untouched, but the focus stats and their priorities are
+    /// derived from what the reference allocations actually stack — so the maximizer chases
+    /// proven builds' emphasis instead of a hand-picked checkbox list. Add several guides and
+    /// the priorities become their consensus: a stat every guide stacks ranks high, a single
+    /// guide's outlier gets diluted.
+    /// </summary>
+    [RelayCommand]
+    private async Task AddBuildReference()
+    {
+        using var busy = BeginBusy();
+        if (await ImportFromClipboardAsync() is not { } import)
+            return;
+
+        SetStatus("Deriving stat priorities from the reference build(s)…");
+        var emphasis = await Task.Run(() =>
+        {
+            var referenceGraph = ComposedGraph.Build(import.Build.Layout);
+            return BuildReference.EmphasisOf(referenceGraph, import.Build.AllocatedCells);
+        });
+        if (emphasis.Count == 0)
+        {
+            SetStatus("The reference build has no allocated nodes to learn from.", error: true);
+            return;
+        }
+
+        _references.Add(($"{import.Source} ({import.Build.AllocatedCells.Count} nodes)", emphasis));
+        ApplyReferencePriorities();
+    }
+
+    [RelayCommand]
+    private void ClearBuildReferences()
+    {
+        _references.Clear();
+        ReferenceSummary = "";
+        SetStatus("Reference builds cleared — focus stats keep their current selection.");
+    }
+
+    /// <summary>
+    /// Maps the references' combined emphasis onto this layout's focusable stats. Core stats
+    /// structurally dominate every allocation (most nodes grant them), so core and secondary
+    /// stats rank against their own tier's best: ≥60% → High, ≥30% → Normal, ≥15% → Low,
+    /// below → unselected noise.
+    /// </summary>
+    private void ApplyReferencePriorities()
+    {
+        var emphasisLists = _references.Select(r => r.Emphasis).ToList();
+        var combined = BuildReference.Combine(emphasisLists, MaximizeFocus.CoreStats);
+        var coreSet = MaximizeFocus.CoreStats.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var scoreByAttribute = combined.ToDictionary(
+            e => e.Attribute, e => e.Score, StringComparer.OrdinalIgnoreCase);
+        double coreTop = combined.Where(e => coreSet.Contains(e.Attribute))
+            .Select(e => e.Score).DefaultIfEmpty(0).Max();
+        double secondaryTop = combined.Where(e => !coreSet.Contains(e.Attribute))
+            .Select(e => e.Score).DefaultIfEmpty(0).Max();
+
+        string Agreement(string attribute) => _references.Count > 1
+            ? $" ({BuildReference.AgreementCount(emphasisLists, attribute, MaximizeFocus.CoreStats)}/{_references.Count})"
+            : "";
+
+        var high = new List<string>();
+        var normal = new List<string>();
+        var low = new List<string>();
+        foreach (var focus in FocusStats)
+        {
+            double score = scoreByAttribute.GetValueOrDefault(focus.Attribute);
+            double tierTop = coreSet.Contains(focus.Attribute) ? coreTop : secondaryTop;
+            if (tierTop <= 0 || score < tierTop * 0.15)
+            {
+                focus.IsSelected = false;
+                focus.Priority = "Normal";
+                continue;
+            }
+            focus.IsSelected = true;
+            focus.Priority = score >= tierTop * 0.60 ? "High" : score >= tierTop * 0.30 ? "Normal" : "Low";
+            string label = focus.DisplayName.Split(" ×")[0] + Agreement(focus.Attribute);
+            (focus.Priority == "High" ? high : focus.Priority == "Normal" ? normal : low).Add(label);
+        }
+
+        // Stats the references stack but this layout can't supply are worth knowing about.
+        var focusable = FocusStats.Select(f => f.Attribute).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var unavailable = combined
+            .Where(e => !focusable.Contains(e.Attribute)
+                && e.Score >= (coreSet.Contains(e.Attribute) ? coreTop : secondaryTop) * 0.30)
+            .Select(e => ParagonDisplay.FormatAttributeName(e.Attribute))
+            .Take(4)
+            .ToList();
+
+        string sources = string.Join("; ", _references.Select(r => r.Source));
+        ReferenceSummary = $"References ({_references.Count}): {sources}. " +
+            $"High: {(high.Count > 0 ? string.Join(", ", high) : "—")}. " +
+            $"Normal: {(normal.Count > 0 ? string.Join(", ", normal) : "—")}. " +
+            $"Low: {(low.Count > 0 ? string.Join(", ", low) : "—")}." +
+            (unavailable.Count > 0
+                ? $" Not on your boards: {string.Join(", ", unavailable)}."
+                : "");
+        SolveDetails = $"Combined reference emphasis (relative to each build's own tier best" +
+            $"{(_references.Count > 1 ? ", averaged across the guides" : "")}):" +
+            Environment.NewLine +
+            string.Join(Environment.NewLine, combined
+                .Where(e => e.Score >= 0.05)
+                .Select(e => $"  {e.Score,5:0.00}  {ParagonDisplay.FormatAttributeName(e.Attribute)}{Agreement(e.Attribute)}"));
+        SetStatus($"Focus priorities set from {_references.Count} reference build(s) — run Re-analyze to apply them.");
+    }
+
+    /// <summary>
+    /// Rewrites the board list so slot numbers AND parent/edge links match how the purchased
+    /// path actually assembles the build — the planner's tree is only positional and can claim
+    /// attachments (e.g. "2 hangs off 1's top") whose crossing the path never buys. Positions,
+    /// rotations, targets, marks, purchases, and glyphs are all preserved.
+    /// </summary>
+    [RelayCommand]
+    private void RenumberToPathOrder()
+    {
+        if (_graph is null || _layout is null)
+            return;
+        var purchased = Cells.Where(c => c.IsPurchased).Select(c => c.Cell).ToHashSet();
+        if (purchased.Count == 0)
+        {
+            SetStatus("Solve or import a build first — the attach order comes from the purchased path.", error: true);
+            return;
+        }
+        var entries = BuildStats.EffectiveAttachments(_graph, purchased);
+        if (Enumerable.Range(0, entries.Count).All(s => entries[s].Tier == s))
+        {
+            SetStatus("Slot numbering already matches the path's attach order.");
+            return;
+        }
+
+        int count = _placedBoards.Count;
+        var oldByNew = Enumerable.Range(0, count).OrderBy(s => entries[s].Tier).ToList();
+        var newByOld = new int[count];
+        for (int n = 0; n < count; n++)
+            newByOld[oldByNew[n]] = n;
+
+        var newBoards = new List<PlacedBoard> { _placedBoards[0] };
+        for (int n = 1; n < count; n++)
+        {
+            int old = oldByNew[n];
+            var placed = _placedBoards[old];
+            int parentOld;
+            BoardEdge edge;
+            if (entries[old] is { EnteredFromSlot: int fromSlot, ParentGate: CellRef gate })
+            {
+                // Re-parent to the crossing the path actually uses.
+                parentOld = fromSlot;
+                edge = EdgeOfGate(gate, _placedBoards[fromSlot].Board.Width);
+            }
+            else
+            {
+                parentOld = placed.ParentSlot!.Value;
+                edge = placed.AttachEdge!.Value;
+            }
+            newBoards.Add(new PlacedBoard
+            {
+                Board = placed.Board,
+                ParentSlot = newByOld[parentOld],
+                AttachEdge = edge,
+                RotationSteps = placed.RotationSteps,
+            });
+        }
+
+        try
+        {
+            ComposedGraph.Build(new ParagonLayout(newBoards));
+        }
+        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
+        {
+            SetStatus($"Couldn't renumber to the path order: {ex.Message}", error: true);
+            return;
+        }
+
+        CellRef Remap(CellRef cell) => cell with { BoardSlot = newByOld[cell.BoardSlot] };
+        var targets = _targets.Select(Remap).ToList();
+        var constraints = Cells.Where(c => c.Constraint != CellConstraint.None)
+            .Select(c => (Remap(c.Cell), c.Constraint)).ToList();
+        var newPurchased = purchased.Select(Remap).ToHashSet();
+        var glyphPicks = GlyphSockets.Select(s =>
+            (NewSlot: newByOld[s.Socket.BoardSlot], Glyph: s.SelectedGlyph?.InternalName,
+             s.Level, s.RequiredStat, s.EnsureActive, s.HighlightRadius)).ToList();
+
+        _placedBoards.Clear();
+        _placedBoards.AddRange(newBoards);
+        RebuildLayout(); // per-slot glyph preservation is wrong after renumbering — restore below
+        RestoreCells(targets, constraints);
+        var socketBySlot = GlyphSockets.ToDictionary(s => s.Socket.BoardSlot);
+        foreach (var pick in glyphPicks)
+        {
+            if (!socketBySlot.TryGetValue(pick.NewSlot, out var socket))
+                continue;
+            socket.SelectedGlyph = pick.Glyph is null
+                ? null
+                : socket.Glyphs.FirstOrDefault(g =>
+                    string.Equals(g.InternalName, pick.Glyph, StringComparison.OrdinalIgnoreCase));
+            socket.Level = pick.Level;
+            socket.RequiredStat = pick.RequiredStat;
+            socket.EnsureActive = pick.EnsureActive && socket.SelectedGlyph is not null;
+            socket.HighlightRadius = pick.HighlightRadius;
+        }
+        foreach (var cell in Cells)
+            cell.IsPurchased = newPurchased.Contains(cell.Cell);
+        ClearDiffMarks(); // same nodes, renumbered slots — a diff would be pure noise
+        RefreshBuildSummary();
+        SetStatus("Boards renumbered to the path's attach order — slot numbers and parent links now " +
+                  "reflect the crossings the path actually uses.");
+    }
+
+    /// <summary>Which edge of a board a gate cell sits on (rotated coordinates).</summary>
+    private static BoardEdge EdgeOfGate(CellRef gate, int width) =>
+        new[] { BoardEdge.Top, BoardEdge.Bottom, BoardEdge.Left, BoardEdge.Right }
+            .First(edge => ParagonLayout.GateCell(edge, width) == (gate.X, gate.Y));
 
     /// <summary>The Optimize-tab settings as one maximizer focus (stats, weights, rare/threshold flags).</summary>
     private MaximizeFocus CurrentMaximizeFocus()
@@ -1659,6 +2017,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
         {
             Weights = weights.Count > 0 ? weights : null,
             RealisticRares = RealisticRares,
+            DefenseShare = DefenseShareOf(),
         };
     }
 
@@ -1679,8 +2038,42 @@ public partial class ParagonPlannerViewModel : ObservableObject
     private void ClearSolution()
     {
         foreach (var cell in Cells)
+        {
             cell.IsPurchased = false;
+            cell.IsNewlyAdded = false;
+            cell.IsRemoved = false;
+        }
         RefreshBuildSummary();
+    }
+
+    private HashSet<CellRef> CurrentPurchases() =>
+        Cells.Where(c => c.IsPurchased).Select(c => c.Cell).ToHashSet();
+
+    /// <summary>
+    /// Rings the diff of the last action: cyan = added, dashed red = removed (refund in game).
+    /// A wholesale replacement (empty baseline) shows no rings — everything would be "added".
+    /// </summary>
+    private void MarkPurchaseDiff(HashSet<CellRef> before)
+    {
+        if (before.Count == 0)
+        {
+            ClearDiffMarks();
+            return;
+        }
+        foreach (var cell in Cells)
+        {
+            cell.IsNewlyAdded = cell.IsPurchased && !before.Contains(cell.Cell);
+            cell.IsRemoved = !cell.IsPurchased && before.Contains(cell.Cell);
+        }
+    }
+
+    private void ClearDiffMarks()
+    {
+        foreach (var cell in Cells)
+        {
+            cell.IsNewlyAdded = false;
+            cell.IsRemoved = false;
+        }
     }
 
     /// <summary>Recomputes the pinned build summary and the effective stat totals panel.</summary>
@@ -1697,6 +2090,8 @@ public partial class ParagonPlannerViewModel : ObservableObject
         if (_graph is null || spent == 0)
         {
             NodeMixSummary = "No nodes allocated yet — solve a path or import a build.";
+            PerBoardSummary = "";
+            AttachOrderSummary = "";
             GlyphSummary = "";
             ThresholdSummary = "";
             UnmetThresholdNeeds = [];
@@ -1704,8 +2099,10 @@ public partial class ParagonPlannerViewModel : ObservableObject
             foreach (var rule in NodeRules)
                 rule.UsedCount = 0;
             UpdateStatHighlights();
+            UpdateBuffTooltips(new Dictionary<CellRef, double>());
             if (_graph is not null)
-                UpdateThresholdTooltips(new Dictionary<string, double>());
+                UpdateThresholdTooltips(new Dictionary<string, double>(),
+                    BuildStats.EffectiveAttachTiers(_graph, []));
             return;
         }
 
@@ -1721,6 +2118,22 @@ public partial class ParagonPlannerViewModel : ObservableObject
             Mix(ParagonNodeKind.GlyphSocket, "socket"),
             Mix(ParagonNodeKind.Gate, "gate"),
         }.Where(part => part.Length > 0));
+
+        PerBoardSummary = "Per board: " + string.Join("  ·  ", purchasedCells
+            .GroupBy(c => c.Cell.BoardSlot)
+            .OrderBy(g => g.Key)
+            .Select(g => $"{g.Key} {BoardDisplayName(_placedBoards[g.Key].Board)}: {g.Count()}"));
+
+        // The game assigns threshold tiers by the order boards are ATTACHED, which follows the
+        // path's gate purchases — say so whenever that differs from the slot numbering.
+        var attachTiers = BuildStats.EffectiveAttachTiers(
+            _graph, purchasedCells.Select(c => c.Cell).ToHashSet());
+        AttachOrderSummary = Enumerable.Range(0, attachTiers.Count).Any(s => attachTiers[s] != s)
+            ? "Attach order on the path: " + string.Join(" → ", Enumerable.Range(1, attachTiers.Count - 1)
+                  .OrderBy(s => attachTiers[s])
+                  .Select(s => $"{attachTiers[s]}. {BoardDisplayName(_placedBoards[s].Board)}")) +
+              " — threshold requirements follow this order, not the slot numbers."
+            : "";
 
         var purchased = purchasedCells.Select(c => c.Cell).ToHashSet();
         UpdatePathEdges(purchased);
@@ -1757,6 +2170,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
             : $"{socketsBought} socket(s) on the path, {glyphsAssigned} glyph(s) socketed, {glyphsActive} activated";
 
         var multipliers = CellMultipliers(purchased);
+        UpdateBuffTooltips(multipliers);
         var report = BuildStats.Compute(
             _graph, purchased, ParagonDatabase.Data, SheetStatOffsets(), SelectedClass, multipliers);
         ThresholdSummary = report.Thresholds.Count == 0
@@ -1855,7 +2269,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
         }
 
         UpdateStatHighlights();
-        UpdateThresholdTooltips(report.Totals);
+        UpdateThresholdTooltips(report.Totals, attachTiers);
     }
 
     /// <summary>
@@ -1887,6 +2301,32 @@ public partial class ParagonPlannerViewModel : ObservableObject
                     a.CanvasLeft + half, a.CanvasTop + half,
                     b.CanvasLeft + half, b.CanvasTop + half));
             }
+        }
+    }
+
+    /// <summary>
+    /// Shows the effective node values under "+X% to [rarity] nodes in radius" glyph buffs
+    /// (e.g. Marshal) on each affected cell's tooltip: "7 → 28.4 Willpower (×4.05 glyph buff)".
+    /// Unpurchased cells in a buffed radius get it too — that's what buying one would grant.
+    /// </summary>
+    private void UpdateBuffTooltips(IReadOnlyDictionary<CellRef, double> multipliers)
+    {
+        foreach (var cell in Cells)
+        {
+            double multiplier = multipliers.GetValueOrDefault(cell.Cell, 1.0);
+            if (Math.Abs(multiplier - 1.0) < 1e-9)
+            {
+                cell.BuffInfo = null;
+                continue;
+            }
+            var effective = cell.Node.Attributes
+                .Where(a => !a.IsThresholdBonus && a.Value is not null)
+                .Select(a => $"{FormatGain(a.Value!.Value)} → {FormatGain(a.Value.Value * multiplier)} " +
+                             ParagonDisplay.FormatAttributeName(a.Attribute))
+                .ToList();
+            cell.BuffInfo = effective.Count == 0
+                ? null
+                : $"Glyph node buff ×{multiplier:0.##} ({multiplier - 1:+0%;-0%}): {string.Join(", ", effective)}";
         }
     }
 
@@ -1924,7 +2364,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
         ParagonDatabase.Data.Thresholds.ToDictionary(t => t.SnoId, StringComparer.OrdinalIgnoreCase);
 
     /// <summary>Puts the exact requirement-vs-have math on every threshold rare's tooltip.</summary>
-    private void UpdateThresholdTooltips(IReadOnlyDictionary<string, double> totals)
+    private void UpdateThresholdTooltips(IReadOnlyDictionary<string, double> totals, IReadOnlyList<int> attachTiers)
     {
         var sheet = SheetStatOffsets();
         foreach (var cell in Cells)
@@ -1941,7 +2381,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
             if (def?.Requirements.FirstOrDefault() is not ThresholdRequirement requirement)
                 continue;
 
-            double required = BuildStats.RequirementAt(requirement, cell.Cell.BoardSlot);
+            double required = BuildStats.RequirementAt(requirement, attachTiers[cell.Cell.BoardSlot]);
             string attribute = requirement.Attribute;
             string paragonKey = attribute.EndsWith("_Total", StringComparison.Ordinal)
                 ? attribute[..^"_Total".Length] + "_Core"
@@ -1953,7 +2393,8 @@ public partial class ParagonPlannerViewModel : ObservableObject
                 ? cell.IsPurchased ? "ACTIVE" : "would activate if purchased"
                 : $"{required - have:0} short";
             cell.DynamicInfo =
-                $"Threshold at this board slot: needs {required:0} {ParagonDisplay.FormatAttributeName(attribute)}" +
+                $"Threshold at this board's attach tier ({attachTiers[cell.Cell.BoardSlot]}): " +
+                $"needs {required:0} {ParagonDisplay.FormatAttributeName(attribute)}" +
                 Environment.NewLine +
                 $"Character total: {have:0} ({paragonPart:0} paragon + {sheetPart:0} level/gear) — {status}";
         }

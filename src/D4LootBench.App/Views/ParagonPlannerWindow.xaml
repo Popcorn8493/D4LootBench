@@ -257,6 +257,23 @@
                             </ProgressBar.Style>
                         </ProgressBar>
                         <TextBlock Text="{Binding NodeMixSummary}" Style="{StaticResource SummaryLine}" />
+                        <TextBlock Text="{Binding PerBoardSummary}" Style="{StaticResource SummaryLine}"
+                                   ToolTip="Compare with the game's per-board point totals to find where a hand-copied build diverges" />
+                        <TextBlock Text="{Binding AttachOrderSummary}" Style="{StaticResource SummaryLine}"
+                                   ToolTip="The game assigns threshold tiers by ATTACHMENT order, which follows your gate purchases along the path — attach boards in-game in this order" />
+                        <Button Command="{Binding RenumberToPathOrderCommand}" Content="Renumber to path order"
+                                Padding="8,2" Margin="0,4,0,0" HorizontalAlignment="Left" FontSize="11"
+                                ToolTip="Rewrite slot numbers AND parent links to match how the path actually assembles the build — the current tree claims attachments whose crossings are never bought. Positions, path, targets, and glyphs are preserved.">
+                            <Button.Style>
+                                <Style TargetType="Button">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding AttachOrderSummary}" Value="">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
                         <TextBlock Text="{Binding GlyphSummary}" Style="{StaticResource SummaryLine}" />
                         <TextBlock Text="{Binding ThresholdSummary}" Style="{StaticResource SummaryLine}" />
                         <ItemsControl ItemsSource="{Binding ThresholdWarnings}">
@@ -457,6 +474,24 @@
                                 <TextBlock Text="Spend Remaining Points" FontWeight="SemiBold" Margin="0,0,0,4" />
                                 <TextBlock Text="After solving, spend the leftover of your point pool on focused stats and/or rare (yellow) nodes."
                                            FontSize="11" Foreground="#888" TextWrapping="Wrap" Margin="0,0,0,4" />
+                                <DockPanel Margin="0,0,0,4">
+                                    <Button DockPanel.Dock="Right" Command="{Binding ClearBuildReferencesCommand}" Content="Clear" Padding="8,3" Margin="4,0,0,0"
+                                            ToolTip="Forget the added reference builds (focus stats keep their current selection)" />
+                                    <Button Command="{Binding AddBuildReferenceCommand}" Content="Add Reference Build" Padding="10,3"
+                                            ToolTip="Copy a reference build to the clipboard (Maxroll code or URL, Mobalytics URL, or the page's HTML), then click: the focus stats below are selected and weighted by what that build's paragon allocation actually stacks — your boards and path stay untouched. Add SEVERAL guides and the priorities become their consensus (agreement shown as n/m). Follow with Re-analyze." />
+                                </DockPanel>
+                                <TextBlock Text="{Binding ReferenceSummary}" FontSize="11" Foreground="#4A7A9E"
+                                           TextWrapping="Wrap" Margin="0,0,0,6">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding ReferenceSummary}" Value="">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
                                 <Border BorderBrush="#E3E3E3" BorderThickness="1" CornerRadius="3" Margin="0,0,0,4">
                                         <ItemsControl ItemsSource="{Binding FocusStats}" Margin="4,2">
                                             <ItemsControl.ItemTemplate>
@@ -478,10 +513,16 @@
                                         </ItemsControl>
                                 </Border>
                                 <CheckBox IsChecked="{Binding PreferRareNodes}" Content="Prefer rare (yellow) nodes first" FontSize="11" Margin="0,0,0,4"
-                                          ToolTip="Buy reachable rare nodes before spending the rest on the focused stats" />
+                                          ToolTip="Buy reachable rare nodes before spending the rest on the focused stats. With focus stats selected, only rares DIRECTLY granting one of them are bought — off-build rares (e.g. max life on a damage build) are skipped entirely, even if their threshold bonus touches a focused stat. Click a skipped rare as a target if you want it anyway." />
                                 <CheckBox IsChecked="{Binding RealisticRares}" Content="Rank rares by attainable thresholds" FontSize="11" Margin="18,0,0,4"
                                           IsEnabled="{Binding PreferRareNodes}"
                                           ToolTip="Buy 'good' rares first: threshold bonuses already met, then ones the boards can realistically still supply the stat for, then plain rares — rares whose bonus is out of reach come last. Requirements count your Character Stats (level/gear)." />
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                    <TextBlock Text="Survivability:" FontSize="11" VerticalAlignment="Center" Margin="0,0,5,0" />
+                                    <ComboBox ItemsSource="{x:Static vm:ParagonPlannerViewModel.SurvivabilityLevels}"
+                                              SelectedItem="{Binding SurvivabilityLevel}" Width="90" FontSize="11"
+                                              ToolTip="Reserves a share of the leftover points for the best defensive value on the boards (life, armor, resists, dodge, healing…) BEFORE the focused-stat spend — Light 15%, Balanced 30%, Heavy 50%. Defensive rares also qualify for the rare phase, and reallocation won't trade the defense away. Hitting hard but dying? Raise this and Re-analyze." />
+                                </StackPanel>
                                 <CheckBox IsChecked="{Binding ActivateThresholds}" Content="Activate rare-node thresholds" FontSize="11" Margin="0,0,0,4"
                                           ToolTip="Buy whatever core stat unmet rare-node threshold bonuses are short of (smallest deficit first) before spending on focused stats. Requirements check the character TOTAL — enter your level/gear stats under Character Stats. Warns when the boards can't supply enough." />
                                 <Button Command="{Binding MaximizePointsCommand}" Content="Spend Remaining Points" Padding="10,3" Margin="0,2,0,0"
@@ -494,7 +535,7 @@
                         <ScrollViewer VerticalScrollBarVisibility="Auto">
                             <StackPanel Margin="10,8">
                                 <TextBlock FontSize="11" Foreground="#888" TextWrapping="Wrap" Margin="0,0,0,6"
-                                           Text="Right-click a node on the board to avoid (orange) or exclude (red) just that node. Normal and magic nodes group by stat; each rare/legendary node is its own group. The 'Any:' rows at the bottom cover every node granting that stat regardless of kind — limit 'Any: Hitpoints Max Bonus' to cap max-life nodes overall." />
+                                           Text="Right-click a node on the board for its menu: mark as target, avoid (orange), or off-limits (red — never pathed through or bought). Normal and magic nodes group by stat; each rare/legendary node is its own group. The 'Any:' rows at the bottom cover every node granting that stat regardless of kind — limit 'Any: Hitpoints Max Bonus' to cap max-life nodes overall. Limit takes at most N; Minimal also prefers the FEWEST the optimal path allows (1 beats 2 at equal cost)." />
                                 <DockPanel Margin="0,0,0,6">
                                     <TextBlock DockPanel.Dock="Left" Text="Filter:" VerticalAlignment="Center" FontSize="11" Margin="0,0,5,0" />
                                     <TextBox Text="{Binding RuleFilter, UpdateSourceTrigger=PropertyChanged}" FontSize="11"
@@ -643,6 +684,13 @@
                                         <!-- Purchased-path ring -->
                                         <Ellipse Width="24" Height="24" StrokeThickness="2.5" Stroke="#7CCB5A"
                                                  Visibility="{Binding IsPurchased, Converter={StaticResource BoolToVis}}" />
+                                        <!-- Just added by Spend Remaining Points / Re-analyze -->
+                                        <Ellipse Width="24" Height="24" StrokeThickness="2.5" Stroke="#4FC3F7"
+                                                 Visibility="{Binding IsNewlyAdded, Converter={StaticResource BoolToVis}}" />
+                                        <!-- Removed by the last action — refund this one in game -->
+                                        <Ellipse Width="24" Height="24" StrokeThickness="2.5" Stroke="#E27D7D"
+                                                 StrokeDashArray="2.2 1.4"
+                                                 Visibility="{Binding IsRemoved, Converter={StaticResource BoolToVis}}" />
                                         <!-- Target ring -->
                                         <Ellipse Width="24" Height="24" StrokeThickness="2" Stroke="White"
                                                  Visibility="{Binding IsTarget, Converter={StaticResource BoolToVis}}" />
@@ -840,16 +888,28 @@
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,1">
                             <Grid Style="{StaticResource Swatch}">
+                                <Ellipse Width="14" Height="14" Stroke="#4FC3F7" StrokeThickness="2.5" />
+                            </Grid>
+                            <TextBlock Text="Added by last action" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,1">
+                            <Grid Style="{StaticResource Swatch}">
+                                <Ellipse Width="14" Height="14" Stroke="#E27D7D" StrokeThickness="2.5" StrokeDashArray="2.2 1.4" />
+                            </Grid>
+                            <TextBlock Text="Removed by last action" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,1">
+                            <Grid Style="{StaticResource Swatch}">
                                 <Ellipse Width="14" Height="14" Stroke="#E8A33D" StrokeThickness="2" StrokeDashArray="1.6 1.6" />
                             </Grid>
-                            <TextBlock Text="Avoid (right-click)" />
+                            <TextBlock Text="Avoid (right-click menu)" />
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,1">
                             <Grid Style="{StaticResource Swatch}">
                                 <Ellipse Width="14" Height="14" Stroke="#C0392B" StrokeThickness="2" />
                                 <Path Stroke="#C0392B" StrokeThickness="1.6" Data="M 5,5 L 13,13 M 13,5 L 5,13" />
                             </Grid>
-                            <TextBlock Text="Exclude (right-click ×2)" />
+                            <TextBlock Text="Off-limits (right-click menu)" />
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,1">
                             <Grid Style="{StaticResource Swatch}">

@@ -45,6 +45,72 @@ public class LimitEnforcementTests
         NodeGrouping.CellsByGroup(graph)[LifeKey].Count(purchased.Contains);
 
     [Fact]
+    public void Minimal_mode_uses_the_fewest_group_nodes_at_equal_points()
+    {
+        var graph = LifeClusterGraph();
+        var request = LimitedRequest(graph);
+
+        var plain = PlanSolver.Solve(graph, new PlanRequest
+        {
+            Targets = request.Targets,
+            GlyphGoals = request.GlyphGoals,
+        });
+        plain.Success.ShouldBeTrue(plain.Error);
+
+        var minimal = PlanSolver.Solve(graph, new PlanRequest
+        {
+            Targets = request.Targets,
+            GlyphGoals = request.GlyphGoals,
+            // Generous cap: the point of Minimal is the fewest-nodes preference, not the cap.
+            NodeRules = [new NodeRule(LifeKey, NodeRuleMode.Minimal, 99)],
+        });
+        minimal.Success.ShouldBeTrue(minimal.Error);
+
+        // The +1 tie-break may never cost real points, and can only reduce group usage.
+        var plainBase = PlanSolver.Solve(graph, new PlanRequest { Targets = request.Targets });
+        var minimalBase = PlanSolver.Solve(graph, new PlanRequest
+        {
+            Targets = request.Targets,
+            NodeRules = [new NodeRule(LifeKey, NodeRuleMode.Minimal, 99)],
+        });
+        minimalBase.PointsSpent.ShouldBe(plainBase.PointsSpent);
+        LifeNodes(graph, minimalBase.PurchasedCells)
+            .ShouldBeLessThanOrEqualTo(LifeNodes(graph, plainBase.PurchasedCells));
+        LifeNodes(graph, minimal.PurchasedCells)
+            .ShouldBeLessThanOrEqualTo(LifeNodes(graph, plain.PurchasedCells));
+    }
+
+    [Fact]
+    public void Minimal_mode_still_caps_like_limit()
+    {
+        var graph = LifeClusterGraph();
+        var request = new PlanRequest
+        {
+            Targets = LimitedRequest(graph).Targets,
+            GlyphGoals = LimitedRequest(graph).GlyphGoals,
+            NodeRules = [new NodeRule(LifeKey, NodeRuleMode.Minimal, Limit)],
+        };
+        var result = PlanSolver.Solve(graph, request);
+        result.Success.ShouldBeTrue(result.Error);
+        LifeNodes(graph, result.PurchasedCells).ShouldBeLessThanOrEqualTo(Limit);
+
+        // The maximizer honors the Minimal cap exactly like a Limit cap.
+        var purchased = result.PurchasedCells.ToHashSet();
+        PointMaximizer.Extend(graph, purchased, 60, new MaximizeFocus([], PreferRare: true), request);
+        LifeNodes(graph, purchased).ShouldBeLessThanOrEqualTo(Limit);
+    }
+
+    [Fact]
+    public void Suggestions_never_trade_a_limit_break_for_other_gains()
+    {
+        var clean = new PipelineResult(2, 5, 100, 10.0);
+        var breaking = new PipelineResult(3, 8, 90, 20.0) { LimitBreaks = 1 };
+
+        breaking.BeatsForSuggestion(clean).ShouldBeFalse("a limit break may never look like a win");
+        clean.BeatsForSuggestion(breaking).ShouldBeTrue("restoring a broken limit is always a win");
+    }
+
+    [Fact]
     public void Glyph_activation_extension_respects_a_limit_rule()
     {
         var graph = LifeClusterGraph();

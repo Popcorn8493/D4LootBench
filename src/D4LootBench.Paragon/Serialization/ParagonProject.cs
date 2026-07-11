@@ -40,6 +40,9 @@ public sealed record ParagonProject
     /// <summary>Buy rares by threshold attainability first (see MaximizeFocus.RealisticRares).</summary>
     public bool RealisticRares { get; init; }
 
+    /// <summary>Share of leftover points reserved for defensive stats (MaximizeFocus.DefenseShare).</summary>
+    public double DefenseShare { get; init; }
+
     public bool ActivateThresholds { get; init; }
     public int TotalPoints { get; init; }
     public double SheetStrength { get; init; }

@@ -53,6 +53,25 @@ public static class PlanSolver
             .ToDictionary(g => g.Key, g => g.DisplayName);
         var (weights, blockedCells, limitRules) = BuildSteering(request, cellsByGroup);
 
+        // Minimal rules: prefer the fewest group nodes WITHOUT disturbing point-optimality.
+        // Every cell's weight is scaled up and Minimal-group cells cost +1 extra, so the tiny
+        // extras can only ever break ties between equally cheap trees, never buy a longer one.
+        var minimalRules = limitRules.Where(r => r.Mode == NodeRuleMode.Minimal).ToList();
+        int scale = 1;
+        if (minimalRules.Count > 0)
+        {
+            scale = 256;
+            foreach (var vertex in graph.Vertices)
+                weights[vertex.Cell] = weights.GetValueOrDefault(vertex.Cell, 1) * scale;
+            foreach (var rule in minimalRules)
+            {
+                if (!cellsByGroup.TryGetValue(rule.GroupKey, out var cells))
+                    continue;
+                foreach (var cell in cells)
+                    weights[cell] += 1;
+            }
+        }
+
         var notes = new List<string>();
         SolverResult result;
         SolverConstraints constraints;
@@ -83,7 +102,7 @@ public static class PlanSolver
             foreach (var (rule, _) in violated)
             {
                 foreach (var cell in cellsByGroup[rule.GroupKey])
-                    weights[cell] = Math.Max(weights.GetValueOrDefault(cell, 1), LimitEscalation[escalation]);
+                    weights[cell] = Math.Max(weights.GetValueOrDefault(cell, 1), LimitEscalation[escalation] * scale);
             }
             escalation++;
         }
@@ -146,6 +165,7 @@ public static class PlanSolver
                         blockedCells.Add(cell);
                     break;
                 case NodeRuleMode.Limit:
+                case NodeRuleMode.Minimal: // caps like Limit; the fewest-nodes bias is solver-side
                     limitRules.Add(rule);
                     break;
             }
