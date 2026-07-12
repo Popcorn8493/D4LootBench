@@ -226,11 +226,22 @@ public static class PointMaximizer
         int remaining = budget;
         var gains = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
 
+        // A board crossing's gate PAIR costs one point in-game (the attached side's gate is
+        // auto-purchased free — see GateCrossings). Pair gates are always consecutive on a
+        // path, so "partner is the previous walked vertex" covers the within-path case.
+        var gatePair = GateCrossings.PairMap(graph);
+
         int PathCost(int vertex)
         {
             int cost = 0;
+            int prev = -1;
             for (int v = vertex; v != -1 && !tree.Contains(v); v = from[v])
-                cost++;
+            {
+                int pair = gatePair[v];
+                if (pair < 0 || (pair != prev && !tree.Contains(pair)))
+                    cost++;
+                prev = v;
+            }
             return cost;
         }
 
@@ -242,7 +253,11 @@ public static class PointMaximizer
                 var cell = graph.Vertices[v].Cell;
                 purchased.Add(cell);
                 added.Add(cell);
-                remaining--;
+                // The walk runs candidate→tree, so a crossing's far gate is added (and paid)
+                // before the near gate finds its partner already in the tree and rides free.
+                int pair = gatePair[v];
+                if (pair < 0 || !tree.Contains(pair))
+                    remaining--;
                 var node = graph.Vertices[v].Node;
                 if (node.Kind == ParagonNodeKind.Rare)
                     raresAdded++;
@@ -562,6 +577,7 @@ public static class PointMaximizer
         int swaps = 0;
         var protectedTargets = request.Targets.ToHashSet();
         var failedThresholds = new HashSet<CellRef>();
+        var reallocGatePair = GateCrossings.PairMap(graph);
 
         double MultiplierOf(int v) =>
             thresholds.CellMultipliers?.GetValueOrDefault(graph.Vertices[v].Cell, 1.0) ?? 1.0;
@@ -655,6 +671,11 @@ public static class PointMaximizer
                 foreach (int v in tree)
                 {
                     if (v == graph.StartVertex || !IsExpendableKind(graph.Vertices[v].Node.Kind))
+                        continue;
+                    // Half of a purchased gate pair frees no real point in-game (the pair costs
+                    // one; the survivor still costs it) — never trade it away.
+                    int pair = reallocGatePair[v];
+                    if (pair >= 0 && tree.Contains(pair))
                         continue;
                     var cell = graph.Vertices[v].Cell;
                     if (protectedTargets.Contains(cell))

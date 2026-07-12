@@ -21,6 +21,13 @@ public class ParagonProjectTests
         Glyphs = [new ParagonProjectGlyph(1, "S04_Glyph_Sorc_10", 46, 40, EnsureActive: true)],
         NodeRules = [new ParagonProjectRule("Magic:Hitpoints_Max_Percent_Bonus:", NodeRuleMode.Limit, 2)],
         FocusStats = ["Intelligence_Core"],
+        References =
+        [
+            new ParagonProjectReference("Mobalytics 'Selig' (312 nodes)",
+                [new ReferenceEmphasis("Intelligence_Core", 12.5), new ReferenceEmphasis("Crit_Damage_Percent", 3.25)]),
+            new ParagonProjectReference("Loaded filter (19 affix(es))",
+                [new ReferenceEmphasis("Willpower_Core", 8)]),
+        ],
         PreferRareNodes = true,
         TotalPoints = 342,
         SheetStrength = 10,
@@ -45,6 +52,10 @@ public class ParagonProjectTests
         parsed.Glyphs[0].EnsureActive.ShouldBeTrue();
         parsed.NodeRules[0].Mode.ShouldBe(NodeRuleMode.Limit);
         parsed.SheetIntelligence.ShouldBe(1200);
+        parsed.References.Count.ShouldBe(2);
+        parsed.References[0].Source.ShouldBe("Mobalytics 'Selig' (312 nodes)");
+        parsed.References[0].Emphasis[0].ShouldBe(new ReferenceEmphasis("Intelligence_Core", 12.5));
+        parsed.References[1].Emphasis.Single().Score.ShouldBe(8);
     }
 
     [Fact]
@@ -76,6 +87,7 @@ public class ParagonProjectTests
         parsed.Version.ShouldBe(1);
         parsed.Targets.ShouldBeEmpty();
         parsed.Glyphs.ShouldBeEmpty();
+        parsed.References.ShouldBeEmpty(); // pre-reference project files still load
         parsed.PreferRareNodes.ShouldBeFalse();
         parsed.Boards[0].ParentSlot.ShouldBeNull();
         parsed.Boards[0].AttachEdge.ShouldBeNull();

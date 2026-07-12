@@ -5,6 +5,7 @@ using D4LootBench.App.ViewModels;
 using D4LootBench.App.Views;
 using D4LootBench.Core.Compare;
 using D4LootBench.Core.Data;
+using D4LootBench.Paragon.Solver;
 
 namespace D4LootBench.App;
 
@@ -107,7 +108,17 @@ public partial class MainWindow
         {
             _paragonWindow = new ParagonPlannerWindow
             {
-                DataContext = new ParagonPlannerViewModel(),
+                DataContext = new ParagonPlannerViewModel
+                {
+                    // The planner stays Core-free: hand it the loaded filter's affix
+                    // priorities as plain (name, weight) pairs, resolved on demand.
+                    GearPriorityProvider = () =>
+                        _vm.Editor?.BuildRuleset() is { } ruleset
+                            ? GearPriorityExtractor.Extract(ruleset)
+                                .Select(p => new GearStatPriority(p.Name, p.Weight))
+                                .ToList()
+                            : [],
+                },
                 Owner = this,
             };
             _paragonWindow.Closed += (_, _) => _paragonWindow = null;

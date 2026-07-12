@@ -32,11 +32,12 @@ public sealed record CompareOutcome(IReadOnlyList<ItemScore> Scores, string Verd
 /// </summary>
 public static class ItemChoiceComparer
 {
-    /// <summary>A guide's top-priority affix is worth this much; lower priorities step down.</summary>
-    private const double TopAffixWeight = 4.0;
+    /// <summary>A guide's top-priority affix is worth this much; lower priorities step down.
+    /// Shared with <see cref="GearPriorityExtractor"/> so both read the filter the same way.</summary>
+    public const double TopAffixWeight = 4.0;
 
     /// <summary>Multiplier when the matched affix rolled as a Greater Affix.</summary>
-    private const double GreaterAffixFactor = 1.5;
+    public const double GreaterAffixFactor = 1.5;
 
     /// <summary>Being the guide's target unique outweighs any single affix line.</summary>
     private const double TargetUniquePoints = 10.0;

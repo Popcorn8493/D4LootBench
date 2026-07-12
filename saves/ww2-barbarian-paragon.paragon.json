@@ -30,7 +30,7 @@
       "boardInternalName": "Paragon_Barb_07",
       "parentSlot": 3,
       "attachEdge": "Right",
-      "rotationSteps": 3
+      "rotationSteps": 2
     }
   ],
   "targets": [
@@ -52,7 +52,7 @@
     {
       "boardSlot": 4,
       "x": 12,
-      "y": 12
+      "y": 8
     }
   ],
   "avoidCells": [],
@@ -71,11 +71,6 @@
     },
     {
       "boardSlot": 0,
-      "x": 9,
-      "y": 1
-    },
-    {
-      "boardSlot": 0,
       "x": 10,
       "y": 1
     },
@@ -91,13 +86,18 @@
     },
     {
       "boardSlot": 0,
+      "x": 9,
+      "y": 3
+    },
+    {
+      "boardSlot": 0,
       "x": 11,
       "y": 3
     },
     {
       "boardSlot": 0,
-      "x": 12,
-      "y": 3
+      "x": 9,
+      "y": 4
     },
     {
       "boardSlot": 0,
@@ -106,8 +106,23 @@
     },
     {
       "boardSlot": 0,
-      "x": 12,
-      "y": 4
+      "x": 6,
+      "y": 5
+    },
+    {
+      "boardSlot": 0,
+      "x": 7,
+      "y": 5
+    },
+    {
+      "boardSlot": 0,
+      "x": 8,
+      "y": 5
+    },
+    {
+      "boardSlot": 0,
+      "x": 9,
+      "y": 5
     },
     {
       "boardSlot": 0,
@@ -116,17 +131,27 @@
     },
     {
       "boardSlot": 0,
-      "x": 13,
-      "y": 5
+      "x": 5,
+      "y": 6
     },
     {
       "boardSlot": 0,
-      "x": 14,
-      "y": 5
+      "x": 6,
+      "y": 6
+    },
+    {
+      "boardSlot": 0,
+      "x": 7,
+      "y": 6
     },
     {
       "boardSlot": 0,
       "x": 8,
+      "y": 6
+    },
+    {
+      "boardSlot": 0,
+      "x": 9,
       "y": 6
     },
     {
@@ -141,27 +166,7 @@
     },
     {
       "boardSlot": 0,
-      "x": 12,
-      "y": 6
-    },
-    {
-      "boardSlot": 0,
-      "x": 13,
-      "y": 6
-    },
-    {
-      "boardSlot": 0,
-      "x": 14,
-      "y": 6
-    },
-    {
-      "boardSlot": 0,
-      "x": 15,
-      "y": 6
-    },
-    {
-      "boardSlot": 0,
-      "x": 8,
+      "x": 7,
       "y": 7
     },
     {
@@ -176,32 +181,22 @@
     },
     {
       "boardSlot": 0,
+      "x": 11,
+      "y": 7
+    },
+    {
+      "boardSlot": 0,
       "x": 12,
       "y": 7
     },
     {
       "boardSlot": 0,
-      "x": 13,
-      "y": 7
-    },
-    {
-      "boardSlot": 0,
-      "x": 14,
-      "y": 7
-    },
-    {
-      "boardSlot": 0,
-      "x": 8,
+      "x": 7,
       "y": 8
     },
     {
       "boardSlot": 0,
       "x": 9,
-      "y": 8
-    },
-    {
-      "boardSlot": 0,
-      "x": 10,
       "y": 8
     },
     {
@@ -216,16 +211,6 @@
     },
     {
       "boardSlot": 0,
-      "x": 8,
-      "y": 9
-    },
-    {
-      "boardSlot": 0,
-      "x": 9,
-      "y": 9
-    },
-    {
-      "boardSlot": 0,
       "x": 11,
       "y": 9
     },
@@ -233,16 +218,6 @@
       "boardSlot": 0,
       "x": 12,
       "y": 9
-    },
-    {
-      "boardSlot": 0,
-      "x": 9,
-      "y": 10
-    },
-    {
-      "boardSlot": 0,
-      "x": 11,
-      "y": 10
     },
     {
       "boardSlot": 0,
@@ -256,11 +231,21 @@
     },
     {
       "boardSlot": 0,
+      "x": 13,
+      "y": 11
+    },
+    {
+      "boardSlot": 0,
       "x": 12,
       "y": 12
     },
     {
       "boardSlot": 0,
+      "x": 10,
+      "y": 13
+    },
+    {
+      "boardSlot": 0,
       "x": 11,
       "y": 13
     },
@@ -271,7 +256,7 @@
     },
     {
       "boardSlot": 0,
-      "x": 11,
+      "x": 9,
       "y": 14
     },
     {
@@ -291,23 +276,8 @@
     },
     {
       "boardSlot": 1,
-      "x": 19,
-      "y": 12
-    },
-    {
-      "boardSlot": 1,
-      "x": 19,
-      "y": 13
-    },
-    {
-      "boardSlot": 1,
       "x": 18,
       "y": 10
-    },
-    {
-      "boardSlot": 1,
-      "x": 18,
-      "y": 12
     },
     {
       "boardSlot": 1,
@@ -321,23 +291,23 @@
     },
     {
       "boardSlot": 1,
-      "x": 16,
-      "y": 11
-    },
-    {
-      "boardSlot": 1,
       "x": 15,
       "y": 10
     },
     {
       "boardSlot": 1,
-      "x": 15,
-      "y": 13
+      "x": 14,
+      "y": 4
     },
     {
       "boardSlot": 1,
       "x": 14,
-      "y": 4
+      "y": 5
+    },
+    {
+      "boardSlot": 1,
+      "x": 14,
+      "y": 7
     },
     {
       "boardSlot": 1,
@@ -353,26 +323,6 @@
       "boardSlot": 1,
       "x": 14,
       "y": 10
-    },
-    {
-      "boardSlot": 1,
-      "x": 14,
-      "y": 11
-    },
-    {
-      "boardSlot": 1,
-      "x": 14,
-      "y": 12
-    },
-    {
-      "boardSlot": 1,
-      "x": 14,
-      "y": 13
-    },
-    {
-      "boardSlot": 1,
-      "x": 14,
-      "y": 14
     },
     {
       "boardSlot": 1,
@@ -413,16 +363,6 @@
       "boardSlot": 1,
       "x": 13,
       "y": 12
-    },
-    {
-      "boardSlot": 1,
-      "x": 13,
-      "y": 13
-    },
-    {
-      "boardSlot": 1,
-      "x": 13,
-      "y": 14
     },
     {
       "boardSlot": 1,
@@ -487,7 +427,7 @@
     {
       "boardSlot": 1,
       "x": 11,
-      "y": 4
+      "y": 3
     },
     {
       "boardSlot": 1,
@@ -497,17 +437,17 @@
     {
       "boardSlot": 1,
       "x": 11,
-      "y": 9
-    },
-    {
-      "boardSlot": 1,
-      "x": 11,
-      "y": 10
-    },
-    {
-      "boardSlot": 1,
-      "x": 11,
       "y": 11
+    },
+    {
+      "boardSlot": 1,
+      "x": 11,
+      "y": 12
+    },
+    {
+      "boardSlot": 1,
+      "x": 11,
+      "y": 13
     },
     {
       "boardSlot": 1,
@@ -562,27 +502,12 @@
     {
       "boardSlot": 1,
       "x": 10,
-      "y": 8
-    },
-    {
-      "boardSlot": 1,
-      "x": 10,
       "y": 12
     },
     {
       "boardSlot": 1,
       "x": 10,
       "y": 13
-    },
-    {
-      "boardSlot": 1,
-      "x": 10,
-      "y": 14
-    },
-    {
-      "boardSlot": 1,
-      "x": 10,
-      "y": 15
     },
     {
       "boardSlot": 1,
@@ -602,7 +527,7 @@
     {
       "boardSlot": 1,
       "x": 9,
-      "y": 1
+      "y": 7
     },
     {
       "boardSlot": 1,
@@ -612,27 +537,12 @@
     {
       "boardSlot": 1,
       "x": 9,
-      "y": 13
+      "y": 19
     },
     {
       "boardSlot": 1,
-      "x": 9,
-      "y": 14
-    },
-    {
-      "boardSlot": 1,
-      "x": 9,
-      "y": 15
-    },
-    {
-      "boardSlot": 1,
-      "x": 9,
-      "y": 17
-    },
-    {
-      "boardSlot": 1,
-      "x": 9,
-      "y": 18
+      "x": 8,
+      "y": 7
     },
     {
       "boardSlot": 1,
@@ -651,33 +561,13 @@
     },
     {
       "boardSlot": 1,
-      "x": 8,
-      "y": 14
-    },
-    {
-      "boardSlot": 1,
-      "x": 8,
-      "y": 15
-    },
-    {
-      "boardSlot": 1,
       "x": 7,
-      "y": 10
+      "y": 7
     },
     {
       "boardSlot": 1,
       "x": 7,
       "y": 12
-    },
-    {
-      "boardSlot": 1,
-      "x": 7,
-      "y": 14
-    },
-    {
-      "boardSlot": 1,
-      "x": 6,
-      "y": 14
     },
     {
       "boardSlot": 2,
@@ -687,7 +577,12 @@
     {
       "boardSlot": 2,
       "x": 1,
-      "y": 11
+      "y": 13
+    },
+    {
+      "boardSlot": 2,
+      "x": 1,
+      "y": 12
     },
     {
       "boardSlot": 2,
@@ -706,6 +601,21 @@
     },
     {
       "boardSlot": 2,
+      "x": 1,
+      "y": 6
+    },
+    {
+      "boardSlot": 2,
+      "x": 2,
+      "y": 14
+    },
+    {
+      "boardSlot": 2,
+      "x": 2,
+      "y": 13
+    },
+    {
+      "boardSlot": 2,
       "x": 2,
       "y": 8
     },
@@ -721,8 +631,13 @@
     },
     {
       "boardSlot": 2,
+      "x": 2,
+      "y": 5
+    },
+    {
+      "boardSlot": 2,
       "x": 3,
-      "y": 6
+      "y": 14
     },
     {
       "boardSlot": 2,
@@ -732,7 +647,7 @@
     {
       "boardSlot": 2,
       "x": 4,
-      "y": 16
+      "y": 14
     },
     {
       "boardSlot": 2,
@@ -741,6 +656,11 @@
     },
     {
       "boardSlot": 2,
+      "x": 4,
+      "y": 5
+    },
+    {
+      "boardSlot": 2,
       "x": 5,
       "y": 17
     },
@@ -777,6 +697,11 @@
     {
       "boardSlot": 2,
       "x": 5,
+      "y": 9
+    },
+    {
+      "boardSlot": 2,
+      "x": 5,
       "y": 8
     },
     {
@@ -791,13 +716,18 @@
     },
     {
       "boardSlot": 2,
+      "x": 5,
+      "y": 5
+    },
+    {
+      "boardSlot": 2,
       "x": 6,
       "y": 17
     },
     {
       "boardSlot": 2,
       "x": 6,
-      "y": 12
+      "y": 13
     },
     {
       "boardSlot": 2,
@@ -818,6 +748,11 @@
       "boardSlot": 2,
       "x": 6,
       "y": 8
+    },
+    {
+      "boardSlot": 2,
+      "x": 6,
+      "y": 7
     },
     {
       "boardSlot": 2,
@@ -836,8 +771,13 @@
     },
     {
       "boardSlot": 2,
-      "x": 8,
-      "y": 17
+      "x": 7,
+      "y": 11
+    },
+    {
+      "boardSlot": 2,
+      "x": 7,
+      "y": 10
     },
     {
       "boardSlot": 2,
@@ -852,12 +792,7 @@
     {
       "boardSlot": 2,
       "x": 8,
-      "y": 12
-    },
-    {
-      "boardSlot": 2,
-      "x": 9,
-      "y": 14
+      "y": 13
     },
     {
       "boardSlot": 2,
@@ -872,12 +807,7 @@
     {
       "boardSlot": 2,
       "x": 9,
-      "y": 11
-    },
-    {
-      "boardSlot": 2,
-      "x": 9,
-      "y": 10
+      "y": 9
     },
     {
       "boardSlot": 2,
@@ -887,6 +817,16 @@
     {
       "boardSlot": 2,
       "x": 10,
+      "y": 12
+    },
+    {
+      "boardSlot": 2,
+      "x": 10,
+      "y": 11
+    },
+    {
+      "boardSlot": 2,
+      "x": 10,
       "y": 9
     },
     {
@@ -917,12 +857,12 @@
     {
       "boardSlot": 2,
       "x": 11,
-      "y": 7
+      "y": 8
     },
     {
       "boardSlot": 2,
-      "x": 12,
-      "y": 14
+      "x": 11,
+      "y": 5
     },
     {
       "boardSlot": 2,
@@ -946,13 +886,18 @@
     },
     {
       "boardSlot": 2,
-      "x": 13,
-      "y": 14
+      "x": 12,
+      "y": 6
+    },
+    {
+      "boardSlot": 2,
+      "x": 12,
+      "y": 5
     },
     {
       "boardSlot": 2,
       "x": 13,
-      "y": 13
+      "y": 10
     },
     {
       "boardSlot": 2,
@@ -968,11 +913,6 @@
       "boardSlot": 2,
       "x": 13,
       "y": 7
-    },
-    {
-      "boardSlot": 2,
-      "x": 13,
-      "y": 6
     },
     {
       "boardSlot": 3,
@@ -982,6 +922,11 @@
     {
       "boardSlot": 3,
       "x": 10,
+      "y": 19
+    },
+    {
+      "boardSlot": 3,
+      "x": 9,
       "y": 19
     },
     {
@@ -1006,13 +951,28 @@
     },
     {
       "boardSlot": 3,
+      "x": 10,
+      "y": 17
+    },
+    {
+      "boardSlot": 3,
       "x": 12,
       "y": 16
     },
     {
       "boardSlot": 3,
+      "x": 13,
+      "y": 15
+    },
+    {
+      "boardSlot": 3,
       "x": 12,
       "y": 15
+    },
+    {
+      "boardSlot": 3,
+      "x": 13,
+      "y": 14
     },
     {
       "boardSlot": 3,
@@ -1037,6 +997,11 @@
     {
       "boardSlot": 3,
       "x": 8,
+      "y": 14
+    },
+    {
+      "boardSlot": 3,
+      "x": 7,
       "y": 14
     },
     {
@@ -1082,6 +1047,11 @@
     {
       "boardSlot": 3,
       "x": 12,
+      "y": 12
+    },
+    {
+      "boardSlot": 3,
+      "x": 11,
       "y": 12
     },
     {
@@ -1146,16 +1116,6 @@
     },
     {
       "boardSlot": 3,
-      "x": 10,
-      "y": 10
-    },
-    {
-      "boardSlot": 3,
-      "x": 9,
-      "y": 10
-    },
-    {
-      "boardSlot": 3,
       "x": 8,
       "y": 10
     },
@@ -1191,13 +1151,13 @@
     },
     {
       "boardSlot": 3,
-      "x": 8,
+      "x": 10,
       "y": 8
     },
     {
       "boardSlot": 3,
-      "x": 11,
-      "y": 7
+      "x": 8,
+      "y": 8
     },
     {
       "boardSlot": 3,
@@ -1226,33 +1186,103 @@
     },
     {
       "boardSlot": 4,
-      "x": 0,
-      "y": 10
+      "x": 13,
+      "y": 15
     },
     {
       "boardSlot": 4,
-      "x": 1,
-      "y": 10
+      "x": 12,
+      "y": 15
     },
     {
       "boardSlot": 4,
-      "x": 1,
-      "y": 9
+      "x": 14,
+      "y": 14
     },
     {
       "boardSlot": 4,
-      "x": 2,
-      "y": 10
+      "x": 13,
+      "y": 14
     },
     {
       "boardSlot": 4,
-      "x": 3,
+      "x": 12,
+      "y": 14
+    },
+    {
+      "boardSlot": 4,
+      "x": 17,
+      "y": 13
+    },
+    {
+      "boardSlot": 4,
+      "x": 16,
+      "y": 13
+    },
+    {
+      "boardSlot": 4,
+      "x": 15,
+      "y": 13
+    },
+    {
+      "boardSlot": 4,
+      "x": 14,
+      "y": 13
+    },
+    {
+      "boardSlot": 4,
+      "x": 12,
+      "y": 13
+    },
+    {
+      "boardSlot": 4,
+      "x": 11,
+      "y": 13
+    },
+    {
+      "boardSlot": 4,
+      "x": 10,
+      "y": 13
+    },
+    {
+      "boardSlot": 4,
+      "x": 17,
+      "y": 12
+    },
+    {
+      "boardSlot": 4,
+      "x": 10,
+      "y": 12
+    },
+    {
+      "boardSlot": 4,
+      "x": 4,
+      "y": 12
+    },
+    {
+      "boardSlot": 4,
+      "x": 17,
       "y": 11
     },
     {
       "boardSlot": 4,
-      "x": 3,
-      "y": 10
+      "x": 10,
+      "y": 11
+    },
+    {
+      "boardSlot": 4,
+      "x": 7,
+      "y": 11
+    },
+    {
+      "boardSlot": 4,
+      "x": 6,
+      "y": 11
+    },
+    {
+      "boardSlot": 4,
+      "x": 5,
+      "y": 11
     },
     {
       "boardSlot": 4,
@@ -1261,263 +1291,263 @@
     },
     {
       "boardSlot": 4,
-      "x": 5,
-      "y": 13
-    },
-    {
-      "boardSlot": 4,
-      "x": 5,
-      "y": 12
-    },
-    {
-      "boardSlot": 4,
-      "x": 5,
+      "x": 3,
       "y": 11
     },
     {
       "boardSlot": 4,
-      "x": 6,
-      "y": 15
-    },
-    {
-      "boardSlot": 4,
-      "x": 6,
-      "y": 14
-    },
-    {
-      "boardSlot": 4,
-      "x": 6,
-      "y": 13
-    },
-    {
-      "boardSlot": 4,
-      "x": 6,
-      "y": 12
-    },
-    {
-      "boardSlot": 4,
-      "x": 6,
+      "x": 2,
       "y": 11
     },
     {
       "boardSlot": 4,
-      "x": 7,
-      "y": 17
-    },
-    {
-      "boardSlot": 4,
-      "x": 7,
-      "y": 16
-    },
-    {
-      "boardSlot": 4,
-      "x": 7,
-      "y": 15
-    },
-    {
-      "boardSlot": 4,
-      "x": 7,
+      "x": 1,
       "y": 11
-    },
-    {
-      "boardSlot": 4,
-      "x": 7,
-      "y": 10
-    },
-    {
-      "boardSlot": 4,
-      "x": 8,
-      "y": 17
-    },
-    {
-      "boardSlot": 4,
-      "x": 8,
-      "y": 16
-    },
-    {
-      "boardSlot": 4,
-      "x": 8,
-      "y": 10
-    },
-    {
-      "boardSlot": 4,
-      "x": 9,
-      "y": 17
-    },
-    {
-      "boardSlot": 4,
-      "x": 9,
-      "y": 10
-    },
-    {
-      "boardSlot": 4,
-      "x": 10,
-      "y": 17
-    },
-    {
-      "boardSlot": 4,
-      "x": 10,
-      "y": 11
-    },
-    {
-      "boardSlot": 4,
-      "x": 10,
-      "y": 10
-    },
-    {
-      "boardSlot": 4,
-      "x": 11,
-      "y": 18
-    },
-    {
-      "boardSlot": 4,
-      "x": 11,
-      "y": 17
-    },
-    {
-      "boardSlot": 4,
-      "x": 11,
-      "y": 16
-    },
-    {
-      "boardSlot": 4,
-      "x": 11,
-      "y": 14
-    },
-    {
-      "boardSlot": 4,
-      "x": 11,
-      "y": 12
-    },
-    {
-      "boardSlot": 4,
-      "x": 11,
-      "y": 11
-    },
-    {
-      "boardSlot": 4,
-      "x": 12,
-      "y": 18
-    },
-    {
-      "boardSlot": 4,
-      "x": 12,
-      "y": 16
-    },
-    {
-      "boardSlot": 4,
-      "x": 12,
-      "y": 15
-    },
-    {
-      "boardSlot": 4,
-      "x": 12,
-      "y": 14
-    },
-    {
-      "boardSlot": 4,
-      "x": 12,
-      "y": 12
-    },
-    {
-      "boardSlot": 4,
-      "x": 13,
-      "y": 17
-    },
-    {
-      "boardSlot": 4,
-      "x": 13,
-      "y": 16
-    },
-    {
-      "boardSlot": 4,
-      "x": 13,
-      "y": 15
-    },
-    {
-      "boardSlot": 4,
-      "x": 14,
-      "y": 15
-    },
-    {
-      "boardSlot": 4,
-      "x": 15,
-      "y": 18
-    },
-    {
-      "boardSlot": 4,
-      "x": 15,
-      "y": 17
-    },
-    {
-      "boardSlot": 4,
-      "x": 15,
-      "y": 16
-    },
-    {
-      "boardSlot": 4,
-      "x": 15,
-      "y": 15
-    },
-    {
-      "boardSlot": 4,
-      "x": 16,
-      "y": 18
-    },
-    {
-      "boardSlot": 4,
-      "x": 16,
-      "y": 15
     },
     {
       "boardSlot": 4,
       "x": 17,
-      "y": 15
+      "y": 10
+    },
+    {
+      "boardSlot": 4,
+      "x": 11,
+      "y": 10
+    },
+    {
+      "boardSlot": 4,
+      "x": 10,
+      "y": 10
+    },
+    {
+      "boardSlot": 4,
+      "x": 9,
+      "y": 10
+    },
+    {
+      "boardSlot": 4,
+      "x": 8,
+      "y": 10
+    },
+    {
+      "boardSlot": 4,
+      "x": 7,
+      "y": 10
+    },
+    {
+      "boardSlot": 4,
+      "x": 3,
+      "y": 10
+    },
+    {
+      "boardSlot": 4,
+      "x": 2,
+      "y": 10
+    },
+    {
+      "boardSlot": 4,
+      "x": 1,
+      "y": 10
+    },
+    {
+      "boardSlot": 4,
+      "x": 0,
+      "y": 10
     },
     {
       "boardSlot": 4,
       "x": 18,
-      "y": 16
+      "y": 9
+    },
+    {
+      "boardSlot": 4,
+      "x": 17,
+      "y": 9
+    },
+    {
+      "boardSlot": 4,
+      "x": 16,
+      "y": 9
+    },
+    {
+      "boardSlot": 4,
+      "x": 14,
+      "y": 9
+    },
+    {
+      "boardSlot": 4,
+      "x": 12,
+      "y": 9
+    },
+    {
+      "boardSlot": 4,
+      "x": 11,
+      "y": 9
+    },
+    {
+      "boardSlot": 4,
+      "x": 1,
+      "y": 9
     },
     {
       "boardSlot": 4,
       "x": 18,
-      "y": 15
+      "y": 8
+    },
+    {
+      "boardSlot": 4,
+      "x": 17,
+      "y": 8
+    },
+    {
+      "boardSlot": 4,
+      "x": 16,
+      "y": 8
+    },
+    {
+      "boardSlot": 4,
+      "x": 15,
+      "y": 8
+    },
+    {
+      "boardSlot": 4,
+      "x": 14,
+      "y": 8
+    },
+    {
+      "boardSlot": 4,
+      "x": 12,
+      "y": 8
+    },
+    {
+      "boardSlot": 4,
+      "x": 17,
+      "y": 7
+    },
+    {
+      "boardSlot": 4,
+      "x": 16,
+      "y": 7
+    },
+    {
+      "boardSlot": 4,
+      "x": 15,
+      "y": 7
+    },
+    {
+      "boardSlot": 4,
+      "x": 19,
+      "y": 6
+    },
+    {
+      "boardSlot": 4,
+      "x": 18,
+      "y": 6
+    },
+    {
+      "boardSlot": 4,
+      "x": 15,
+      "y": 6
+    },
+    {
+      "boardSlot": 4,
+      "x": 19,
+      "y": 5
+    },
+    {
+      "boardSlot": 4,
+      "x": 18,
+      "y": 5
+    },
+    {
+      "boardSlot": 4,
+      "x": 17,
+      "y": 5
+    },
+    {
+      "boardSlot": 4,
+      "x": 16,
+      "y": 5
+    },
+    {
+      "boardSlot": 4,
+      "x": 15,
+      "y": 5
+    },
+    {
+      "boardSlot": 4,
+      "x": 19,
+      "y": 4
+    },
+    {
+      "boardSlot": 4,
+      "x": 18,
+      "y": 4
+    },
+    {
+      "boardSlot": 4,
+      "x": 17,
+      "y": 4
+    },
+    {
+      "boardSlot": 4,
+      "x": 15,
+      "y": 4
+    },
+    {
+      "boardSlot": 4,
+      "x": 17,
+      "y": 3
+    },
+    {
+      "boardSlot": 4,
+      "x": 15,
+      "y": 3
+    },
+    {
+      "boardSlot": 4,
+      "x": 17,
+      "y": 2
+    },
+    {
+      "boardSlot": 4,
+      "x": 15,
+      "y": 2
     }
   ],
   "glyphs": [
     {
       "boardSlot": 0,
       "glyphInternalName": "Rare_Str_Generic",
-      "level": 96,
+      "level": 122,
       "requiredStat": 40,
       "ensureActive": true
     },
     {
       "boardSlot": 1,
       "glyphInternalName": "Rare_080_Strength_Main",
-      "level": 116,
+      "level": 124,
       "requiredStat": 40,
       "ensureActive": true
     },
     {
       "boardSlot": 2,
       "glyphInternalName": "Rare_030_Dexterity_Side",
-      "level": 103,
+      "level": 121,
       "requiredStat": 25,
       "ensureActive": true
     },
     {
       "boardSlot": 3,
       "glyphInternalName": "Rare_028_Strength_Main",
-      "level": 113,
+      "level": 120,
       "requiredStat": 40,
       "ensureActive": true
     },
     {
       "boardSlot": 4,
       "glyphInternalName": "Rare_016_Dexterity_Side",
-      "level": 104,
+      "level": 120,
       "requiredStat": 25,
       "ensureActive": true
     }
@@ -1537,29 +1567,192 @@
   "focusStats": [
     "Dexterity_Core",
     "Strength_Core",
+    "Willpower_Core",
     "Armor_Percent",
     "Attack_Speed_Percent_Bonus",
+    "Bonus_Healing_Received_Percent",
     "Crit_Percent_Bonus",
     "Crit_Damage_Percent",
     "Damage_Percent_All_From_Skills",
-    "Damage_Percent_Bonus_While_Affected_By_Power",
+    "Hitpoints_Max_Percent_Bonus",
     "Resistance_All_Bonus_Percent",
-    "Resource_Max_Bonus",
-    "Resource_On_Kill"
+    "Resource_Max_Bonus"
+  ],
+  "references": [
+    {
+      "source": "Mobalytics \u0027Current Setup\u0027 (338 nodes)",
+      "emphasis": [
+        {
+          "attribute": "Strength_Core",
+          "score": 53.474452554744566
+        },
+        {
+          "attribute": "Resistance_All_Bonus_Percent",
+          "score": 25.961538461538442
+        },
+        {
+          "attribute": "Dexterity_Core",
+          "score": 25.370393900889475
+        },
+        {
+          "attribute": "Damage_Percent_All_From_Skills",
+          "score": 19.09090909090909
+        },
+        {
+          "attribute": "Willpower_Core",
+          "score": 16.5046783625731
+        },
+        {
+          "attribute": "Armor_Percent",
+          "score": 12.981818181818172
+        },
+        {
+          "attribute": "Bonus_Healing_Received_Percent",
+          "score": 6.75
+        },
+        {
+          "attribute": "Attack_Speed_Percent_Bonus",
+          "score": 6.000000000000001
+        },
+        {
+          "attribute": "Resource_Max_Bonus",
+          "score": 6
+        },
+        {
+          "attribute": "Intelligence_Core",
+          "score": 3.5
+        },
+        {
+          "attribute": "Resource_On_Kill",
+          "score": 3.4285714285714284
+        },
+        {
+          "attribute": "Hitpoints_Max_Percent_Bonus",
+          "score": 3.1999999999999993
+        },
+        {
+          "attribute": "Damage_Percent_Bonus_Vs_Elites",
+          "score": 3
+        },
+        {
+          "attribute": "Crit_Damage_Percent",
+          "score": 3
+        },
+        {
+          "attribute": "Damage_Percent_Bonus_When_Fortified",
+          "score": 2.9999999999999996
+        },
+        {
+          "attribute": "Damage_Percent_Bonus_While_Affected_By_Power",
+          "score": 2.571428571428572
+        },
+        {
+          "attribute": "Damage_Percent_Bonus_Against_Dot_Type",
+          "score": 2.0000000000000004
+        }
+      ]
+    },
+    {
+      "source": "Mobalytics \u0027Selig\u0027 (332 nodes)",
+      "emphasis": [
+        {
+          "attribute": "Strength_Core",
+          "score": 53.19609665427514
+        },
+        {
+          "attribute": "Dexterity_Core",
+          "score": 28.345357590966152
+        },
+        {
+          "attribute": "Resistance_All_Bonus_Percent",
+          "score": 18.095238095238088
+        },
+        {
+          "attribute": "Willpower_Core",
+          "score": 17.38362573099415
+        },
+        {
+          "attribute": "Damage_Percent_All_From_Skills",
+          "score": 14.933333333333334
+        },
+        {
+          "attribute": "Armor_Percent",
+          "score": 7.475409836065569
+        },
+        {
+          "attribute": "Bonus_Healing_Received_Percent",
+          "score": 6.75
+        },
+        {
+          "attribute": "Resource_Max_Bonus",
+          "score": 6
+        },
+        {
+          "attribute": "Damage_Type_Percent_Bonus",
+          "score": 3.75
+        },
+        {
+          "attribute": "Intelligence_Core",
+          "score": 3.5
+        },
+        {
+          "attribute": "Hitpoints_Max_Percent_Bonus",
+          "score": 3.2857142857142847
+        },
+        {
+          "attribute": "Power_Damage_Percent_Bonus",
+          "score": 3.230769230769231
+        },
+        {
+          "attribute": "Damage_Percent_Bonus_Vs_Elites",
+          "score": 3
+        },
+        {
+          "attribute": "Resource_On_Kill",
+          "score": 3
+        },
+        {
+          "attribute": "Damage_Bonus_To_Near",
+          "score": 3
+        },
+        {
+          "attribute": "Crit_Damage_Percent",
+          "score": 3
+        },
+        {
+          "attribute": "Damage_Percent_Bonus_When_Fortified",
+          "score": 2.9999999999999996
+        },
+        {
+          "attribute": "Attack_Speed_Percent_Bonus",
+          "score": 2.9999999999999996
+        },
+        {
+          "attribute": "Damage_Percent_Bonus_While_Affected_By_Power",
+          "score": 2.571428571428572
+        },
+        {
+          "attribute": "Damage_Percent_Bonus_Against_Dot_Type",
+          "score": 2.0000000000000004
+        }
+      ]
+    }
   ],
   "focusWeights": {
     "Strength_Core": 3,
-    "Crit_Damage_Percent": 3,
+    "Attack_Speed_Percent_Bonus": 0.3,
     "Damage_Percent_All_From_Skills": 3,
-    "Resistance_All_Bonus_Percent": 3
+    "Hitpoints_Max_Percent_Bonus": 0.3,
+    "Resistance_All_Bonus_Percent": 3,
+    "Resource_Max_Bonus": 0.3
   },
   "preferRareNodes": false,
   "realisticRares": false,
   "defenseShare": 0,
   "activateThresholds": true,
-  "totalPoints": 284,
-  "sheetStrength": 2531,
-  "sheetIntelligence": 76,
-  "sheetWillpower": 76,
-  "sheetDexterity": 77
+  "totalPoints": 290,
+  "sheetStrength": 2741,
+  "sheetIntelligence": 268,
+  "sheetWillpower": 268,
+  "sheetDexterity": 269
 }

@@ -644,7 +644,19 @@ public partial class ParagonPlannerViewModel : ObservableObject
     /// maxroll.gg planner or build-guide URL, a mobalytics.gg build URL, or pasted page HTML.
     /// Reports errors itself; returns null on failure or cancellation.
     /// </summary>
-    private async Task<(ConvertedMaxrollBuild Build, string Source)?> ImportFromClipboardAsync()
+    private async Task<(ConvertedMaxrollBuild Build, string Source)?> ImportFromClipboardAsync() =>
+        await ImportManyFromClipboardAsync(allowMultiple: false) is { Count: > 0 } imports
+            ? imports[0]
+            : null;
+
+    /// <summary>
+    /// The multi-capable core of <see cref="ImportFromClipboardAsync"/>: with
+    /// <paramref name="allowMultiple"/> the variant picker takes any number of a guide's build
+    /// versions (e.g. a Mobalytics Selig setup AND the standard setup), each returned as its
+    /// own build. Layout imports keep single-pick — the planner holds one layout at a time.
+    /// </summary>
+    private async Task<IReadOnlyList<(ConvertedMaxrollBuild Build, string Source)>?>
+        ImportManyFromClipboardAsync(bool allowMultiple)
     {
         string text = Clipboard.ContainsText() ? Clipboard.GetText().Trim() : "";
         if (string.IsNullOrWhiteSpace(text))
@@ -659,9 +671,9 @@ public partial class ParagonPlannerViewModel : ObservableObject
             if (text.StartsWith("http", StringComparison.OrdinalIgnoreCase))
             {
                 if (text.Contains("mobalytics.gg", StringComparison.OrdinalIgnoreCase))
-                    return await ImportMobalyticsBuildAsync(text);
+                    return await ImportMobalyticsBuildsAsync(text, allowMultiple);
                 if (text.Contains("maxroll.gg", StringComparison.OrdinalIgnoreCase))
-                    return await ImportMaxrollUrlAsync(text);
+                    return await ImportMaxrollUrlAsync(text, allowMultiple);
                 SetStatus("The clipboard URL is neither a maxroll.gg nor a mobalytics.gg page.", error: true);
                 return null;
             }
@@ -670,9 +682,9 @@ public partial class ParagonPlannerViewModel : ObservableObject
                 var build = MaxrollParagonCodec.ToLayout(
                     MaxrollParagonCodec.Decode(text), ParagonDatabase.BoardsByInternalName);
                 ComposedGraph.Build(build.Layout);
-                return (build, "Maxroll code");
+                return [(build, "Maxroll code")];
             }
-            return await ImportMobalyticsBuildAsync(text); // pasted page HTML
+            return await ImportMobalyticsBuildsAsync(text, allowMultiple); // pasted page HTML
         }
         catch (Exception ex) when (ex is FormatException or ArgumentException or InvalidOperationException)
         {
@@ -686,7 +698,8 @@ public partial class ParagonPlannerViewModel : ObservableObject
         }
     }
 
-    private async Task<(ConvertedMaxrollBuild Build, string Source)?> ImportMobalyticsBuildAsync(string text)
+    private async Task<IReadOnlyList<(ConvertedMaxrollBuild Build, string Source)>?>
+        ImportMobalyticsBuildsAsync(string text, bool allowMultiple)
     {
         string html = text;
         if (text.StartsWith("http", StringComparison.OrdinalIgnoreCase))
@@ -698,15 +711,20 @@ public partial class ParagonPlannerViewModel : ObservableObject
         try
         {
             var variants = MobalyticsParagonImporter.ExtractVariants(html);
-            var variant = variants.Count == 1 ? variants[0] : PickVariant(variants);
-            if (variant is null)
+            var chosen = variants.Count == 1 ? [variants[0]] : PickVariants(variants, allowMultiple);
+            if (chosen is not { Count: > 0 })
             {
                 SetStatus("Import cancelled.");
                 return null;
             }
-            var build = MobalyticsParagonImporter.ToBuild(variant, ParagonDatabase.Data);
-            ComposedGraph.Build(build.Layout);
-            return (build, $"Mobalytics '{variant.Title}'");
+            var builds = new List<(ConvertedMaxrollBuild, string)>();
+            foreach (var variant in chosen)
+            {
+                var build = MobalyticsParagonImporter.ToBuild(variant, ParagonDatabase.Data);
+                ComposedGraph.Build(build.Layout);
+                builds.Add((build, $"Mobalytics '{variant.Title}'"));
+            }
+            return builds;
         }
         catch (FormatException) when (html.Contains("cf_chl", StringComparison.Ordinal))
         {
@@ -715,7 +733,8 @@ public partial class ParagonPlannerViewModel : ObservableObject
         }
     }
 
-    private async Task<(ConvertedMaxrollBuild Build, string Source)?> ImportMaxrollUrlAsync(string url)
+    private async Task<IReadOnlyList<(ConvertedMaxrollBuild Build, string Source)>?>
+        ImportMaxrollUrlAsync(string url, bool allowMultiple)
     {
         if (!MaxrollBuildImporter.TryParsePlannerUrl(url, out string plannerId))
         {
@@ -728,19 +747,25 @@ public partial class ParagonPlannerViewModel : ObservableObject
         SetStatus("Fetching the Maxroll planner data…");
         string json = await FetchPageAsync(string.Format(MaxrollBuildImporter.ProfileApiFormat, plannerId));
         var variants = MaxrollBuildImporter.ExtractVariants(json);
-        int index = 0;
+        IReadOnlyList<int> indices = [0];
         if (variants.Count > 1)
         {
-            index = PickIndex(variants.Select(v => $"{v.Title} — {v.Entries.Count} board(s)").ToList());
-            if (index < 0)
+            indices = PickIndices(
+                variants.Select(v => $"{v.Title} — {v.Entries.Count} board(s)").ToList(), allowMultiple);
+            if (indices.Count == 0)
             {
                 SetStatus("Import cancelled.");
                 return null;
             }
         }
-        var build = MaxrollParagonCodec.ToLayout(variants[index].Entries, ParagonDatabase.BoardsByInternalName);
-        ComposedGraph.Build(build.Layout);
-        return (build, $"Maxroll '{variants[index].Title}'");
+        var builds = new List<(ConvertedMaxrollBuild, string)>();
+        foreach (int index in indices)
+        {
+            var build = MaxrollParagonCodec.ToLayout(variants[index].Entries, ParagonDatabase.BoardsByInternalName);
+            ComposedGraph.Build(build.Layout);
+            builds.Add((build, $"Maxroll '{variants[index].Title}'"));
+        }
+        return builds;
     }
 
     private const string ManualHtmlHint =
@@ -749,22 +774,23 @@ public partial class ParagonPlannerViewModel : ObservableObject
 
     private static Task<string> FetchPageAsync(string url) => Services.GuidePageFetcher.FetchPageAsync(url);
 
-    private static MobalyticsParagonVariant? PickVariant(IReadOnlyList<MobalyticsParagonVariant> variants)
+    private static IReadOnlyList<MobalyticsParagonVariant>? PickVariants(
+        IReadOnlyList<MobalyticsParagonVariant> variants, bool allowMultiple)
     {
-        var dialog = new MobalyticsVariantPickerWindow(variants)
+        var dialog = new MobalyticsVariantPickerWindow(variants, allowMultiple)
         {
             Owner = Application.Current?.Windows.OfType<ParagonPlannerWindow>().FirstOrDefault(),
         };
-        return dialog.ShowDialog() == true ? dialog.Selected : null;
+        return dialog.ShowDialog() == true ? dialog.SelectedVariants : null;
     }
 
-    private static int PickIndex(IReadOnlyList<string> labels)
+    private static IReadOnlyList<int> PickIndices(IReadOnlyList<string> labels, bool allowMultiple)
     {
-        var dialog = new MobalyticsVariantPickerWindow(labels)
+        var dialog = new MobalyticsVariantPickerWindow(labels, allowMultiple)
         {
             Owner = Application.Current?.Windows.OfType<ParagonPlannerWindow>().FirstOrDefault(),
         };
-        return dialog.ShowDialog() == true ? dialog.SelectedIndex : -1;
+        return dialog.ShowDialog() == true ? dialog.SelectedIndices : [];
     }
 
     // ── Compare / combine against another build ──────────────────────────
@@ -1062,6 +1088,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
             .Select(r => new ParagonProjectRule(r.Group.Key, r.Mode, r.Limit))
             .ToList(),
         FocusStats = FocusStats.Where(f => f.IsSelected).Select(f => f.Attribute).ToList(),
+        References = _references.Select(r => new ParagonProjectReference(r.Source, r.Emphasis)).ToList(),
         FocusWeights = FocusStats
             .Where(f => f.IsSelected && Math.Abs(f.Weight - 1.0) > 1e-9)
             .ToDictionary(f => f.Attribute, f => f.Weight),
@@ -1146,6 +1173,16 @@ public partial class ParagonPlannerViewModel : ObservableObject
                 ? FocusStatViewModel.PriorityForWeight(weight)
                 : "Normal";
         }
+
+        // Restore the saved references so the consensus can be extended, but rebuild only the
+        // summary — the focus selections above are the saved state, possibly hand-tuned after
+        // the references were applied, and must not be overwritten by a re-derivation.
+        _references.Clear();
+        _references.AddRange(project.References.Select(r => (r.Source, r.Emphasis)));
+        if (_references.Count > 0)
+            ApplyReferencePriorities(assignFocus: false);
+        else
+            ReferenceSummary = "";
 
         var purchased = project.PurchasedCells.ToHashSet();
         foreach (var cell in Cells)
@@ -1321,7 +1358,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
         if (!await SolveAsync())
             return;
         // With thresholds on, a full pool still gets the reallocation check.
-        if (TotalPoints - Cells.Count(c => c.IsPurchased) > 0 || ActivateThresholds)
+        if (TotalPoints - CurrentPointCost() > 0 || ActivateThresholds)
             await MaximizePointsAsync();
         MarkPurchaseDiff(before);
     }
@@ -1727,12 +1764,14 @@ public partial class ParagonPlannerViewModel : ObservableObject
         if (_graph is null)
             return;
         var purchased = Cells.Where(c => c.IsPurchased).Select(c => c.Cell).ToHashSet();
-        int remaining = TotalPoints - purchased.Count;
+        // In-game cost, not cell count: a crossing's gate pair costs one point (GateCrossings).
+        int costBefore = GateCrossings.PointCost(_graph, purchased);
+        int remaining = TotalPoints - costBefore;
         // With thresholds on, a zero budget still runs the reallocation pass — it trades
         // already-spent points for small threshold deficits without needing new ones.
         if (remaining <= 0 && !ActivateThresholds)
         {
-            SetStatus($"No points left — {purchased.Count} of {TotalPoints} are already spent.", error: true);
+            SetStatus($"No points left — {costBefore} of {TotalPoints} are already spent.", error: true);
             return;
         }
         remaining = Math.Max(0, remaining);
@@ -1743,20 +1782,19 @@ public partial class ParagonPlannerViewModel : ObservableObject
         var request = BuildPlanRequest();
         var graph = _graph;
         using var busy = BeginBusy();
-        int countBefore = purchased.Count;
         SetStatus(remaining > 0
             ? $"Spending up to {remaining} remaining point(s)…"
             : "No points left — checking whether reallocating any closes a threshold…");
         var outcome = await Task.Run(() => PointMaximizer.Extend(graph, purchased, remaining, focus, request, context));
 
-        int spent = purchased.Count - countBefore;
+        int spent = Math.Max(0, GateCrossings.PointCost(graph, purchased) - costBefore);
         bool reallocated = outcome.Notes.Any(n => n.StartsWith("Reallocated", StringComparison.Ordinal));
         if (outcome.AddedCells.Count == 0 && !reallocated)
         {
             SetStatus(outcome.Notes.FirstOrDefault()
                 ?? (remaining > 0
                     ? "Nothing worthwhile is reachable with the remaining points — no nodes added."
-                    : $"No points left and no beneficial reallocation found — {purchased.Count} of {TotalPoints} spent."),
+                    : $"No points left and no beneficial reallocation found — {costBefore} of {TotalPoints} spent."),
                 error: true);
             return;
         }
@@ -1776,7 +1814,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
         SolveDetails = $"Spent {spent} leftover point(s): {rares}{thresholdsPart}" +
                        $"{(gains.Length > 0 ? "gained " + gains : "no focused stat gains")}." +
                        (details.Length > 0 ? Environment.NewLine + details : "");
-        SetStatus($"{purchased.Count} of {TotalPoints} points spent " +
+        SetStatus($"{GateCrossings.PointCost(graph, purchased)} of {TotalPoints} points spent " +
                   $"(+{spent} maximizing{(PreferRareNodes ? " rare nodes and" : "")} focused stats" +
                   $"{(outcome.ThresholdsActivated > 0 ? $", {outcome.ThresholdsActivated} threshold(s) activated" : "")}" +
                   $"{(reallocated ? ", some points reallocated to thresholds" : "")}) — " +
@@ -1788,38 +1826,66 @@ public partial class ParagonPlannerViewModel : ObservableObject
     [ObservableProperty]
     private string _referenceSummary = "";
 
-    /// <summary>Reference builds added this session; priorities derive from their consensus.</summary>
+    /// <summary>References the priorities derive from; saved with the project and restored on load.</summary>
     private readonly List<(string Source, IReadOnlyList<ReferenceEmphasis> Emphasis)> _references = [];
 
+    /// <summary>Sources compare without their trailing count suffix, so "Loaded filter (19 affix(es))"
+    /// updates "Loaded filter (12 affix(es))" and a re-imported variant refreshes its old emphasis.</summary>
+    private void AddOrReplaceReference(string source, IReadOnlyList<ReferenceEmphasis> emphasis)
+    {
+        static string KeyOf(string s) => System.Text.RegularExpressions.Regex
+            .Replace(s, @"\s*\(\d+ (?:nodes|affix\(es\))\)$", "").Trim();
+        string key = KeyOf(source);
+        int existing = _references.FindIndex(r => KeyOf(r.Source).Equals(key, StringComparison.OrdinalIgnoreCase));
+        if (existing >= 0)
+            _references[existing] = (source, emphasis);
+        else
+            _references.Add((source, emphasis));
+    }
+
     /// <summary>
-    /// Imports a build (clipboard: Maxroll code/URL, Mobalytics URL, or page HTML) as a REFERENCE
+    /// Imports builds (clipboard: Maxroll code/URL, Mobalytics URL, or page HTML) as REFERENCES
     /// only: the current layout stays untouched, but the focus stats and their priorities are
     /// derived from what the reference allocations actually stack — so the maximizer chases
-    /// proven builds' emphasis instead of a hand-picked checkbox list. Add several guides and
-    /// the priorities become their consensus: a stat every guide stacks ranks high, a single
-    /// guide's outlier gets diluted.
+    /// proven builds' emphasis instead of a hand-picked checkbox list. When a guide carries
+    /// several build versions (e.g. a Selig setup and the standard setup) any number can be
+    /// picked and each votes as its own reference; re-importing a variant updates its old
+    /// entry. Add several guides and the priorities become their consensus: a stat every
+    /// reference stacks ranks high, a single reference's outlier gets diluted.
     /// </summary>
     [RelayCommand]
     private async Task AddBuildReference()
     {
         using var busy = BeginBusy();
-        if (await ImportFromClipboardAsync() is not { } import)
+        if (await ImportManyFromClipboardAsync(allowMultiple: true) is not { Count: > 0 } imports)
             return;
 
         SetStatus("Deriving stat priorities from the reference build(s)…");
-        var emphasis = await Task.Run(() =>
+        int empty = 0;
+        foreach (var import in imports)
         {
-            var referenceGraph = ComposedGraph.Build(import.Build.Layout);
-            return BuildReference.EmphasisOf(referenceGraph, import.Build.AllocatedCells);
-        });
-        if (emphasis.Count == 0)
-        {
-            SetStatus("The reference build has no allocated nodes to learn from.", error: true);
-            return;
+            var emphasis = await Task.Run(() =>
+            {
+                var referenceGraph = ComposedGraph.Build(import.Build.Layout);
+                return BuildReference.EmphasisOf(referenceGraph, import.Build.AllocatedCells);
+            });
+            if (emphasis.Count == 0)
+            {
+                empty++;
+                continue;
+            }
+            AddOrReplaceReference($"{import.Source} ({import.Build.AllocatedCells.Count} nodes)", emphasis);
         }
 
-        _references.Add(($"{import.Source} ({import.Build.AllocatedCells.Count} nodes)", emphasis));
+        if (empty == imports.Count)
+        {
+            SetStatus("The reference build(s) have no allocated nodes to learn from.", error: true);
+            return;
+        }
         ApplyReferencePriorities();
+        if (empty > 0)
+            SetStatus($"Focus priorities set from {_references.Count} reference(s); " +
+                      $"{empty} imported variant(s) had no allocated nodes and were skipped.");
     }
 
     [RelayCommand]
@@ -1831,12 +1897,54 @@ public partial class ParagonPlannerViewModel : ObservableObject
     }
 
     /// <summary>
+    /// The main window's loot filter as (affix name, guide weight) pairs — set by MainWindow so
+    /// this window stays free of Core dependencies. Null when opened without a host.
+    /// </summary>
+    public Func<IReadOnlyList<GearStatPriority>>? GearPriorityProvider { get; set; }
+
+    /// <summary>
+    /// Adds the loaded loot filter as a reference: its per-slot affix priorities are translated
+    /// to paragon attributes (<see cref="GearReference"/>) and vote in the same consensus as
+    /// imported reference builds — the build's GEAR wish list and its paragon allocation then
+    /// pull the focus stats together.
+    /// </summary>
+    [RelayCommand]
+    private void AddGearReference()
+    {
+        var gear = GearPriorityProvider?.Invoke();
+        if (gear is null || gear.Count == 0)
+        {
+            SetStatus("Load or import a filter with affix rules in the main window first — " +
+                      "its affix priorities become the reference.", error: true);
+            return;
+        }
+
+        var result = GearReference.EmphasisOf(gear);
+        if (result.Emphasis.Count == 0)
+        {
+            SetStatus("None of the filter's affixes correspond to stats paragon boards grant.", error: true);
+            return;
+        }
+
+        AddOrReplaceReference($"Loaded filter ({gear.Count} affix(es))", result.Emphasis);
+        ApplyReferencePriorities();
+        if (result.UnmappedStats.Count > 0)
+        {
+            var examples = string.Join(", ", result.UnmappedStats.Take(3));
+            SetStatus($"Focus priorities set from {_references.Count} reference(s). " +
+                      $"{result.UnmappedStats.Count} filter affix(es) have no paragon counterpart " +
+                      $"(e.g. {examples}) — run Re-analyze to apply.");
+        }
+    }
+
+    /// <summary>
     /// Maps the references' combined emphasis onto this layout's focusable stats. Core stats
     /// structurally dominate every allocation (most nodes grant them), so core and secondary
     /// stats rank against their own tier's best: ≥60% → High, ≥30% → Normal, ≥15% → Low,
-    /// below → unselected noise.
+    /// below → unselected noise. With <paramref name="assignFocus"/> false only the summary
+    /// and details are rebuilt (project load: the saved focus selection stays authoritative).
     /// </summary>
-    private void ApplyReferencePriorities()
+    private void ApplyReferencePriorities(bool assignFocus = true)
     {
         var emphasisLists = _references.Select(r => r.Emphasis).ToList();
         var combined = BuildReference.Combine(emphasisLists, MaximizeFocus.CoreStats);
@@ -1861,14 +1969,21 @@ public partial class ParagonPlannerViewModel : ObservableObject
             double tierTop = coreSet.Contains(focus.Attribute) ? coreTop : secondaryTop;
             if (tierTop <= 0 || score < tierTop * 0.15)
             {
-                focus.IsSelected = false;
-                focus.Priority = "Normal";
+                if (assignFocus)
+                {
+                    focus.IsSelected = false;
+                    focus.Priority = "Normal";
+                }
                 continue;
             }
-            focus.IsSelected = true;
-            focus.Priority = score >= tierTop * 0.60 ? "High" : score >= tierTop * 0.30 ? "Normal" : "Low";
+            string priority = score >= tierTop * 0.60 ? "High" : score >= tierTop * 0.30 ? "Normal" : "Low";
+            if (assignFocus)
+            {
+                focus.IsSelected = true;
+                focus.Priority = priority;
+            }
             string label = focus.DisplayName.Split(" ×")[0] + Agreement(focus.Attribute);
-            (focus.Priority == "High" ? high : focus.Priority == "Normal" ? normal : low).Add(label);
+            (priority == "High" ? high : priority == "Normal" ? normal : low).Add(label);
         }
 
         // Stats the references stack but this layout can't supply are worth knowing about.
@@ -1894,7 +2009,8 @@ public partial class ParagonPlannerViewModel : ObservableObject
             string.Join(Environment.NewLine, combined
                 .Where(e => e.Score >= 0.05)
                 .Select(e => $"  {e.Score,5:0.00}  {ParagonDisplay.FormatAttributeName(e.Attribute)}{Agreement(e.Attribute)}"));
-        SetStatus($"Focus priorities set from {_references.Count} reference build(s) — run Re-analyze to apply them.");
+        if (assignFocus)
+            SetStatus($"Focus priorities set from {_references.Count} reference(s) — run Re-analyze to apply them.");
     }
 
     /// <summary>
@@ -2076,14 +2192,24 @@ public partial class ParagonPlannerViewModel : ObservableObject
         }
     }
 
+    /// <summary>In-game cost of the current purchases: a crossing's gate pair costs one point.</summary>
+    private int CurrentPointCost() =>
+        _graph is null
+            ? Cells.Count(c => c.IsPurchased)
+            : GateCrossings.PointCost(_graph, Cells.Where(c => c.IsPurchased).Select(c => c.Cell).ToList());
+
     /// <summary>Recomputes the pinned build summary and the effective stat totals panel.</summary>
     private void RefreshBuildSummary()
     {
         StatTotals.Clear();
         ThresholdWarnings.Clear();
         var purchasedCells = Cells.Where(c => c.IsPurchased).ToList();
-        int spent = purchasedCells.Count;
-        PointsSummary = $"{spent} of {TotalPoints} points spent";
+        int spent = _graph is null
+            ? purchasedCells.Count
+            : GateCrossings.PointCost(_graph, purchasedCells.Select(c => c.Cell).ToList());
+        int freeGates = purchasedCells.Count - spent;
+        PointsSummary = $"{spent} of {TotalPoints} points spent" +
+            (freeGates > 0 ? $" ({freeGates} crossing gate{(freeGates == 1 ? "" : "s")} free)" : "");
         PointsFraction = TotalPoints > 0 ? Math.Min(1.0, (double)spent / TotalPoints) : 0;
         PointsOverBudget = spent > TotalPoints;
 

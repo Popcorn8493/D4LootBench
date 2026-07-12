@@ -19,7 +19,12 @@ public sealed class PlanResult
     public required bool Success { get; init; }
     public string? Error { get; init; }
     public IReadOnlyList<CellRef> PurchasedCells { get; init; } = [];
-    public int PointsSpent => PurchasedCells.Count;
+
+    /// <summary>Free half-gates in the purchase set: a crossing's gate pair costs one point
+    /// in-game (see <see cref="GateCrossings"/>), so these don't count toward the spend.</summary>
+    public int GateCredits { get; init; }
+
+    public int PointsSpent => PurchasedCells.Count - GateCredits;
 
     /// <summary>True when the base tree came from the exact solver (glyph extension is always greedy).</summary>
     public bool IsOptimal { get; init; }
@@ -136,6 +141,7 @@ public static class PlanSolver
             Success = true,
             IsOptimal = result.IsOptimal,
             PurchasedCells = ordered,
+            GateCredits = GateCrossings.FreeCredits(graph, ordered),
             Notes = notes,
             GlyphOutcomes = outcomes,
         };

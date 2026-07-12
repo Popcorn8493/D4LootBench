@@ -104,6 +104,7 @@ public static class BuildStats
         var thresholdsBySnoId = data.Thresholds.ToDictionary(t => t.SnoId, StringComparer.OrdinalIgnoreCase);
         var purchasedSet = purchased as ISet<CellRef> ?? purchased.ToHashSet();
         var tiers = EffectiveAttachTiers(graph, purchasedSet);
+        var gatePair = GateCrossings.PairMap(graph);
 
         var totals = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         var candidates = new List<(GraphVertex Vertex, ParagonThresholdDef Def)>();
@@ -111,6 +112,14 @@ public static class BuildStats
         {
             var vertex = graph.Vertices[v];
             if (v != graph.StartVertex && !purchasedSet.Contains(vertex.Cell))
+                continue;
+
+            // A purchased gate PAIR grants its +5 attributes once: the auto-purchased half
+            // (the board entered later on the path) grants nothing in-game.
+            if (gatePair[v] is int pair and >= 0
+                && graph.Vertices[pair].Cell is var partnerCell
+                && purchasedSet.Contains(partnerCell)
+                && tiers[partnerCell.BoardSlot] < tiers[vertex.Cell.BoardSlot])
                 continue;
 
             double factor = cellMultipliers?.GetValueOrDefault(vertex.Cell, 1.0) ?? 1.0;

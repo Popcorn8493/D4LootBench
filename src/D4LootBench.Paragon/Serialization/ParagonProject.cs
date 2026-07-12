@@ -13,6 +13,13 @@ public sealed record ParagonProjectGlyph(
 public sealed record ParagonProjectRule(string GroupKey, NodeRuleMode Mode, int Limit);
 
 /// <summary>
+/// One reference the focus priorities were derived from (an imported build variant or the
+/// loaded loot filter), stored with its full per-attribute emphasis so the consensus can be
+/// re-combined — and extended with further references — after reopening the project.
+/// </summary>
+public sealed record ParagonProjectReference(string Source, IReadOnlyList<ReferenceEmphasis> Emphasis);
+
+/// <summary>
 /// A saved paragon planner session: layout, targets, per-cell constraints, the solved purchase
 /// set, glyph assignments, node rules, and the planner settings. Boards and glyphs are stored
 /// by internal name so a project survives data updates (unknown names fail at load with a
@@ -30,6 +37,7 @@ public sealed record ParagonProject
     public IReadOnlyList<ParagonProjectGlyph> Glyphs { get; init; } = [];
     public IReadOnlyList<ParagonProjectRule> NodeRules { get; init; } = [];
     public IReadOnlyList<string> FocusStats { get; init; } = [];
+    public IReadOnlyList<ParagonProjectReference> References { get; init; } = [];
 
     /// <summary>Per-stat priority weights for the maximizer (attribute → weight, missing = 1).</summary>
     public IReadOnlyDictionary<string, double> FocusWeights { get; init; } =

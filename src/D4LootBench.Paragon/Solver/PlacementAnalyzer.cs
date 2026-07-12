@@ -641,7 +641,7 @@ public static class PlacementAnalyzer
         var thresholds = pipeline.Thresholds is null
             ? null
             : pipeline.Thresholds with { CellMultipliers = MultipliersFor() };
-        int budget = Math.Max(0, pipeline.TotalPoints - purchased.Count);
+        int budget = Math.Max(0, pipeline.TotalPoints - GateCrossings.PointCost(graph, purchased));
         if (budget > 0 || (pipeline.Focus.ActivateThresholds && thresholds is not null))
             PointMaximizer.Extend(graph, purchased, budget, pipeline.Focus, effectiveRequest, thresholds);
 
@@ -676,7 +676,7 @@ public static class PlacementAnalyzer
             limitBreaks += Math.Max(0, cells.Count(purchased.Contains) - rule.Limit);
         }
 
-        return new PipelineResult(glyphsActive, thresholdsMet, purchased.Count,
+        return new PipelineResult(glyphsActive, thresholdsMet, GateCrossings.PointCost(graph, purchased),
             FocusScoreOf(graph, purchased, pipeline.Focus, finalMultipliers))
         {
             GlyphMoves = glyphMoves,

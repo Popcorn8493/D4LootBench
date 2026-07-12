@@ -120,12 +120,19 @@ public static class BuildComparer
 
         int points = 0, rares = 0, legendaries = 0;
         var stats = new Dictionary<string, double>();
+        var gatePair = GateCrossings.PairMap(graph);
+        var allocatedCells = build.AllocatedCells.ToHashSet();
         foreach (var cell in build.AllocatedCells.Distinct())
         {
             if (!graph.TryGetVertex(cell, out int vertex))
                 continue;
             var node = graph.Vertices[vertex].Node;
             if (node.Kind == ParagonNodeKind.Start)
+                continue;
+            // One half of an allocated gate pair is free in-game and grants no stats — count
+            // the pair once (the lower-index half stands in for the paid side).
+            if (gatePair[vertex] is int pair and >= 0 && pair < vertex
+                && allocatedCells.Contains(graph.Vertices[pair].Cell))
                 continue;
             points++;
             if (node.Kind == ParagonNodeKind.Rare) rares++;

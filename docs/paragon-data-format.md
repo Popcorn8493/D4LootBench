@@ -129,7 +129,10 @@ Current counts (patch 3.1.0): 79 boards, 561 nodes, 160 glyphs, 52 thresholds.
 - `isThresholdBonus: true` marks attributes granted only when the node's threshold requirement is met.
 - Legendary nodes carry `power` instead of meaningful attributes:
   `{ "snoId": "0x…", "name": "Paragon_Sorc_Legendary_001", "description": "…" }`.
-- Every node costs 1 paragon point; there is no cost field.
+- There is no cost field. Every node costs 1 paragon point, with one engine-side exception
+  (user-verified vs a live build, July 2026): a board crossing's Attachment Gate PAIR costs one
+  point total — buying your side's gate attaches the board and auto-purchases the far gate,
+  which also does not grant its +5 attributes. Modeled by `Solver/GateCrossings`.
 
 ## glyphs
 
