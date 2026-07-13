@@ -9,6 +9,52 @@ public partial class ParagonPlannerWindow : Window
     public ParagonPlannerWindow()
     {
         InitializeComponent();
+        DataContextChanged += (_, e) =>
+        {
+            if (e.OldValue is ParagonPlannerViewModel oldViewModel)
+                oldViewModel.LayoutReplaced -= OnLayoutReplaced;
+            if (e.NewValue is ParagonPlannerViewModel viewModel)
+                viewModel.LayoutReplaced += OnLayoutReplaced;
+        };
+    }
+
+    /// <summary>
+    /// An open/import/plan just swapped the whole layout — refit the zoom so the user sees all
+    /// of it instead of a corner. Deferred until WPF has measured the new canvas. Never magnifies
+    /// past 100%: small layouts at actual size beat a surprise close-up.
+    /// </summary>
+    private void OnLayoutReplaced(object? sender, EventArgs e) =>
+        Dispatcher.BeginInvoke(() => FitToView(maxZoom: 1.0),
+            System.Windows.Threading.DispatcherPriority.Loaded);
+
+    /// <summary>
+    /// Keyboard shortcuts run on the tunneling pass so no focused child (board button, text box,
+    /// combo, scroll viewer) can swallow them — Window.InputBindings only fire when the KeyDown
+    /// bubbles back to the window unhandled, which users reported failing for Ctrl+S.
+    /// </summary>
+    private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (DataContext is not ParagonPlannerViewModel viewModel || viewModel.IsBusy)
+            return;
+        // A focused text box keeps its own editing shortcuts (its local Ctrl+Z undo stack).
+        bool inTextBox = Keyboard.FocusedElement is System.Windows.Controls.Primitives.TextBoxBase;
+        ICommand? command = (e.Key, Keyboard.Modifiers) switch
+        {
+            (Key.S, ModifierKeys.Control) => viewModel.SaveProjectCommand,
+            (Key.S, ModifierKeys.Control | ModifierKeys.Shift) => viewModel.SaveProjectAsCommand,
+            (Key.O, ModifierKeys.Control) => viewModel.OpenProjectCommand,
+            (Key.I, ModifierKeys.Control) => viewModel.ImportBuildCommand,
+            (Key.Z, ModifierKeys.Control) when !inTextBox => viewModel.UndoCommand,
+            (Key.Y, ModifierKeys.Control) when !inTextBox => viewModel.RedoCommand,
+            (Key.Z, ModifierKeys.Control | ModifierKeys.Shift) when !inTextBox => viewModel.RedoCommand,
+            (Key.F5, ModifierKeys.None) => viewModel.SolveCommand,
+            (Key.F6, ModifierKeys.None) => viewModel.ReanalyzeCommand,
+            _ => null,
+        };
+        if (command is null || !command.CanExecute(null))
+            return;
+        e.Handled = true;
+        command.Execute(null);
     }
 
     /// <summary>Right-click on a node: an explicit menu instead of blind state cycling.</summary>
@@ -40,27 +86,20 @@ public partial class ParagonPlannerWindow : Window
         menu.IsOpen = true;
     }
 
-    /// <summary>Drops the Recent-projects menu below its button on left-click.</summary>
-    private void RecentButton_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is not System.Windows.Controls.Button { ContextMenu: { } menu } button)
-            return;
-        menu.PlacementTarget = button;
-        menu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
-        menu.IsOpen = true;
-    }
-
     /// <summary>Zooms so the whole layout fits the visible board area (clamped to the slider range).</summary>
-    private void FitZoom_Click(object sender, RoutedEventArgs e)
+    private void FitZoom_Click(object sender, RoutedEventArgs e) => FitToView(maxZoom: 2.0);
+
+    private void FitToView(double maxZoom)
     {
         if (DataContext is not ParagonPlannerViewModel viewModel
-            || viewModel.CanvasWidth <= 0 || viewModel.CanvasHeight <= 0)
+            || viewModel.CanvasWidth <= 0 || viewModel.CanvasHeight <= 0
+            || BoardScroll.ViewportWidth <= 40 || BoardScroll.ViewportHeight <= 40)
             return;
         // The ScrollViewer pads the canvas by 20 on each side.
         double fit = Math.Min(
             (BoardScroll.ViewportWidth - 40) / viewModel.CanvasWidth,
             (BoardScroll.ViewportHeight - 40) / viewModel.CanvasHeight);
-        viewModel.Zoom = Math.Clamp(fit, 0.4, 2.0);
+        viewModel.Zoom = Math.Clamp(fit, 0.4, maxZoom);
     }
 
     private void ResetZoom_Click(object sender, RoutedEventArgs e)

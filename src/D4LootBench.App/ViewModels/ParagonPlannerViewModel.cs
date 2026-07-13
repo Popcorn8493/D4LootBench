@@ -31,6 +31,16 @@ public sealed record RecentProject(string FullPath)
 }
 
 /// <summary>
+/// One imported build, plus the skill setup its guide variant carried when the source page
+/// embeds one (Mobalytics build guides do; Maxroll planner data has no skill text).
+/// </summary>
+public sealed record ParagonImport(
+    ConvertedMaxrollBuild Build, string Source, MobalyticsSkillVariant? Skills = null);
+
+/// <summary>One row of the Optimize tab's reference list; Detail is the tooltip breakdown.</summary>
+public sealed record ReferenceListItem(string Source, string Detail);
+
+/// <summary>
 /// An unmet rare-node threshold of the current paragon build — the item compare tool weighs
 /// gear core stats against these deficits (requirements check the character TOTAL).
 /// </summary>
@@ -216,6 +226,18 @@ public partial class ParagonPlannerViewModel : ObservableObject
     [ObservableProperty]
     private double _zoom = 1.0;
 
+    /// <summary>Shows the quick-start card on the canvas until the session has any real content.</summary>
+    [ObservableProperty]
+    private bool _showGettingStarted = true;
+
+    private void UpdateGettingStarted() =>
+        ShowGettingStarted = _placedBoards.Count <= 1 && _targets.Count == 0 && !Cells.Any(c => c.IsPurchased);
+
+    /// <summary>Raised when an open/import/plan replaces the whole layout — the window refits the zoom.</summary>
+    public event EventHandler? LayoutReplaced;
+
+    private void NotifyLayoutReplaced() => LayoutReplaced?.Invoke(this, EventArgs.Empty);
+
     /// <summary>True while a solver or import operation runs — shows the canvas busy overlay.</summary>
     [ObservableProperty]
     private bool _isBusy;
@@ -313,6 +335,10 @@ public partial class ParagonPlannerViewModel : ObservableObject
     [ObservableProperty]
     private double _canvasHeight;
 
+    // Changing the class wipes the whole layout — snapshot BEFORE the property lands so the
+    // undo state is consistent (old class with old boards). No-op during ApplyProject.
+    partial void OnSelectedClassChanging(string value) => RecordUndo();
+
     partial void OnSelectedClassChanged(string value)
     {
         AttachableBoards.Clear();
@@ -365,6 +391,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
             return;
         }
 
+        RecordUndo();
         _placedBoards.Add(candidate[^1]);
         RebuildLayout();
         SetStatus($"Attached {BoardDisplayName(board)} ({edge} of slot {parentSlot}).");
@@ -374,6 +401,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
     private void RemoveLastBoard()
     {
         // Only the newest board is removable — later slots may attach to earlier ones.
+        RecordUndo();
         _placedBoards.RemoveAt(_placedBoards.Count - 1);
         RebuildLayout();
         SetStatus("Removed the last attached board.");
@@ -402,6 +430,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
         };
         if (dialog.ShowDialog() != true)
             return;
+        RecordUndo();
 
         var request = new LayoutOptimizerRequest
         {
@@ -471,6 +500,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
                   $"{plan.PointsSpent} points reaching every legendary node, " +
                   $"{activated} of {result.GlyphPlacements.Count} glyph(s) activated.",
             error: plan.Notes.Count > 0);
+        NotifyLayoutReplaced();
     }
 
     private void RebuildLayout()
@@ -644,7 +674,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
     /// maxroll.gg planner or build-guide URL, a mobalytics.gg build URL, or pasted page HTML.
     /// Reports errors itself; returns null on failure or cancellation.
     /// </summary>
-    private async Task<(ConvertedMaxrollBuild Build, string Source)?> ImportFromClipboardAsync() =>
+    private async Task<ParagonImport?> ImportFromClipboardAsync() =>
         await ImportManyFromClipboardAsync(allowMultiple: false) is { Count: > 0 } imports
             ? imports[0]
             : null;
@@ -655,7 +685,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
     /// versions (e.g. a Mobalytics Selig setup AND the standard setup), each returned as its
     /// own build. Layout imports keep single-pick — the planner holds one layout at a time.
     /// </summary>
-    private async Task<IReadOnlyList<(ConvertedMaxrollBuild Build, string Source)>?>
+    private async Task<IReadOnlyList<ParagonImport>?>
         ImportManyFromClipboardAsync(bool allowMultiple)
     {
         string text = Clipboard.ContainsText() ? Clipboard.GetText().Trim() : "";
@@ -682,7 +712,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
                 var build = MaxrollParagonCodec.ToLayout(
                     MaxrollParagonCodec.Decode(text), ParagonDatabase.BoardsByInternalName);
                 ComposedGraph.Build(build.Layout);
-                return [(build, "Maxroll code")];
+                return [new ParagonImport(build, "Maxroll code")];
             }
             return await ImportMobalyticsBuildsAsync(text, allowMultiple); // pasted page HTML
         }
@@ -698,7 +728,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
         }
     }
 
-    private async Task<IReadOnlyList<(ConvertedMaxrollBuild Build, string Source)>?>
+    private async Task<IReadOnlyList<ParagonImport>?>
         ImportMobalyticsBuildsAsync(string text, bool allowMultiple)
     {
         string html = text;
@@ -717,12 +747,25 @@ public partial class ParagonPlannerViewModel : ObservableObject
                 SetStatus("Import cancelled.");
                 return null;
             }
-            var builds = new List<(ConvertedMaxrollBuild, string)>();
+
+            // The same page embeds the variants' skill setups — carry them along so reference
+            // imports can vote skills too. Absent or unparseable skill data never blocks builds.
+            IReadOnlyList<MobalyticsSkillVariant> skillVariants = [];
+            try
+            {
+                skillVariants = MobalyticsSkillImporter.ExtractVariants(html);
+            }
+            catch (FormatException)
+            {
+            }
+
+            var builds = new List<ParagonImport>();
             foreach (var variant in chosen)
             {
                 var build = MobalyticsParagonImporter.ToBuild(variant, ParagonDatabase.Data);
                 ComposedGraph.Build(build.Layout);
-                builds.Add((build, $"Mobalytics '{variant.Title}'"));
+                builds.Add(new ParagonImport(
+                    build, $"Mobalytics '{variant.Title}'", MatchSkills(skillVariants, variant.Title)));
             }
             return builds;
         }
@@ -733,7 +776,22 @@ public partial class ParagonPlannerViewModel : ObservableObject
         }
     }
 
-    private async Task<IReadOnlyList<(ConvertedMaxrollBuild Build, string Source)>?>
+    /// <summary>
+    /// Finds the skill variant belonging to a paragon variant. Identical paragon sections merge
+    /// their titles ("A / B"), so any part matching a skill variant's title counts; a page with
+    /// a single skill setup covers every paragon variant.
+    /// </summary>
+    private static MobalyticsSkillVariant? MatchSkills(
+        IReadOnlyList<MobalyticsSkillVariant> skillVariants, string paragonTitle)
+    {
+        if (skillVariants.Count == 1)
+            return skillVariants[0];
+        var parts = paragonTitle.Split(" / ", StringSplitOptions.TrimEntries);
+        return skillVariants.FirstOrDefault(s =>
+            parts.Contains(s.Title, StringComparer.OrdinalIgnoreCase));
+    }
+
+    private async Task<IReadOnlyList<ParagonImport>?>
         ImportMaxrollUrlAsync(string url, bool allowMultiple)
     {
         if (!MaxrollBuildImporter.TryParsePlannerUrl(url, out string plannerId))
@@ -758,12 +816,12 @@ public partial class ParagonPlannerViewModel : ObservableObject
                 return null;
             }
         }
-        var builds = new List<(ConvertedMaxrollBuild, string)>();
+        var builds = new List<ParagonImport>();
         foreach (int index in indices)
         {
             var build = MaxrollParagonCodec.ToLayout(variants[index].Entries, ParagonDatabase.BoardsByInternalName);
             ComposedGraph.Build(build.Layout);
-            builds.Add((build, $"Maxroll '{variants[index].Title}'"));
+            builds.Add(new ParagonImport(build, $"Maxroll '{variants[index].Title}'"));
         }
         return builds;
     }
@@ -884,6 +942,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
 
     private void ApplyImportedBuild(ConvertedMaxrollBuild build, string source)
     {
+        RecordUndo();
         string? className = build.Layout.Boards[0].Board.ClassName;
         if (className is not null && className != SelectedClass)
             SelectedClass = className;
@@ -914,6 +973,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
             ? ""
             : "Imported glyphs: " + string.Join(", ", assigned.Select(DescribeGlyph));
         SetStatus($"Imported {source} build: {_placedBoards.Count} board(s), {allocated.Count} allocated node(s).");
+        NotifyLayoutReplaced();
     }
 
     [RelayCommand]
@@ -1045,11 +1105,102 @@ public partial class ParagonPlannerViewModel : ObservableObject
     [RelayCommand]
     private void OpenRecentProject(RecentProject recent) => OpenProjectFile(recent.FullPath);
 
+    // ── Undo / redo ───────────────────────────────────────────────────────
+    // Snapshot-based: every mutating action first serializes the whole session (the same
+    // ParagonProject a save writes), and undo restores it through ApplyProject. Glyph picks,
+    // rule tweaks, and focus checkboxes are directly reversible by hand and not snapshotted.
+
+    private const int UndoDepth = 30;
+    private readonly List<string> _undoStack = [];
+    private readonly List<string> _redoStack = [];
+
+    /// <summary>Suppresses snapshots while ApplyProject rebuilds state (open, undo, redo).</summary>
+    private bool _restoring;
+
+    /// <summary>Call BEFORE mutating; consecutive identical states collapse, so a recorded
+    /// action that then fails or no-ops never produces a dead undo step.</summary>
+    private void RecordUndo()
+    {
+        if (_restoring || _layout is null)
+            return;
+        string snapshot = ParagonProjectSerializer.ToJson(CaptureProject());
+        if (_undoStack.Count > 0 && _undoStack[^1] == snapshot)
+            return;
+        _undoStack.Add(snapshot);
+        if (_undoStack.Count > UndoDepth)
+            _undoStack.RemoveAt(0);
+        _redoStack.Clear();
+        UndoCommand.NotifyCanExecuteChanged();
+        RedoCommand.NotifyCanExecuteChanged();
+    }
+
+    [RelayCommand(CanExecute = nameof(CanUndo))]
+    private void Undo()
+    {
+        string current = ParagonProjectSerializer.ToJson(CaptureProject());
+        // Snapshots equal to the present state are leftovers of actions that changed nothing.
+        while (_undoStack.Count > 0 && _undoStack[^1] == current)
+            _undoStack.RemoveAt(_undoStack.Count - 1);
+        if (_undoStack.Count == 0)
+        {
+            UndoCommand.NotifyCanExecuteChanged();
+            SetStatus("Nothing to undo.");
+            return;
+        }
+        string snapshot = _undoStack[^1];
+        _undoStack.RemoveAt(_undoStack.Count - 1);
+        _redoStack.Add(current);
+        RestoreSnapshot(snapshot);
+        UndoCommand.NotifyCanExecuteChanged();
+        RedoCommand.NotifyCanExecuteChanged();
+        SetStatus("Undid the last change (Ctrl+Y redoes it).");
+    }
+
+    private bool CanUndo() => _undoStack.Count > 0;
+
+    [RelayCommand(CanExecute = nameof(CanRedo))]
+    private void Redo()
+    {
+        string current = ParagonProjectSerializer.ToJson(CaptureProject());
+        while (_redoStack.Count > 0 && _redoStack[^1] == current)
+            _redoStack.RemoveAt(_redoStack.Count - 1);
+        if (_redoStack.Count == 0)
+        {
+            RedoCommand.NotifyCanExecuteChanged();
+            SetStatus("Nothing to redo.");
+            return;
+        }
+        string snapshot = _redoStack[^1];
+        _redoStack.RemoveAt(_redoStack.Count - 1);
+        _undoStack.Add(current);
+        RestoreSnapshot(snapshot);
+        UndoCommand.NotifyCanExecuteChanged();
+        RedoCommand.NotifyCanExecuteChanged();
+        SetStatus("Redid the undone change.");
+    }
+
+    private bool CanRedo() => _redoStack.Count > 0;
+
+    private void RestoreSnapshot(string json)
+    {
+        try
+        {
+            ApplyProject(ParagonProjectSerializer.FromJson(json), refitView: false);
+        }
+        catch (Exception ex) when (ex is FormatException or ArgumentException or InvalidOperationException)
+        {
+            // Snapshots round-trip our own state, so this is effectively unreachable.
+            SetStatus($"Restore failed: {ex.Message}", error: true);
+        }
+    }
+
     private void OpenProjectFile(string path)
     {
         try
         {
-            ApplyProject(ParagonProjectSerializer.FromJson(File.ReadAllText(path)));
+            var project = ParagonProjectSerializer.FromJson(File.ReadAllText(path));
+            RecordUndo();
+            ApplyProject(project);
             SetCurrentProject(path);
             RememberRecentProject(path);
             SetStatus($"Opened project \"{Path.GetFileName(path)}\": {_placedBoards.Count} board(s), " +
@@ -1104,10 +1255,25 @@ public partial class ParagonPlannerViewModel : ObservableObject
     };
 
     /// <summary>Restores a saved session; validates everything before touching the live state.</summary>
-    private void ApplyProject(ParagonProject project)
+    private void ApplyProject(ParagonProject project, bool refitView = true)
     {
         if (!Classes.Contains(project.ClassName))
             throw new FormatException($"Unknown class '{project.ClassName}'.");
+        _restoring = true;
+        try
+        {
+            ApplyProjectCore(project);
+        }
+        finally
+        {
+            _restoring = false;
+        }
+        if (refitView)
+            NotifyLayoutReplaced();
+    }
+
+    private void ApplyProjectCore(ParagonProject project)
+    {
         var boardsByName = ParagonDatabase.BoardsByInternalName;
         var placed = project.Boards.Select(b => new PlacedBoard
         {
@@ -1180,9 +1346,14 @@ public partial class ParagonPlannerViewModel : ObservableObject
         _references.Clear();
         _references.AddRange(project.References.Select(r => (r.Source, r.Emphasis)));
         if (_references.Count > 0)
+        {
             ApplyReferencePriorities(assignFocus: false);
+        }
         else
+        {
             ReferenceSummary = "";
+            RefreshReferenceItems();
+        }
 
         var purchased = project.PurchasedCells.ToHashSet();
         foreach (var cell in Cells)
@@ -1307,6 +1478,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
         if (cell.IsStart)
             return;
 
+        RecordUndo();
         cell.IsTarget = !cell.IsTarget;
         if (cell.IsTarget)
             _targets.Add(cell.Cell);
@@ -1314,6 +1486,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
             _targets.Remove(cell.Cell);
 
         ClearSolution();
+        UpdateGettingStarted();
         SetStatus($"{_targets.Count} target(s) selected.");
     }
 
@@ -1339,6 +1512,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
     [RelayCommand]
     private async Task Solve()
     {
+        RecordUndo();
         var before = CurrentPurchases();
         if (await SolveAsync())
             MarkPurchaseDiff(before);
@@ -1353,6 +1527,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
     {
         if (_graph is null)
             return;
+        RecordUndo();
         var before = CurrentPurchases();
         using var busy = BeginBusy();
         if (!await SolveAsync())
@@ -1428,6 +1603,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
         if (cell.IsStart)
             return;
 
+        RecordUndo();
         cell.Constraint = constraint;
         if (cell.Constraint == CellConstraint.Exclude && cell.IsTarget)
         {
@@ -1575,6 +1751,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
     {
         if (_layout is null || suggestion.Change is null)
             return;
+        RecordUndo();
         var before = CaptureState();
         var purchasesBefore = CurrentPurchases();
         int pointsBefore = purchasesBefore.Count;
@@ -1731,6 +1908,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
     {
         if (_revertState is not PlannerState state)
             return;
+        RecordUndo();
         var purchasesBefore = CurrentPurchases();
         _placedBoards.Clear();
         _placedBoards.AddRange(state.Boards);
@@ -1754,6 +1932,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
     [RelayCommand]
     private async Task MaximizePoints()
     {
+        RecordUndo();
         var before = CurrentPurchases();
         await MaximizePointsAsync();
         MarkPurchaseDiff(before);
@@ -1829,12 +2008,46 @@ public partial class ParagonPlannerViewModel : ObservableObject
     /// <summary>References the priorities derive from; saved with the project and restored on load.</summary>
     private readonly List<(string Source, IReadOnlyList<ReferenceEmphasis> Emphasis)> _references = [];
 
+    /// <summary>The reference list rendered in the Optimize tab, one removable row per reference.</summary>
+    public ObservableCollection<ReferenceListItem> ReferenceItems { get; } = [];
+
+    private void RefreshReferenceItems()
+    {
+        ReferenceItems.Clear();
+        foreach (var (source, emphasis) in _references)
+        {
+            string detail = "Votes for: " + string.Join(", ", emphasis
+                .OrderByDescending(e => e.Score)
+                .Take(6)
+                .Select(e => ParagonDisplay.FormatAttributeName(e.Attribute)));
+            ReferenceItems.Add(new ReferenceListItem(source, detail));
+        }
+    }
+
+    /// <summary>Drops one reference and re-derives the consensus from what remains.</summary>
+    [RelayCommand]
+    private void RemoveReference(ReferenceListItem item)
+    {
+        int index = _references.FindIndex(r => r.Source == item.Source);
+        if (index < 0)
+            return;
+        _references.RemoveAt(index);
+        if (_references.Count == 0)
+        {
+            ReferenceSummary = "";
+            RefreshReferenceItems();
+            SetStatus("Reference removed — focus stats keep their current selection.");
+            return;
+        }
+        ApplyReferencePriorities();
+    }
+
     /// <summary>Sources compare without their trailing count suffix, so "Loaded filter (19 affix(es))"
     /// updates "Loaded filter (12 affix(es))" and a re-imported variant refreshes its old emphasis.</summary>
     private void AddOrReplaceReference(string source, IReadOnlyList<ReferenceEmphasis> emphasis)
     {
         static string KeyOf(string s) => System.Text.RegularExpressions.Regex
-            .Replace(s, @"\s*\(\d+ (?:nodes|affix\(es\))\)$", "").Trim();
+            .Replace(s, @"\s*\([^()]*\d+ (?:nodes|skills|affix\(es\))[^()]*\)$", "").Trim();
         string key = KeyOf(source);
         int existing = _references.FindIndex(r => KeyOf(r.Source).Equals(key, StringComparison.OrdinalIgnoreCase));
         if (existing >= 0)
@@ -1862,6 +2075,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
 
         SetStatus("Deriving stat priorities from the reference build(s)…");
         int empty = 0;
+        var skillNotes = new List<string>();
         foreach (var import in imports)
         {
             var emphasis = await Task.Run(() =>
@@ -1869,23 +2083,39 @@ public partial class ParagonPlannerViewModel : ObservableObject
                 var referenceGraph = ComposedGraph.Build(import.Build.Layout);
                 return BuildReference.EmphasisOf(referenceGraph, import.Build.AllocatedCells);
             });
-            if (emphasis.Count == 0)
-            {
+            if (emphasis.Count > 0)
+                AddOrReplaceReference($"{import.Source} ({import.Build.AllocatedCells.Count} nodes)", emphasis);
+            else
                 empty++;
-                continue;
+
+            // The guide's skill setup votes as its own reference — gear, boards, and skills
+            // then pull the focus priorities together.
+            if (import.Skills is { ActiveSkills.Count: > 0 } skills)
+            {
+                var skillResult = SkillReference.EmphasisOf(skills);
+                if (skillResult.Emphasis.Count > 0)
+                {
+                    AddOrReplaceReference(
+                        $"{import.Source} skills ({skills.ActiveSkills.Count} skills, {skillResult.PrimaryDamageType.ToLowerInvariant()})",
+                        skillResult.Emphasis);
+                    skillNotes.Add($"{string.Join(", ", skillResult.ActiveSkillNames)} " +
+                                   $"({skillResult.PrimaryDamageType.ToLowerInvariant()} damage)");
+                }
             }
-            AddOrReplaceReference($"{import.Source} ({import.Build.AllocatedCells.Count} nodes)", emphasis);
         }
 
-        if (empty == imports.Count)
+        if (_references.Count == 0)
         {
-            SetStatus("The reference build(s) have no allocated nodes to learn from.", error: true);
+            SetStatus("The reference build(s) have no allocated nodes or skills to learn from.", error: true);
             return;
         }
         ApplyReferencePriorities();
-        if (empty > 0)
-            SetStatus($"Focus priorities set from {_references.Count} reference(s); " +
-                      $"{empty} imported variant(s) had no allocated nodes and were skipped.");
+        string skillSuffix = skillNotes.Count > 0
+            ? $" Skills read from the guide: {string.Join(" · ", skillNotes.Distinct())}."
+            : "";
+        string emptySuffix = empty > 0 ? $" {empty} variant(s) had no allocated nodes." : "";
+        SetStatus($"Focus priorities set from {_references.Count} reference(s) — " +
+                  $"run Re-analyze to apply.{skillSuffix}{emptySuffix}");
     }
 
     [RelayCommand]
@@ -1893,7 +2123,8 @@ public partial class ParagonPlannerViewModel : ObservableObject
     {
         _references.Clear();
         ReferenceSummary = "";
-        SetStatus("Reference builds cleared — focus stats keep their current selection.");
+        RefreshReferenceItems();
+        SetStatus("References cleared — focus stats keep their current selection.");
     }
 
     /// <summary>
@@ -1995,8 +2226,8 @@ public partial class ParagonPlannerViewModel : ObservableObject
             .Take(4)
             .ToList();
 
-        string sources = string.Join("; ", _references.Select(r => r.Source));
-        ReferenceSummary = $"References ({_references.Count}): {sources}. " +
+        RefreshReferenceItems();
+        ReferenceSummary = "Derived priorities — " +
             $"High: {(high.Count > 0 ? string.Join(", ", high) : "—")}. " +
             $"Normal: {(normal.Count > 0 ? string.Join(", ", normal) : "—")}. " +
             $"Low: {(low.Count > 0 ? string.Join(", ", low) : "—")}." +
@@ -2030,6 +2261,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
             SetStatus("Solve or import a build first — the attach order comes from the purchased path.", error: true);
             return;
         }
+        RecordUndo();
         var entries = BuildStats.EffectiveAttachments(_graph, purchased);
         if (Enumerable.Range(0, entries.Count).All(s => entries[s].Tier == s))
         {
@@ -2144,6 +2376,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
     [RelayCommand]
     private void ClearTargets()
     {
+        RecordUndo();
         _targets.Clear();
         foreach (var cell in Cells)
             cell.IsTarget = false;
@@ -2201,6 +2434,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
     /// <summary>Recomputes the pinned build summary and the effective stat totals panel.</summary>
     private void RefreshBuildSummary()
     {
+        UpdateGettingStarted();
         StatTotals.Clear();
         ThresholdWarnings.Clear();
         var purchasedCells = Cells.Where(c => c.IsPurchased).ToList();
