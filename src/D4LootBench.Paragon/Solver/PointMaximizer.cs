@@ -39,6 +39,13 @@ public sealed record MaximizeFocus(
     /// </summary>
     public double DefenseShare { get; init; }
 
+    /// <summary>
+    /// The socketed attribute-mapped glyphs' pull on the spend (see <see cref="GlyphDelivery"/>):
+    /// source stat bought inside a glyph's radius counts again, scaled by the glyph's relative
+    /// strength. Null falls back to the request's glyph goals at weight 1; empty means no pull.
+    /// </summary>
+    public IReadOnlyList<GlyphDelivery>? GlyphDeliveries { get; init; }
+
     /// <summary>Attributes that keep the character alive — the defense basket's membership.</summary>
     public static bool IsDefensive(string attribute)
     {
@@ -76,11 +83,14 @@ public sealed record MaximizeOutcome(
 /// <summary>
 /// Spends a point budget extending an already-solved tree. Greedy frontier growth: each round a
 /// multi-source Dijkstra finds the reachable candidate with the best value-per-point path and
-/// absorbs it, until the budget is gone or nothing valuable is reachable. Values are normalized
-/// per attribute (a node's contribution is measured against that attribute's average per-node
-/// magnitude) so flat and percent stats compete fairly. Node rules apply: excluded cells are
-/// never entered, avoided cells are routed around, and Limit groups are enforced hard — a full
-/// group is off-limits, and a path that would jump a group past its cap is rejected.
+/// absorbs it, until the budget is gone or nothing valuable is reachable. A candidate's score is
+/// the value of its WHOLE path (absorbing buys every intermediate node), equally cheap routes
+/// prefer the stat-bearing one, and glyph node buffs count toward a cell's effective value.
+/// Values are normalized per attribute (a node's contribution is measured against that
+/// attribute's average per-node magnitude) so flat and percent stats compete fairly. Node rules
+/// apply: excluded cells are never entered, avoided cells are routed around, and Limit groups
+/// are enforced hard — a full group is off-limits, and a path that would jump a group past its
+/// cap is rejected.
 /// </summary>
 public static class PointMaximizer
 {
@@ -130,16 +140,32 @@ public static class PointMaximizer
 
         var attributes = focus.Attributes.Count > 0 ? focus.Attributes : MaximizeFocus.CoreStats;
         var attributeSet = new HashSet<string>(attributes, StringComparer.OrdinalIgnoreCase);
+        // The glyph pull: explicit deliveries when the caller knows the socketed glyphs (their
+        // weights carry each glyph's relative strength), else the activation goals at weight 1.
+        var deliveries = focus.GlyphDeliveries ?? request.GlyphGoals
+            .Select(g => new GlyphDelivery(g.Socket, g.SourceAttribute, g.Radius, 1.0))
+            .ToList();
         // Gains are also reported for glyph-source stats, even when they aren't focused.
         var gainSet = new HashSet<string>(attributeSet, StringComparer.OrdinalIgnoreCase);
+        foreach (var delivery in deliveries)
+            gainSet.Add(delivery.SourceAttribute);
         foreach (var goal in request.GlyphGoals)
             gainSet.Add(goal.SourceAttribute);
 
+        // Glyph node buffs make a cell's grants worth more toward totals and thresholds —
+        // selection values the effective grant. Activation math stays raw (the game counts
+        // purchased stat), and reported gains stay raw for the same reason.
+        double MultiplierOf(int v) =>
+            thresholds?.CellMultipliers?.GetValueOrDefault(graph.Vertices[v].Cell, 1.0) ?? 1.0;
+
         // Per-attribute average per-node magnitude across the layout, for unit-fair scoring.
+        // User-excluded cells are not purchasable, so they don't belong in the pool.
         var attributeMean = new Dictionary<string, (double Sum, int Count)>(StringComparer.OrdinalIgnoreCase);
-        foreach (var vertex in graph.Vertices)
+        for (int v = 0; v < n; v++)
         {
-            foreach (var a in vertex.Node.Attributes)
+            if (userBlocked[v])
+                continue;
+            foreach (var a in graph.Vertices[v].Node.Attributes)
             {
                 if (a.IsThresholdBonus || a.Value is not double value || !gainSet.Contains(a.Attribute))
                     continue;
@@ -149,23 +175,24 @@ public static class PointMaximizer
         }
 
         // Glyph delivery: a point of source stat inside an active glyph's radius is worth its raw
-        // value AND what the glyph converts it into — count it again for each covering glyph.
+        // value AND what the glyph converts it into — count it again for each covering glyph,
+        // scaled by that glyph's weight (activation math elsewhere stays raw).
         var glyphBonus = new double[n];
-        foreach (var goal in request.GlyphGoals)
+        foreach (var delivery in deliveries)
         {
-            if (!attributeMean.TryGetValue(goal.SourceAttribute, out var mean))
+            if (!attributeMean.TryGetValue(delivery.SourceAttribute, out var mean))
                 continue;
             for (int v = 0; v < n; v++)
             {
                 var cell = graph.Vertices[v].Cell;
-                if (cell.BoardSlot != goal.Socket.BoardSlot
-                    || Math.Abs(cell.X - goal.Socket.X) + Math.Abs(cell.Y - goal.Socket.Y) > goal.Radius)
+                if (cell.BoardSlot != delivery.Socket.BoardSlot
+                    || Math.Abs(cell.X - delivery.Socket.X) + Math.Abs(cell.Y - delivery.Socket.Y) > delivery.Radius)
                     continue;
                 foreach (var a in graph.Vertices[v].Node.Attributes)
                 {
                     if (!a.IsThresholdBonus && a.Value is double value
-                        && string.Equals(a.Attribute, goal.SourceAttribute, StringComparison.OrdinalIgnoreCase))
-                        glyphBonus[v] += value / (mean.Sum / mean.Count);
+                        && string.Equals(a.Attribute, delivery.SourceAttribute, StringComparison.OrdinalIgnoreCase))
+                        glyphBonus[v] += value / (mean.Sum / mean.Count) * delivery.Weight;
                 }
             }
         }
@@ -176,12 +203,14 @@ public static class PointMaximizer
         double NormValue(int v)
         {
             double total = glyphBonus[v];
+            double factor = MultiplierOf(v);
             foreach (var a in graph.Vertices[v].Node.Attributes)
             {
                 if (a.IsThresholdBonus || a.Value is not double value || !attributeSet.Contains(a.Attribute))
                     continue;
-                var (sum, count) = attributeMean[a.Attribute];
-                total += value / (sum / count) * WeightOf(a.Attribute);
+                if (!attributeMean.TryGetValue(a.Attribute, out var mean))
+                    continue; // the attribute exists only on excluded cells
+                total += value * factor / (mean.Sum / mean.Count) * WeightOf(a.Attribute);
             }
             return total;
         }
@@ -191,9 +220,11 @@ public static class PointMaximizer
         var defenseMean = new Dictionary<string, (double Sum, int Count)>(StringComparer.OrdinalIgnoreCase);
         if (focus.DefenseShare > 0)
         {
-            foreach (var vertex in graph.Vertices)
+            for (int v = 0; v < n; v++)
             {
-                foreach (var a in vertex.Node.Attributes)
+                if (userBlocked[v])
+                    continue;
+                foreach (var a in graph.Vertices[v].Node.Attributes)
                 {
                     if (a.IsThresholdBonus || a.Value is not double value || !MaximizeFocus.IsDefensive(a.Attribute))
                         continue;
@@ -209,12 +240,13 @@ public static class PointMaximizer
             if (focus.DefenseShare <= 0)
                 return 0;
             double total = 0;
+            double factor = MultiplierOf(v);
             foreach (var a in graph.Vertices[v].Node.Attributes)
             {
                 if (a.IsThresholdBonus || a.Value is not double value
                     || !defenseMean.TryGetValue(a.Attribute, out var mean))
                     continue;
-                total += value / (mean.Sum / mean.Count);
+                total += value * factor / (mean.Sum / mean.Count);
             }
             return total;
         }
@@ -226,6 +258,17 @@ public static class PointMaximizer
         int remaining = budget;
         var gains = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
 
+        // Per-vertex values, precomputed: candidate scoring counts the WHOLE path (absorbing a
+        // candidate buys every intermediate node too, so their value belongs in the ratio), and
+        // the Dijkstra tie-break prefers the stat-bearing route among equally cheap ones.
+        var normByVertex = new double[n];
+        var defenseByVertex = new double[n];
+        for (int v = 0; v < n; v++)
+        {
+            normByVertex[v] = NormValue(v);
+            defenseByVertex[v] = DefenseValue(v);
+        }
+
         // A board crossing's gate PAIR costs one point in-game (the attached side's gate is
         // auto-purchased free — see GateCrossings). Pair gates are always consecutive on a
         // path, so "partner is the previous walked vertex" covers the within-path case.
@@ -233,16 +276,29 @@ public static class PointMaximizer
 
         int PathCost(int vertex)
         {
+            var (cost, _) = PathCostAndValue(vertex, normByVertex);
+            return cost;
+        }
+
+        // Cost and accumulated value of the not-yet-owned path down to the tree. Value rides
+        // the same guard as cost: a gate pair grants its attributes once, so the free half
+        // contributes neither (both halves carry the same node def, so the sum is right).
+        (int Cost, double Value) PathCostAndValue(int vertex, double[] value)
+        {
             int cost = 0;
+            double total = 0;
             int prev = -1;
             for (int v = vertex; v != -1 && !tree.Contains(v); v = from[v])
             {
                 int pair = gatePair[v];
                 if (pair < 0 || (pair != prev && !tree.Contains(pair)))
+                {
                     cost++;
+                    total += value[v];
+                }
                 prev = v;
             }
-            return cost;
+            return (cost, total);
         }
 
         void Absorb(int vertex)
@@ -272,7 +328,7 @@ public static class PointMaximizer
             limits.BlockFullGroups(blocked, tree);
         }
 
-        // Phase 1: rare nodes. Default order is cheapest first (ties: more focused stat value).
+        // Phase 1: rare nodes, by focused value-per-point of the whole path (ties: cheaper).
         // With RealisticRares, threshold attainability leads instead: bonuses already met, then
         // ones the boards can realistically still supply, then plain rares, and rares whose
         // bonus is out of reach last — so points chase "good" rares, not just near ones.
@@ -285,16 +341,63 @@ public static class PointMaximizer
         {
             bool realistic = focus.RealisticRares && thresholds is not null;
             bool explicitFocus = focus.Attributes.Count > 0;
-            bool WantedRare(int v) => !explicitFocus || NormValue(v) > 1e-9
-                || DefenseValue(v) > 1e-9; // with a defense share, survivability rares are wanted
+            bool WantedRare(int v) => !explicitFocus || normByVertex[v] > 1e-9
+                || defenseByVertex[v] > 1e-9; // with a defense share, survivability rares are wanted
+
+            // Every rare with a threshold is a status candidate — BuildStats only reports
+            // PURCHASED cells on its own, and the whole point here is ranking unbought ones.
+            var thresholdRareCells = new List<CellRef>();
+            // A met (or realistically meetable) bonus is real value the moment the rare is
+            // bought — its focused/defensive magnitude joins the score, normalized against
+            // the layout's other bonuses so it competes fairly with direct grants.
+            var bonusNorm = new double[n];
+            if (realistic)
+            {
+                var bonusMean = new Dictionary<string, (double Sum, int Count)>(StringComparer.OrdinalIgnoreCase);
+                for (int v = 0; v < n; v++)
+                {
+                    if (graph.Vertices[v].Node.Kind == ParagonNodeKind.Rare
+                        && graph.Vertices[v].Node.Thresholds.Count > 0)
+                        thresholdRareCells.Add(graph.Vertices[v].Cell);
+                    if (userBlocked[v])
+                        continue;
+                    foreach (var a in graph.Vertices[v].Node.Attributes)
+                    {
+                        if (!a.IsThresholdBonus || a.Value is not double value)
+                            continue;
+                        if (!attributeSet.Contains(a.Attribute)
+                            && !(focus.DefenseShare > 0 && MaximizeFocus.IsDefensive(a.Attribute)))
+                            continue;
+                        var (sum, count) = bonusMean.GetValueOrDefault(a.Attribute);
+                        bonusMean[a.Attribute] = (sum + Math.Abs(value), count + 1);
+                    }
+                }
+                for (int v = 0; v < n; v++)
+                {
+                    double factor = MultiplierOf(v);
+                    foreach (var a in graph.Vertices[v].Node.Attributes)
+                    {
+                        if (!a.IsThresholdBonus || a.Value is not double value
+                            || !bonusMean.TryGetValue(a.Attribute, out var mean))
+                            continue;
+                        double weight = attributeSet.Contains(a.Attribute)
+                            ? WeightOf(a.Attribute)
+                            : focus.DefenseShare;
+                        bonusNorm[v] += value * factor / (mean.Sum / mean.Count) * weight;
+                    }
+                }
+            }
+
             while (remaining > 0)
             {
                 Func<int, int> rank = _ => 0;
+                Func<int, double> bonusValue = _ => 0;
                 if (realistic)
                 {
                     // Recomputed each round: an absorbed rare changes both Have and supply.
                     var report = BuildStats.Compute(graph, purchased, thresholds!.Data,
-                        thresholds.NonParagonStats, thresholds.ClassName, thresholds.CellMultipliers);
+                        thresholds.NonParagonStats, thresholds.ClassName, thresholds.CellMultipliers,
+                        evaluate: thresholdRareCells);
                     var statusByCell = report.Thresholds
                         .GroupBy(t => t.Cell)
                         .ToDictionary(g => g.Key, g => g.OrderBy(t => t.Requirement - t.Have).First());
@@ -324,9 +427,12 @@ public static class PointMaximizer
                         double deficit = status.Requirement - status.Have;
                         return supply.GetValueOrDefault(coreKey) >= deficit ? 1 : 3;
                     };
+                    // Met bonuses score full; realistically meetable ones at a discount (the
+                    // deficit still has to be bought); unattainable ones are worth nothing.
+                    bonusValue = v => rank(v) switch { 0 => bonusNorm[v], 1 => 0.5 * bonusNorm[v], _ => 0 };
                 }
 
-                RunDijkstra(graph, tree, weights, blocked, dist, from);
+                RunDijkstra(graph, tree, weights, blocked, dist, from, normByVertex);
                 var rejected = new HashSet<int>();
                 int best;
                 while (true)
@@ -334,24 +440,27 @@ public static class PointMaximizer
                     best = -1;
                     int bestRank = 0;
                     int bestCost = 0;
-                    double bestValue = 0;
+                    double bestRatio = 0;
                     for (int v = 0; v < n; v++)
                     {
                         if (tree.Contains(v) || blocked[v] || dist[v] >= Infinity || rejected.Contains(v)
                             || graph.Vertices[v].Node.Kind != ParagonNodeKind.Rare || !WantedRare(v))
                             continue;
-                        int cost = PathCost(v);
+                        var (cost, pathValue) = PathCostAndValue(v, normByVertex);
                         if (cost > remaining)
                             continue;
+                        // Within an attainability rank, value-per-point decides — a slightly
+                        // farther but much better rare beats the merely nearest one. An active
+                        // (or affordable) threshold bonus is part of the rare's value.
                         int nodeRank = rank(v);
-                        double value = NormValue(v);
+                        double ratio = (pathValue + bonusValue(v)) / cost;
                         if (best < 0 || nodeRank < bestRank
-                            || (nodeRank == bestRank && (cost < bestCost || (cost == bestCost && value > bestValue))))
+                            || (nodeRank == bestRank && (ratio > bestRatio || (ratio == bestRatio && cost < bestCost))))
                         {
                             best = v;
                             bestRank = nodeRank;
                             bestCost = cost;
-                            bestValue = value;
+                            bestRatio = ratio;
                         }
                     }
                     if (best < 0 || !limits.PathWouldViolate(best, from, tree))
@@ -398,7 +507,11 @@ public static class PointMaximizer
                         .Sum(a => a.Value!.Value)
                     * (thresholds.CellMultipliers?.GetValueOrDefault(graph.Vertices[v].Cell, 1.0) ?? 1.0);
 
-                RunDijkstra(graph, tree, weights, blocked, dist, from);
+                var targetValue = new double[n];
+                for (int v = 0; v < n; v++)
+                    targetValue[v] = ValueOf(v);
+
+                RunDijkstra(graph, tree, weights, blocked, dist, from, targetValue);
                 double reachable = 0;
                 for (int v = 0; v < n; v++)
                 {
@@ -417,7 +530,7 @@ public static class PointMaximizer
                 double gained = 0;
                 while (gained < needed - 1e-9 && remaining > 0)
                 {
-                    RunDijkstra(graph, tree, weights, blocked, dist, from);
+                    RunDijkstra(graph, tree, weights, blocked, dist, from, targetValue);
                     var rejected = new HashSet<int>();
                     int best;
                     while (true)
@@ -428,13 +541,12 @@ public static class PointMaximizer
                         {
                             if (tree.Contains(v) || blocked[v] || dist[v] >= Infinity || rejected.Contains(v))
                                 continue;
-                            double value = ValueOf(v);
-                            if (value <= 0)
+                            if (targetValue[v] <= 0)
                                 continue;
-                            int cost = PathCost(v);
+                            var (cost, pathValue) = PathCostAndValue(v, targetValue);
                             if (cost > remaining)
                                 continue;
-                            double ratio = value / cost;
+                            double ratio = pathValue / cost;
                             if (best < 0 || ratio > bestRatio)
                             {
                                 best = v;
@@ -468,10 +580,11 @@ public static class PointMaximizer
         // "balance in toughness where available" as an explicit budget, not a hope.
         if (focus.DefenseShare > 0 && remaining > 0)
         {
-            int defenseBudget = Math.Max(1, (int)Math.Round(remaining * focus.DefenseShare));
+            // Proportional, not floored: a 2-point budget at a 0.15 share buys no defense.
+            int defenseBudget = (int)Math.Round(remaining * focus.DefenseShare);
             while (defenseBudget > 0 && remaining > 0)
             {
-                RunDijkstra(graph, tree, weights, blocked, dist, from);
+                RunDijkstra(graph, tree, weights, blocked, dist, from, defenseByVertex);
                 var rejected = new HashSet<int>();
                 int best;
                 while (true)
@@ -482,13 +595,12 @@ public static class PointMaximizer
                     {
                         if (tree.Contains(v) || blocked[v] || dist[v] >= Infinity || rejected.Contains(v))
                             continue;
-                        double value = DefenseValue(v);
-                        if (value <= 0)
+                        if (defenseByVertex[v] <= 0)
                             continue;
-                        int cost = PathCost(v);
+                        var (cost, pathValue) = PathCostAndValue(v, defenseByVertex);
                         if (cost > remaining)
                             continue;
-                        double ratio = value / cost;
+                        double ratio = pathValue / cost;
                         if (best < 0 || ratio > bestRatio)
                         {
                             best = v;
@@ -507,10 +619,11 @@ public static class PointMaximizer
             }
         }
 
-        // Phase 2: focused stats by value-per-point.
+        // Phase 2: focused stats by value-per-point, counting the whole path's value — a
+        // farther candidate whose route passes stat-bearing nodes can beat a nearer one.
         while (remaining > 0)
         {
-            RunDijkstra(graph, tree, weights, blocked, dist, from);
+            RunDijkstra(graph, tree, weights, blocked, dist, from, normByVertex);
             var rejected = new HashSet<int>();
             int best;
             while (true)
@@ -521,13 +634,12 @@ public static class PointMaximizer
                 {
                     if (tree.Contains(v) || blocked[v] || dist[v] >= Infinity || rejected.Contains(v))
                         continue;
-                    double value = NormValue(v);
-                    if (value <= 0)
+                    if (normByVertex[v] <= 0)
                         continue;
-                    int cost = PathCost(v);
+                    var (cost, pathValue) = PathCostAndValue(v, normByVertex);
                     if (cost > remaining)
                         continue;
-                    double ratio = value / cost;
+                    double ratio = pathValue / cost;
                     if (best < 0 || ratio > bestRatio)
                     {
                         best = v;
@@ -542,6 +654,16 @@ public static class PointMaximizer
                 break;
             Absorb(best);
         }
+
+        // Phase H: value hill-climb over THIS call's additions. The greedy spend is
+        // order-dependent — an early pick can be strictly worse than a candidate that became
+        // adjacent later — so trade the least valuable added purchase 1:1 for the best
+        // tree-adjacent candidate while that improves total value. Pre-existing purchases are
+        // never dropped here (only the threshold pass may do that), and connectivity, met
+        // thresholds, active glyph goals and Limit caps all hold.
+        HillClimbValue(graph, purchased, tree, request, thresholds, limits, userBlocked,
+            added, gains, gainSet, ref raresAdded, notes,
+            v => normByVertex[v] + defenseByVertex[v] * focus.DefenseShare * 2);
 
         // Phase R: reallocation. The greedy spend is one-way, so the budget can die a few stat
         // points short of a threshold that a single node would flip. Trade the least valuable
@@ -565,6 +687,179 @@ public static class PointMaximizer
     /// <summary>Kinds the reallocation pass may drop: cheap connectors and filler stat nodes.</summary>
     private static bool IsExpendableKind(ParagonNodeKind kind) =>
         kind is ParagonNodeKind.Normal or ParagonNodeKind.Magic or ParagonNodeKind.Gate;
+
+    /// <summary>
+    /// Trades the least valuable expendable cell among <paramref name="added"/> for the best
+    /// tree-adjacent unpurchased candidate, while each swap strictly improves total value.
+    /// Only this call's own additions are ever dropped; every safety the threshold
+    /// reallocation applies (connectivity, protected targets, gate pairs, met-threshold and
+    /// active-glyph slack, Limit caps) applies here too.
+    /// </summary>
+    private static void HillClimbValue(
+        ComposedGraph graph, ISet<CellRef> purchased, HashSet<int> tree, PlanRequest request,
+        ThresholdContext? thresholds, LimitTracker limits, bool[] userBlocked,
+        List<CellRef> added, Dictionary<string, double> gains, HashSet<string> gainSet,
+        ref int raresAdded, List<string> notes, Func<int, double> valueOf)
+    {
+        const int MaxSwaps = 40;
+        const double Margin = 1e-3; // in normalized units: a thousandth of an average node
+        int n = graph.Vertices.Count;
+        var protectedTargets = request.Targets.ToHashSet();
+        var gatePair = GateCrossings.PairMap(graph);
+        var addedSet = added.ToHashSet();
+
+        double MultiplierOf(int v) =>
+            thresholds?.CellMultipliers?.GetValueOrDefault(graph.Vertices[v].Cell, 1.0) ?? 1.0;
+
+        double GrantOf(int v, string attribute) => graph.Vertices[v].Node.Attributes
+            .Where(a => !a.IsThresholdBonus && a.Value is not null
+                && string.Equals(a.Attribute, attribute, StringComparison.OrdinalIgnoreCase))
+            .Sum(a => a.Value!.Value) * MultiplierOf(v);
+
+        bool StaysConnectedWithout(int candidate)
+        {
+            var seen = new HashSet<int> { graph.StartVertex };
+            var queue = new Queue<int>();
+            queue.Enqueue(graph.StartVertex);
+            while (queue.Count > 0)
+            {
+                int v = queue.Dequeue();
+                foreach (int u in graph.Adjacency[v])
+                {
+                    if (u != candidate && tree.Contains(u) && seen.Add(u))
+                        queue.Enqueue(u);
+                }
+            }
+            return seen.Count == tree.Count - 1;
+        }
+
+        int swaps = 0;
+        var droppedNames = new List<string>();
+        while (swaps < MaxSwaps)
+        {
+            // Met bonuses may not lose more of their stat than their slack, or they flip off.
+            var slackByAttribute = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+            if (thresholds is not null)
+            {
+                var report = BuildStats.Compute(graph, purchased, thresholds.Data,
+                    thresholds.NonParagonStats, thresholds.ClassName, thresholds.CellMultipliers);
+                foreach (var met in report.Thresholds.Where(t => t.Met))
+                {
+                    string coreKey = met.Attribute.EndsWith("_Total", StringComparison.Ordinal)
+                        ? met.Attribute[..^"_Total".Length] + "_Core"
+                        : met.Attribute;
+                    double slack = met.Have - met.Requirement;
+                    slackByAttribute[coreKey] = Math.Min(
+                        slackByAttribute.GetValueOrDefault(coreKey, double.MaxValue), slack);
+                }
+            }
+            // Active glyph goals may not lose more in-radius source stat than their slack.
+            var goalSlack = new List<(GlyphGoal Goal, double Slack)>();
+            foreach (var goal in request.GlyphGoals)
+            {
+                double have = GlyphRadius.AttributeTotalsInRange(
+                        graph, goal.Socket, purchased.ToList(), goal.Radius, GlyphRadius.GameMetric)
+                    .GetValueOrDefault(goal.SourceAttribute);
+                goalSlack.Add((goal, have - goal.RequiredTotal));
+            }
+
+            // Buy candidate: the most valuable point available next to the tree.
+            int buy = -1;
+            double buyValue = 0;
+            for (int v = 0; v < n; v++)
+            {
+                if (tree.Contains(v) || userBlocked[v] || limits.WouldViolate(v))
+                    continue;
+                double value = valueOf(v);
+                if (value <= buyValue)
+                    continue;
+                if (!graph.Adjacency[v].Any(u => tree.Contains(u)))
+                    continue;
+                buy = v;
+                buyValue = value;
+            }
+            if (buy < 0)
+                break;
+
+            // Free candidate: the least valuable of this call's own expendable purchases.
+            int free = -1;
+            double freeLoss = double.MaxValue;
+            foreach (int v in tree)
+            {
+                var cell = graph.Vertices[v].Cell;
+                if (v == graph.StartVertex || !addedSet.Contains(cell)
+                    || !IsExpendableKind(graph.Vertices[v].Node.Kind))
+                    continue;
+                // Half of a purchased gate pair frees no real point in-game — never trade it.
+                int pair = gatePair[v];
+                if (pair >= 0 && tree.Contains(pair))
+                    continue;
+                if (protectedTargets.Contains(cell))
+                    continue;
+                bool unsafeGrant = graph.Vertices[v].Node.Attributes.Any(a =>
+                    !a.IsThresholdBonus && a.Value is not null
+                    && slackByAttribute.TryGetValue(a.Attribute, out double slack)
+                    && a.Value.Value * MultiplierOf(v) > slack);
+                if (unsafeGrant)
+                    continue; // would flip a met threshold bonus back off
+                bool breaksGoal = goalSlack.Any(g => g.Slack >= 0
+                    && cell.BoardSlot == g.Goal.Socket.BoardSlot
+                    && Math.Abs(cell.X - g.Goal.Socket.X) + Math.Abs(cell.Y - g.Goal.Socket.Y) <= g.Goal.Radius
+                    && GrantOf(v, g.Goal.SourceAttribute) / MultiplierOf(v) > g.Slack);
+                if (breaksGoal)
+                    continue; // would deactivate a met glyph
+                // The buy must still touch the tree once this vertex is gone.
+                if (!graph.Adjacency[buy].Any(u => u != v && tree.Contains(u)))
+                    continue;
+                if (!StaysConnectedWithout(v))
+                    continue;
+                double loss = valueOf(v);
+                if (loss < freeLoss)
+                {
+                    free = v;
+                    freeLoss = loss;
+                }
+            }
+            if (free < 0 || buyValue <= freeLoss + Margin)
+                break;
+
+            var freedCell = graph.Vertices[free].Cell;
+            tree.Remove(free);
+            purchased.Remove(freedCell);
+            added.Remove(freedCell);
+            addedSet.Remove(freedCell);
+            limits.OnRemoved(free);
+            foreach (var a in graph.Vertices[free].Node.Attributes)
+            {
+                if (!a.IsThresholdBonus && a.Value is not null && gainSet.Contains(a.Attribute))
+                    gains[a.Attribute] = gains.GetValueOrDefault(a.Attribute) - a.Value.Value;
+            }
+
+            var boughtCell = graph.Vertices[buy].Cell;
+            tree.Add(buy);
+            purchased.Add(boughtCell);
+            added.Add(boughtCell);
+            addedSet.Add(boughtCell);
+            limits.OnAbsorbed(buy);
+            foreach (var a in graph.Vertices[buy].Node.Attributes)
+            {
+                if (!a.IsThresholdBonus && a.Value is not null && gainSet.Contains(a.Attribute))
+                    gains[a.Attribute] = gains.GetValueOrDefault(a.Attribute) + a.Value.Value;
+            }
+            if (graph.Vertices[buy].Node.Kind == ParagonNodeKind.Rare)
+                raresAdded++;
+
+            droppedNames.Add(graph.Vertices[free].Node.Name ?? graph.Vertices[free].Node.InternalName);
+            swaps++;
+        }
+
+        if (swaps > 0)
+        {
+            notes.Add($"Rebalanced {swaps} point(s) toward higher-value nodes " +
+                      $"(dropped {string.Join(", ", droppedNames.Distinct().Take(3))}" +
+                      $"{(droppedNames.Distinct().Count() > 3 ? ", …" : "")}).");
+        }
+    }
 
     private static void ReallocateForThresholds(
         ComposedGraph graph, ISet<CellRef> purchased, HashSet<int> tree, PlanRequest request,
@@ -782,31 +1077,41 @@ public static class PointMaximizer
         }
     }
 
+    /// <summary>
+    /// Multi-source Dijkstra from the tree. With <paramref name="tieValue"/>, equally cheap
+    /// routes prefer the one whose cells carry more value — every weight is ≥1, so the
+    /// tie-break can reroute but never change a path's cost.
+    /// </summary>
     private static void RunDijkstra(
-        ComposedGraph graph, HashSet<int> tree, int[] weights, bool[] blocked, int[] dist, int[] from)
+        ComposedGraph graph, HashSet<int> tree, int[] weights, bool[] blocked, int[] dist, int[] from,
+        double[]? tieValue = null)
     {
         Array.Fill(dist, Infinity);
-        var queue = new PriorityQueue<int, int>();
+        var pathValue = tieValue is null ? null : new double[dist.Length];
+        var queue = new PriorityQueue<int, (int Cost, double NegValue)>();
         foreach (int v in tree)
         {
             dist[v] = 0;
             from[v] = -1;
-            queue.Enqueue(v, 0);
+            queue.Enqueue(v, (0, 0));
         }
-        while (queue.TryDequeue(out int v, out int cost))
+        while (queue.TryDequeue(out int v, out var priority))
         {
-            if (cost > dist[v])
+            if (priority.Cost > dist[v])
                 continue;
             foreach (int u in graph.Adjacency[v])
             {
                 if (blocked[u])
                     continue;
-                int next = cost + weights[u];
-                if (next < dist[u])
+                int next = priority.Cost + weights[u];
+                double value = pathValue is null ? 0 : pathValue[v] + tieValue![u];
+                if (next < dist[u] || (pathValue is not null && next == dist[u] && value > pathValue[u]))
                 {
                     dist[u] = next;
                     from[u] = v;
-                    queue.Enqueue(u, next);
+                    if (pathValue is not null)
+                        pathValue[u] = value;
+                    queue.Enqueue(u, (next, -value));
                 }
             }
         }

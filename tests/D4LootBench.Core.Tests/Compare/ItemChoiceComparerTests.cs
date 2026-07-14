@@ -146,6 +146,36 @@ public sealed class ItemChoiceComparerTests
     }
 
     [Fact]
+    public void TransfiguredStatScoresLikeAnAffix_AndIsAnnotated()
+    {
+        var needs = new[] { new StatNeed(Willpower, "Willpower", 200, "Tenacity") };
+        var outcome = ItemChoiceComparer.Compare(
+            [
+                Item("Transfigured", new CandidateAffix(Willpower, "affix-4", 100, false, IsTransfigured: true)),
+                Item("Natural", Affix(Willpower, value: 100)),
+            ],
+            reference: null, needs);
+
+        outcome.Scores[0].Total.ShouldBe(outcome.Scores[1].Total, 0.001);
+        outcome.Scores[0].Lines.ShouldContain(l => l.Reason.Contains("(transfigured)"));
+    }
+
+    [Fact]
+    public void TransfiguredStatNeverCountsAsGreater()
+    {
+        // Even a (bogus) greater flag on a transfigured line earns no GA factor or derived roll.
+        var outcome = ItemChoiceComparer.Compare(
+            [
+                Item("Transfigured", new CandidateAffix(CritChance, "affix-1", 8, true, IsTransfigured: true)),
+                Item("Natural", Affix(CritChance, value: 8)),
+            ],
+            Reference(), []);
+
+        outcome.Scores[0].Total.ShouldBe(outcome.Scores[1].Total, 0.001);
+        outcome.Scores[0].Lines.ShouldNotContain(l => l.Reason.Contains("Greater Affix"));
+    }
+
+    [Fact]
     public void CloseScoresAreCalledATie()
     {
         var outcome = ItemChoiceComparer.Compare(

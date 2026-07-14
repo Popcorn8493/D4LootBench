@@ -13,9 +13,11 @@ public sealed record GlyphGoalOutcome(
 /// <summary>
 /// Extends a solved purchase set with the cheapest additional nodes needed to satisfy glyph
 /// activation goals. Greedy: each round runs a multi-source Dijkstra from the current tree and
-/// connects the in-radius stat node with the best stat-gained-per-point ratio, until the
-/// requirement is met or no reachable stat node remains. Limit rules are hard: a candidate
-/// whose path would push a group past its cap is skipped, even if that leaves the goal unmet.
+/// connects the in-radius stat node with the best stat-gained-per-point ratio — counting the
+/// source stat of every in-radius node the path absorbs on the way, with equally cheap routes
+/// preferring the stat-bearing one — until the requirement is met or no reachable stat node
+/// remains. Limit rules are hard: a candidate whose path would push a group past its cap is
+/// skipped, even if that leaves the goal unmet.
 /// </summary>
 public static class GlyphOptimizer
 {
@@ -99,13 +101,26 @@ public static class GlyphOptimizer
 
         var dist = new int[graph.Vertices.Count];
         var from = new int[graph.Vertices.Count];
+        var valueByVertex = new double[graph.Vertices.Count];
+        foreach (var (v, value) in candidateValue)
+            valueByVertex[v] = value;
+
+        // Absorbing a candidate buys its whole path, and intermediates inside the radius count
+        // toward the total too — credit them, so a route through source-stat nodes wins.
+        double PathValue(int vertex)
+        {
+            double total = 0;
+            for (int v = vertex; v != -1 && !tree.Contains(v); v = from[v])
+                total += valueByVertex[v];
+            return total;
+        }
 
         // Activating a glyph means having its socket purchased — connect it first if needed.
         // The limit penalty makes this path cross as few limited nodes as possible, so a
         // violation here means no route to the socket fits under the caps.
         if (!tree.Contains(socketVertex))
         {
-            RunDijkstra(graph, tree, weights, blocked, dist, from);
+            RunDijkstra(graph, tree, weights, blocked, dist, from, valueByVertex);
             if (dist[socketVertex] >= Infinity)
                 return new GlyphGoalOutcome(goal, Total(), Met: false, added);
             if (limits.PathWouldViolate(socketVertex, from, tree))
@@ -115,7 +130,7 @@ public static class GlyphOptimizer
 
         while (Total() < goal.RequiredTotal - 1e-9)
         {
-            RunDijkstra(graph, tree, weights, blocked, dist, from);
+            RunDijkstra(graph, tree, weights, blocked, dist, from, valueByVertex);
 
             // Pick the best ratio; a candidate whose minimal-limited-node path would still
             // break a cap is rejected and the next-best tried (paths only change on absorb).
@@ -125,7 +140,7 @@ public static class GlyphOptimizer
             {
                 best = -1;
                 double bestRatio = 0;
-                foreach (var (v, value) in candidateValue)
+                foreach (var (v, _) in candidateValue)
                 {
                     if (tree.Contains(v) || dist[v] >= Infinity || rejected.Contains(v))
                         continue;
@@ -134,7 +149,7 @@ public static class GlyphOptimizer
                         limitConstrained |= limits.IsLimitBlocked(v);
                         continue;
                     }
-                    double ratio = value / dist[v];
+                    double ratio = PathValue(v) / dist[v];
                     if (best < 0 || ratio > bestRatio || (ratio == bestRatio && dist[v] < dist[best]))
                     {
                         best = v;
@@ -172,30 +187,37 @@ public static class GlyphOptimizer
         }
     }
 
-    private static void RunDijkstra(ComposedGraph graph, HashSet<int> tree, int[] weights, bool[] blocked, int[] dist, int[] from)
+    /// <summary>Multi-source Dijkstra; equally cheap routes prefer more in-radius source stat
+    /// (weights are all ≥1, so the tie-break can reroute but never change a path's cost).</summary>
+    private static void RunDijkstra(
+        ComposedGraph graph, HashSet<int> tree, int[] weights, bool[] blocked, int[] dist, int[] from,
+        double[] tieValue)
     {
         Array.Fill(dist, Infinity);
-        var queue = new PriorityQueue<int, int>();
+        var pathValue = new double[dist.Length];
+        var queue = new PriorityQueue<int, (int Cost, double NegValue)>();
         foreach (int v in tree)
         {
             dist[v] = 0;
             from[v] = -1;
-            queue.Enqueue(v, 0);
+            queue.Enqueue(v, (0, 0));
         }
-        while (queue.TryDequeue(out int v, out int cost))
+        while (queue.TryDequeue(out int v, out var priority))
         {
-            if (cost > dist[v])
+            if (priority.Cost > dist[v])
                 continue;
             foreach (int u in graph.Adjacency[v])
             {
                 if (blocked[u])
                     continue;
-                int next = cost + weights[u];
-                if (next < dist[u])
+                int next = priority.Cost + weights[u];
+                double value = pathValue[v] + tieValue[u];
+                if (next < dist[u] || (next == dist[u] && value > pathValue[u]))
                 {
                     dist[u] = next;
                     from[u] = v;
-                    queue.Enqueue(u, next);
+                    pathValue[u] = value;
+                    queue.Enqueue(u, (next, -value));
                 }
             }
         }

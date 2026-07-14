@@ -173,10 +173,9 @@ public class PointMaximizerTests
         ]);
         var graph = ComposedGraph.Build(layout);
 
-        // A huge Dexterity sheet meets every Dexterity threshold outright; other stats get nothing.
+        // A huge sheet meets every threshold outright, so every threshold rare ranks "met".
         var context = new ThresholdContext(
-            ParagonDatabase.Data, "Sorcerer",
-            NonParagonStats.PerStat(new Dictionary<string, double> { ["Dexterity"] = 10_000 }));
+            ParagonDatabase.Data, "Sorcerer", NonParagonStats.Uniform(10_000));
 
         var purchased = new HashSet<CellRef>();
         var outcome = PointMaximizer.Extend(graph, purchased, 40,
@@ -184,20 +183,23 @@ public class PointMaximizerTests
         outcome.RaresAdded.ShouldBeGreaterThan(0);
         AssertConnected(graph, purchased);
 
-        // The first rare bought must be one whose threshold was already met (rank 0) as long as
-        // any met-threshold rare exists on the boards at all.
+        // The first rare bought must be one whose threshold is already met (rank 0). Candidate
+        // statuses come from BuildStats' evaluate parameter — unpurchased cells are not
+        // reported otherwise.
+        var thresholdRares = graph.Vertices
+            .Where(v => v.Node.Kind == ParagonNodeKind.Rare && v.Node.Thresholds.Count > 0)
+            .Select(v => v.Cell)
+            .ToList();
         var report = BuildStats.Compute(graph, new HashSet<CellRef>(), ParagonDatabase.Data,
-            context.NonParagonStats, "Sorcerer");
+            context.NonParagonStats, "Sorcerer", cellMultipliers: null, evaluate: thresholdRares);
         var metCells = report.Thresholds.Where(t => t.Met).Select(t => t.Cell).ToHashSet();
-        if (metCells.Count > 0)
+        metCells.ShouldNotBeEmpty("the boards must offer met-threshold rares for this scenario to test anything");
+        var firstRare = outcome.AddedCells.First(c =>
         {
-            var firstRare = outcome.AddedCells.First(c =>
-            {
-                graph.TryGetVertex(c, out int v);
-                return graph.Vertices[v].Node.Kind == ParagonNodeKind.Rare;
-            });
-            metCells.ShouldContain(firstRare);
-        }
+            graph.TryGetVertex(c, out int v);
+            return graph.Vertices[v].Node.Kind == ParagonNodeKind.Rare;
+        });
+        metCells.ShouldContain(firstRare);
     }
 
     [Fact]

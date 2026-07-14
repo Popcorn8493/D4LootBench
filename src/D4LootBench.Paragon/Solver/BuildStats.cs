@@ -93,40 +93,53 @@ public static class BuildStats
     /// Per-cell stat multipliers from glyph node buffs (see <see cref="GlyphNodeBuffs"/>);
     /// absent cells count ×1. Applied to everything the node grants, threshold bonuses included.
     /// </param>
+    /// <param name="evaluate">
+    /// Extra cells to REPORT threshold status for without owning them: they contribute nothing
+    /// to the totals and their bonuses never enter the fixpoint — their status answers "would
+    /// this node's bonus be active if it were bought right now?". Purchased cells listed here
+    /// are simply reported as usual.
+    /// </param>
     public static BuildStatsReport Compute(
         ComposedGraph graph,
         IEnumerable<CellRef> purchased,
         ParagonData data,
         NonParagonStats nonParagonStats,
         string? className = null,
-        IReadOnlyDictionary<CellRef, double>? cellMultipliers = null)
+        IReadOnlyDictionary<CellRef, double>? cellMultipliers = null,
+        IReadOnlyCollection<CellRef>? evaluate = null)
     {
         var thresholdsBySnoId = data.Thresholds.ToDictionary(t => t.SnoId, StringComparer.OrdinalIgnoreCase);
         var purchasedSet = purchased as ISet<CellRef> ?? purchased.ToHashSet();
+        var evaluateSet = evaluate is null ? null : evaluate as ISet<CellRef> ?? evaluate.ToHashSet();
         var tiers = EffectiveAttachTiers(graph, purchasedSet);
         var gatePair = GateCrossings.PairMap(graph);
 
         var totals = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
-        var candidates = new List<(GraphVertex Vertex, ParagonThresholdDef Def)>();
+        var candidates = new List<(GraphVertex Vertex, ParagonThresholdDef Def, bool Owned)>();
         for (int v = 0; v < graph.Vertices.Count; v++)
         {
             var vertex = graph.Vertices[v];
-            if (v != graph.StartVertex && !purchasedSet.Contains(vertex.Cell))
+            bool owned = v == graph.StartVertex || purchasedSet.Contains(vertex.Cell);
+            if (!owned && evaluateSet?.Contains(vertex.Cell) != true)
                 continue;
 
             // A purchased gate PAIR grants its +5 attributes once: the auto-purchased half
             // (the board entered later on the path) grants nothing in-game.
-            if (gatePair[v] is int pair and >= 0
+            if (owned
+                && gatePair[v] is int pair and >= 0
                 && graph.Vertices[pair].Cell is var partnerCell
                 && purchasedSet.Contains(partnerCell)
                 && tiers[partnerCell.BoardSlot] < tiers[vertex.Cell.BoardSlot])
                 continue;
 
-            double factor = cellMultipliers?.GetValueOrDefault(vertex.Cell, 1.0) ?? 1.0;
-            foreach (var attribute in vertex.Node.Attributes)
+            if (owned)
             {
-                if (!attribute.IsThresholdBonus && attribute.Value is double value)
-                    totals[attribute.Attribute] = totals.GetValueOrDefault(attribute.Attribute) + value * factor;
+                double factor = cellMultipliers?.GetValueOrDefault(vertex.Cell, 1.0) ?? 1.0;
+                foreach (var attribute in vertex.Node.Attributes)
+                {
+                    if (!attribute.IsThresholdBonus && attribute.Value is double value)
+                        totals[attribute.Attribute] = totals.GetValueOrDefault(attribute.Attribute) + value * factor;
+                }
             }
 
             if (vertex.Node.Thresholds.Count == 0)
@@ -141,10 +154,11 @@ public static class BuildStats
                     || def.Classes.Contains(className, StringComparer.OrdinalIgnoreCase))
                 ?? defs.FirstOrDefault();
             if (match is not null)
-                candidates.Add((vertex, match));
+                candidates.Add((vertex, match, owned));
         }
 
         // Fixpoint: activating a bonus can raise a core stat and unlock another threshold.
+        // Evaluate-only candidates are spectators — they grant nothing.
         var met = new HashSet<int>();
         bool changed = true;
         while (changed)
@@ -152,9 +166,9 @@ public static class BuildStats
             changed = false;
             for (int i = 0; i < candidates.Count; i++)
             {
-                if (met.Contains(i))
+                if (met.Contains(i) || !candidates[i].Owned)
                     continue;
-                var (vertex, def) = candidates[i];
+                var (vertex, def, _) = candidates[i];
                 if (!def.Requirements.All(r => Have(r.Attribute) >= RequirementAt(r, tiers[vertex.Cell.BoardSlot])))
                     continue;
                 met.Add(i);
@@ -171,17 +185,20 @@ public static class BuildStats
         var statuses = new List<ThresholdStatus>();
         for (int i = 0; i < candidates.Count; i++)
         {
-            var (vertex, def) = candidates[i];
+            var (vertex, def, owned) = candidates[i];
             var first = def.Requirements.FirstOrDefault();
             if (first is null)
                 continue;
+            bool isMet = owned
+                ? met.Contains(i)
+                : def.Requirements.All(r => Have(r.Attribute) >= RequirementAt(r, tiers[vertex.Cell.BoardSlot]));
             statuses.Add(new ThresholdStatus(
                 vertex.Cell,
                 vertex.Node.Name ?? vertex.Node.InternalName,
                 first.Attribute,
                 RequirementAt(first, tiers[vertex.Cell.BoardSlot]),
                 Have(first.Attribute),
-                met.Contains(i)));
+                isMet));
         }
         return new BuildStatsReport(totals, statuses);
 

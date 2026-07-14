@@ -453,6 +453,17 @@ public partial class ParagonPlannerViewModel : ObservableObject
             return;
         }
 
+        // The plan moves glyphs to new boards, so their user-set levels/thresholds/highlights
+        // travel by glyph identity — only glyphs the user never configured get the dialog values.
+        var keptGlyphSettings = new Dictionary<string, (int Level, double RequiredStat, bool HighlightRadius)>(
+            StringComparer.OrdinalIgnoreCase);
+        foreach (var socket in GlyphSockets)
+        {
+            if (socket.SelectedGlyph is not null)
+                keptGlyphSettings.TryAdd(socket.SelectedGlyph.InternalName,
+                    (socket.Level, socket.RequiredStat, socket.HighlightRadius));
+        }
+
         _placedBoards.Clear();
         _placedBoards.AddRange(result.Layout!.Boards);
         RebuildLayout();
@@ -464,8 +475,17 @@ public partial class ParagonPlannerViewModel : ObservableObject
             {
                 socket.SelectedGlyph = socket.Glyphs.FirstOrDefault(g =>
                     string.Equals(g.InternalName, placement.Glyph.InternalName, StringComparison.OrdinalIgnoreCase));
-                socket.Level = request.GlyphLevel;
-                socket.RequiredStat = request.RequiredStat;
+                if (keptGlyphSettings.TryGetValue(placement.Glyph.InternalName, out var kept))
+                {
+                    socket.Level = kept.Level;
+                    socket.RequiredStat = kept.RequiredStat;
+                    socket.HighlightRadius = kept.HighlightRadius;
+                }
+                else
+                {
+                    socket.Level = request.GlyphLevel;
+                    socket.RequiredStat = request.RequiredStat;
+                }
                 socket.EnsureActive = socket.SelectedGlyph is not null;
             }
             else
@@ -885,10 +905,12 @@ public partial class ParagonPlannerViewModel : ObservableObject
         using var busy = BeginBusy();
         SetStatus("Comparing…");
         var sheetStats = SheetStatOffsets();
+        // Point parity keeps the verdict about build quality, not budget: the smaller build is
+        // grown by its own priorities (or the larger trimmed) until both spend the same.
         string report = await Task.Run(() =>
-            BuildComparer.Compare(current, imported, ParagonDatabase.Data, sheetStats));
+            BuildComparer.Compare(current, imported, ParagonDatabase.Data, sheetStats, matchPoints: true));
         SolveDetails = report;
-        SetStatus($"Compared the current build against {import.Source} — see the report below.");
+        SetStatus($"Compared the current build against {import.Source} at matched points — see the report below.");
     }
 
     [RelayCommand]
@@ -1967,7 +1989,8 @@ public partial class ParagonPlannerViewModel : ObservableObject
         var outcome = await Task.Run(() => PointMaximizer.Extend(graph, purchased, remaining, focus, request, context));
 
         int spent = Math.Max(0, GateCrossings.PointCost(graph, purchased) - costBefore);
-        bool reallocated = outcome.Notes.Any(n => n.StartsWith("Reallocated", StringComparison.Ordinal));
+        // "Reallocated"/"Rebalanced" notes describe swaps the maximizer made, not problems.
+        bool reallocated = outcome.Notes.Any(IsSwapNote);
         if (outcome.AddedCells.Count == 0 && !reallocated)
         {
             SetStatus(outcome.Notes.FirstOrDefault()
@@ -1996,10 +2019,14 @@ public partial class ParagonPlannerViewModel : ObservableObject
         SetStatus($"{GateCrossings.PointCost(graph, purchased)} of {TotalPoints} points spent " +
                   $"(+{spent} maximizing{(PreferRareNodes ? " rare nodes and" : "")} focused stats" +
                   $"{(outcome.ThresholdsActivated > 0 ? $", {outcome.ThresholdsActivated} threshold(s) activated" : "")}" +
-                  $"{(reallocated ? ", some points reallocated to thresholds" : "")}) — " +
+                  $"{(reallocated ? ", some points reallocated" : "")}) — " +
                   "changes ringed on the board: cyan added, dashed red removed.",
-            error: outcome.Notes.Any(n => !n.StartsWith("Reallocated", StringComparison.Ordinal)));
+            error: outcome.Notes.Any(n => !IsSwapNote(n)));
     }
+
+    private static bool IsSwapNote(string note) =>
+        note.StartsWith("Reallocated", StringComparison.Ordinal)
+        || note.StartsWith("Rebalanced", StringComparison.Ordinal);
 
     /// <summary>What the reference-derived priorities came from, shown in the Optimize tab.</summary>
     [ObservableProperty]
@@ -2366,6 +2393,11 @@ public partial class ParagonPlannerViewModel : ObservableObject
             Weights = weights.Count > 0 ? weights : null,
             RealisticRares = RealisticRares,
             DefenseShare = DefenseShareOf(),
+            // Every socketed attribute-mapped glyph pulls — not just the ones with an
+            // activation goal — weighted by its scalar so stronger glyphs attract more stat.
+            GlyphDeliveries = GlyphDelivery.For(GlyphSockets
+                .Where(s => s.SelectedGlyph is not null)
+                .Select(s => (s.Socket, s.SelectedGlyph!, s.Level))),
         };
     }
 

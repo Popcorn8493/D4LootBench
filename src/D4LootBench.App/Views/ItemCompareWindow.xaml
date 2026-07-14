@@ -30,9 +30,41 @@
                 </Border.Style>
                 <DockPanel>
                     <StackPanel DockPanel.Dock="Top">
-                        <TextBox Text="{Binding Label, UpdateSourceTrigger=PropertyChanged}"
-                                 FontWeight="SemiBold" Margin="0,0,0,6"
-                                 ToolTip="A nickname for this item, used in the verdict" />
+                        <DockPanel Margin="0,0,0,6">
+                            <Button DockPanel.Dock="Right" Content="Scan" Padding="8,1" Margin="4,0,0,0" FontSize="11"
+                                    Command="{Binding DataContext.ScanItemCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                    CommandParameter="{Binding}"
+                                    ToolTip="Identify this item from a tooltip screenshot on the clipboard (snip it with Win+Shift+S first) — Windows OCR reads the name, slot, and stat lines" />
+                            <TextBox Text="{Binding Label, UpdateSourceTrigger=PropertyChanged}"
+                                     FontWeight="SemiBold"
+                                     ToolTip="A nickname for this item, used in the verdict and as its name in the gear library" />
+                        </DockPanel>
+                        <Grid Margin="0,0,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="52" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Saved:" VerticalAlignment="Center" FontSize="11" />
+                            <ComboBox Grid.Column="1" FontSize="11" MaxDropDownHeight="320"
+                                      ItemsSource="{Binding DataContext.SavedGearNames, RelativeSource={RelativeSource AncestorType=Window}}"
+                                      SelectedItem="{Binding SelectedSavedName}"
+                                      ToolTip="Your gear library — pick an entry and Load it into this side (e.g. the piece you have equipped)" />
+                            <StackPanel Grid.Column="2" Orientation="Horizontal">
+                                <Button Content="Load" Padding="6,1" Margin="4,0,0,0" FontSize="11"
+                                        Command="{Binding DataContext.LoadSavedCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        CommandParameter="{Binding}"
+                                        ToolTip="Fill this side from the picked gear-library entry" />
+                                <Button Content="Save" Padding="6,1" Margin="4,0,0,0" FontSize="11"
+                                        Command="{Binding DataContext.SaveItemCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        CommandParameter="{Binding}"
+                                        ToolTip="Save this item to the gear library under its nickname (same name overwrites)" />
+                                <Button Content="✕" Padding="6,1" Margin="4,0,0,0" FontSize="11"
+                                        Command="{Binding DataContext.DeleteSavedCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        CommandParameter="{Binding}"
+                                        ToolTip="Delete the picked entry from the gear library" />
+                            </StackPanel>
+                        </Grid>
                         <Grid Margin="0,0,0,4">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="52" />
@@ -63,8 +95,13 @@
                                 </ComboBox.ItemsPanel>
                             </ComboBox>
                         </Grid>
-                        <TextBlock Text="Affixes (value optional, GA = Greater Affix):"
-                                   FontSize="11" Foreground="#888" Margin="0,0,0,3" />
+                        <DockPanel Margin="0,0,0,3">
+                            <Button DockPanel.Dock="Right" Content="+" Width="20" FontSize="11" Padding="0"
+                                    Command="{Binding AddAffixRowCommand}"
+                                    ToolTip="Add another affix line" />
+                            <TextBlock Text="Affixes (value optional, GA = Greater Affix):"
+                                       FontSize="11" Foreground="#888" VerticalAlignment="Center" />
+                        </DockPanel>
                         <ItemsControl ItemsSource="{Binding AffixRows}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate DataType="{x:Type vm:AffixRowViewModel}">
@@ -95,6 +132,39 @@
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
+                        <DockPanel Margin="0,4,0,3">
+                            <Button DockPanel.Dock="Right" Content="+" Width="20" FontSize="11" Padding="0"
+                                    Command="{Binding AddTransfiguredRowCommand}"
+                                    ToolTip="Add another transfigured stat line" />
+                            <TextBlock Text="Transfigured stats (Horadric, no GA):"
+                                       FontSize="11" Foreground="#888" VerticalAlignment="Center" />
+                        </DockPanel>
+                        <ItemsControl ItemsSource="{Binding TransfiguredRows}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:AffixRowViewModel}">
+                                    <Grid Margin="0,0,0,3">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="52" />
+                                        </Grid.ColumnDefinitions>
+                                        <ComboBox FontSize="11" MaxDropDownHeight="320"
+                                                  ItemsSource="{Binding DataContext.AffixOptions, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                  SelectedItem="{Binding SelectedAffix}"
+                                                  DisplayMemberPath="Name" TextSearch.TextPath="Name"
+                                                  ToolTip="A stat granted by Horadric transfiguration — scores like an affix but can never be a Greater Affix">
+                                            <ComboBox.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <VirtualizingStackPanel />
+                                                </ItemsPanelTemplate>
+                                            </ComboBox.ItemsPanel>
+                                        </ComboBox>
+                                        <TextBox Grid.Column="1" Text="{Binding ValueText, UpdateSourceTrigger=PropertyChanged}"
+                                                 FontSize="11" Margin="4,0,0,0"
+                                                 ToolTip="The transfigured stat's value" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
                     </StackPanel>
                     <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,8,0,0">
                         <TextBlock Text="{Binding ResultText}" TextWrapping="Wrap" FontSize="11"
@@ -108,6 +178,8 @@
     <DockPanel Margin="12">
         <TextBlock DockPanel.Dock="Top" Text="{Binding ReferenceSummary}" TextWrapping="Wrap"
                    Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
+                   FontSize="11" Margin="0,0,0,4" />
+        <TextBlock DockPanel.Dock="Top" Text="{Binding StatusText}" TextWrapping="Wrap"
                    FontSize="11" Margin="0,0,0,8" />
 
         <DockPanel DockPanel.Dock="Bottom" Margin="0,10,0,0">

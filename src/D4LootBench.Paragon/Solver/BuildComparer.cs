@@ -14,19 +14,28 @@ public sealed record BuildSnapshot(
 /// <summary>
 /// Side-by-side comparison of two builds: points, node-kind mix, glyphs, per-attribute stat
 /// totals, and a metric-by-metric verdict. Stats keep their own units (flat vs percent), so the
-/// verdict counts per-metric wins instead of pretending they share a scale.
+/// verdict counts per-metric wins instead of pretending they share a scale. With
+/// <c>matchPoints</c>, unequal spends are first equalized via <see cref="PointParity"/> so the
+/// verdict measures build quality instead of who has the bigger budget — the report opens with
+/// exactly what was adjusted.
 /// </summary>
 public static class BuildComparer
 {
     public static string Compare(BuildSnapshot a, BuildSnapshot b, ParagonData data, double nonParagonStat = 0)
         => Compare(a, b, data, NonParagonStats.Uniform(nonParagonStat));
 
-    public static string Compare(BuildSnapshot a, BuildSnapshot b, ParagonData data, NonParagonStats nonParagonStats)
+    public static string Compare(
+        BuildSnapshot a, BuildSnapshot b, ParagonData data, NonParagonStats nonParagonStats,
+        bool matchPoints = false)
     {
+        IReadOnlyList<string> parityNotes = [];
+        if (matchPoints)
+            (a, b, parityNotes) = PointParity.MatchPoints(a, b, data);
+
         var summaryA = Summarize(a, data, nonParagonStats);
         var summaryB = Summarize(b, data, nonParagonStats);
 
-        var lines = new List<string>
+        var lines = new List<string>(parityNotes)
         {
             $"{a.Name}: {Describe(summaryA)}",
             $"{b.Name}: {Describe(summaryB)}",

@@ -622,15 +622,16 @@ public static class PlacementAnalyzer
             return null;
         var purchased = solve.PurchasedCells.ToHashSet();
 
+        var socketBySlot = graph.Vertices
+            .Where(v => v.Node.Kind == ParagonNodeKind.GlyphSocket)
+            .ToDictionary(v => v.Cell.BoardSlot, v => v.Cell);
+
         // "+X% to [rarity] nodes in radius" buffs, from THIS variant's own live sockets — a
         // rotation or swap moves the socket, so the buffed area moves with it.
         IReadOnlyDictionary<CellRef, double>? MultipliersFor()
         {
             if (effectiveGlyphs is not { Count: > 0 } glyphs)
                 return pipeline.Thresholds?.CellMultipliers;
-            var socketBySlot = graph.Vertices
-                .Where(v => v.Node.Kind == ParagonNodeKind.GlyphSocket)
-                .ToDictionary(v => v.Cell.BoardSlot, v => v.Cell);
             var live = glyphs
                 .Where(g => socketBySlot.TryGetValue(g.BoardSlot, out var socket) && purchased.Contains(socket))
                 .Select(g => new SocketedGlyph(socketBySlot[g.BoardSlot], g.Glyph, g.Level))
@@ -641,9 +642,19 @@ public static class PlacementAnalyzer
         var thresholds = pipeline.Thresholds is null
             ? null
             : pipeline.Thresholds with { CellMultipliers = MultipliersFor() };
+        // The glyph pull follows THIS candidate's (possibly re-assigned) sockets too — the
+        // pipeline's stored focus would point the pull at the pre-move socket cells.
+        var focus = effectiveGlyphs is { Count: > 0 } pullGlyphs
+            ? pipeline.Focus with
+            {
+                GlyphDeliveries = GlyphDelivery.For(pullGlyphs
+                    .Where(g => socketBySlot.ContainsKey(g.BoardSlot))
+                    .Select(g => (socketBySlot[g.BoardSlot], g.Glyph, g.Level))),
+            }
+            : pipeline.Focus;
         int budget = Math.Max(0, pipeline.TotalPoints - GateCrossings.PointCost(graph, purchased));
-        if (budget > 0 || (pipeline.Focus.ActivateThresholds && thresholds is not null))
-            PointMaximizer.Extend(graph, purchased, budget, pipeline.Focus, effectiveRequest, thresholds);
+        if (budget > 0 || (focus.ActivateThresholds && thresholds is not null))
+            PointMaximizer.Extend(graph, purchased, budget, focus, effectiveRequest, thresholds);
 
         int glyphsActive = 0;
         foreach (var goal in effectiveRequest.GlyphGoals)

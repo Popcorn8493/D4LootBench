@@ -2,8 +2,11 @@ using D4LootBench.Core.Models;
 
 namespace D4LootBench.Core.Compare;
 
-/// <summary>One affix on a candidate item; the roll value is optional but sharpens the verdict.</summary>
-public sealed record CandidateAffix(uint AffixId, string Name, double? Value, bool IsGreater);
+/// <summary>One affix on a candidate item; the roll value is optional but sharpens the verdict.
+/// Transfigured stats (Horadric transfiguration lines) score like natural affixes — the stat is
+/// just as real — but are annotated in the reasons and never count as Greater Affixes.</summary>
+public sealed record CandidateAffix(
+    uint AffixId, string Name, double? Value, bool IsGreater, bool IsTransfigured = false);
 
 /// <summary>A dropped item the user is weighing, e.g. one of two pairs of gloves.</summary>
 public sealed record CandidateItem(
@@ -57,12 +60,12 @@ public static class ItemChoiceComparer
         // entered value derives one from the best natural roll entered for the same affix.
         var bestNaturalByAffix = items
             .SelectMany(i => i.Affixes)
-            .Where(a => !a.IsGreater && a.Value is > 0)
+            .Where(a => (!a.IsGreater || a.IsTransfigured) && a.Value is > 0)
             .GroupBy(a => a.AffixId)
             .ToDictionary(g => g.Key, g => g.Max(a => a.Value!.Value));
 
         double? Effective(CandidateAffix a) => a.Value
-            ?? (a.IsGreater && bestNaturalByAffix.TryGetValue(a.AffixId, out double natural)
+            ?? (a.IsGreater && !a.IsTransfigured && bestNaturalByAffix.TryGetValue(a.AffixId, out double natural)
                 ? natural * GreaterAffixRollFactor
                 : null);
 
@@ -120,6 +123,8 @@ public static class ItemChoiceComparer
         foreach (var affix in item.Affixes)
         {
             bool scored = false;
+            bool greater = affix.IsGreater && !affix.IsTransfigured;
+            string name = affix.IsTransfigured ? $"{affix.Name} (transfigured)" : affix.Name;
 
             int position = desired.IndexOf(affix.AffixId);
             bool isOptional = position < 0 && optional.Contains(affix.AffixId);
@@ -130,14 +135,14 @@ public static class ItemChoiceComparer
                     && best > 0
                     ? value / best
                     : 1.0;
-                double points = weight * ratio * (affix.IsGreater ? GreaterAffixFactor : 1.0);
+                double points = weight * ratio * (greater ? GreaterAffixFactor : 1.0);
                 string rank = position >= 0 ? $"priority {position + 1}" : "nice-to-have";
-                string detail = $"{affix.Name}: {rank} affix of the guide";
-                if (affix.IsGreater)
+                string detail = $"{name}: {rank} affix of the guide";
+                if (greater)
                     detail += greaterWanted.Contains(affix.AffixId)
                         ? ", Greater Affix exactly where the guide wants one"
                         : ", Greater Affix";
-                if (affix.IsGreater && affix.Value is null && effective(affix) is not null)
+                if (greater && affix.Value is null && effective(affix) is not null)
                     detail += $", roll derived as max × {GreaterAffixRollFactor}";
                 if (ratio < 1.0)
                     detail += $", rolled {ratio:P0} of the best candidate";
@@ -151,20 +156,20 @@ public static class ItemChoiceComparer
                 {
                     double closed = Math.Min(value / need.Deficit, 1.0);
                     lines.Add(new ScoreLine(ThresholdClosePoints * closed,
-                        $"{affix.Name}: +{value:0} {need.StatName} closes {closed:P0} of the " +
+                        $"{name}: +{value:0} {need.StatName} closes {closed:P0} of the " +
                         $"{need.NodeName} paragon threshold deficit ({need.Deficit:0} short)."));
                 }
                 else
                 {
                     lines.Add(new ScoreLine(ThresholdClosePoints / 2,
-                        $"{affix.Name}: feeds the {need.NodeName} paragon threshold " +
+                        $"{name}: feeds the {need.NodeName} paragon threshold " +
                         $"({need.Deficit:0} {need.StatName} short) — enter its value to weigh it exactly."));
                 }
                 scored = true;
             }
 
             if (!scored)
-                lines.Add(new ScoreLine(0, $"{affix.Name}: not sought by the build."));
+                lines.Add(new ScoreLine(0, $"{name}: not sought by the build."));
         }
 
         return new ItemScore(item, lines.Sum(l => l.Points), lines);
