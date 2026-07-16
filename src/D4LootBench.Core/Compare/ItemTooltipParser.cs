@@ -18,7 +18,8 @@ public sealed record ParsedTooltip(
 /// heuristics — the OCR engine itself lives in the App (Windows.Media.Ocr needs WinRT). Rules of
 /// thumb: the rarity line ("Ancestral Legendary Gloves") splits name from stats; a stat line
 /// starts with '+' or is a leading percentage (base lines like "1,224 Armor" or "925 Item Power"
-/// carry neither); roll-range brackets and the rolled number are stripped so what remains matches
+/// carry neither, and OCR-dropped '+' signs are tolerated by excluding known base-line words);
+/// roll-range brackets and the rolled number are stripped so what remains matches
 /// catalog affix names; a leading star glyph (or its common OCR mangling '*') marks a Greater
 /// Affix; lines under a header containing "transfigur" are transfigured stats.
 /// </summary>
@@ -26,6 +27,12 @@ public static partial class ItemTooltipParser
 {
     private static readonly string[] RarityWords =
         ["Common", "Magic", "Rare", "Legendary", "Unique", "Mythic"];
+
+    /// <summary>What a base line reads as once its leading number is stripped — these keep a
+    /// plus-less "925 Item Power" from being taken for a stat whose '+' the OCR dropped.</summary>
+    private static readonly string[] BaseLineMarkers =
+        ["item power", "armor", "damage per second", "damage per hit", "attacks per second",
+         "requires level", "durability", "empty socket", "gold"];
 
     /// <summary>Glyphs OCR plausibly produces for the Greater Affix star icon.</summary>
     private const string GreaterMarkers = "*★☆✦✧✶";
@@ -102,15 +109,20 @@ public static partial class ItemTooltipParser
             return false;
 
         // Stat lines carry '+' or a leading percentage; base lines ("1,224 Armor",
-        // "925 Item Power", "1.10 Attacks per Second") carry neither.
+        // "925 Item Power", "1.10 Attacks per Second") carry neither. OCR frequently loses the
+        // '+', so a bare leading number is accepted too — provided what follows isn't a known
+        // base line and holds no further digits (a damage range would).
         bool startsPlus = line[0] == '+';
-        bool leadingPercent = !startsPlus && char.IsDigit(line[0])
-            && Number().Match(line) is { Success: true, Index: 0 } m
-            && m.Value.TrimEnd().EndsWith('%');
-        if (!startsPlus && !leadingPercent)
+        bool leadingNumber = !startsPlus && char.IsDigit(line[0])
+            && Number().Match(line) is { Success: true, Index: 0 };
+        bool leadingPercent = leadingNumber && Number().Match(line).Value.TrimEnd().EndsWith('%');
+        if (!startsPlus && !leadingNumber)
             return false;
 
         string text = RollRange().Replace(line, " ");
+        // OCR can wrap a roll range onto the next line, leaving an unterminated "[6.5 -" here.
+        if (text.IndexOf('[') is int bracket and >= 0 && !text.Contains(']'))
+            text = text[..bracket];
         var number = Number().Match(text);
         double? value = null;
         if (number.Success)
@@ -128,8 +140,18 @@ public static partial class ItemTooltipParser
         if (WordsOf(text).Length > 9)
             return false;
 
+        // The plus-less path is heuristic — hold it to a stricter standard than an explicit '+'.
+        if (!startsPlus && !leadingPercent && (text.Any(char.IsDigit) || IsBaseLine(text)))
+            return false;
+
         stat = new TooltipStatLine(text, value, greater && !transfigured, transfigured, raw);
         return true;
+    }
+
+    private static bool IsBaseLine(string text)
+    {
+        string norm = text.ToLowerInvariant();
+        return BaseLineMarkers.Any(m => norm == m || norm.StartsWith(m + " ") || norm.EndsWith(" " + m));
     }
 
     private static string[] WordsOf(string line) =>

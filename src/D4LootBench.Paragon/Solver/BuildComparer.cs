@@ -24,21 +24,42 @@ public static class BuildComparer
     public static string Compare(BuildSnapshot a, BuildSnapshot b, ParagonData data, double nonParagonStat = 0)
         => Compare(a, b, data, NonParagonStats.Uniform(nonParagonStat));
 
+    /// <summary>
+    /// Re-levels every glyph assignment from the given per-glyph levels (with a fallback for
+    /// glyphs the map doesn't know), so both builds are judged at the SAME glyph levels —
+    /// radius and delivery scale with level, and imports carry the guide's (often default)
+    /// levels rather than the player's real ones.
+    /// </summary>
+    public static BuildSnapshot WithGlyphLevels(
+        BuildSnapshot build, IReadOnlyDictionary<string, int> levelByGlyph, int fallbackLevel) =>
+        build with
+        {
+            Glyphs = build.Glyphs
+                .Select(g => g with { Level = levelByGlyph.GetValueOrDefault(g.GlyphInternalName, fallbackLevel) })
+                .ToList(),
+        };
+
+    /// <param name="additiveDamageOffset">The character's ALWAYS-ON gear "+% damage" sum (native
+    /// fraction, 3.5 = +350%) — both builds' damage profiles saturate from the same real bucket.</param>
+    /// <param name="situationalDamageOffset">The conditional slice of the gear's "+% damage"
+    /// (vulnerable/close/crit damage …), also a native fraction.</param>
     public static string Compare(
         BuildSnapshot a, BuildSnapshot b, ParagonData data, NonParagonStats nonParagonStats,
-        bool matchPoints = false)
+        bool matchPoints = false, double additiveDamageOffset = 0, double situationalDamageOffset = 0)
     {
         IReadOnlyList<string> parityNotes = [];
         if (matchPoints)
             (a, b, parityNotes) = PointParity.MatchPoints(a, b, data);
 
-        var summaryA = Summarize(a, data, nonParagonStats);
-        var summaryB = Summarize(b, data, nonParagonStats);
+        var summaryA = Summarize(a, data, nonParagonStats, additiveDamageOffset, situationalDamageOffset);
+        var summaryB = Summarize(b, data, nonParagonStats, additiveDamageOffset, situationalDamageOffset);
 
         var lines = new List<string>(parityNotes)
         {
             $"{a.Name}: {Describe(summaryA)}",
             $"{b.Name}: {Describe(summaryB)}",
+            $"Damage balance {a.Name}: {DescribeDamage(summaryA.Damage)}",
+            $"Damage balance {b.Name}: {DescribeDamage(summaryB.Damage)}",
         };
 
         var boardsA = a.Layout.Boards.Select(p => p.Board.Name ?? p.Board.InternalName).ToHashSet();
@@ -97,6 +118,11 @@ public static class BuildComparer
             summaryA.ThresholdsMet, summaryB.ThresholdsMet);
         Judge($"has a higher glyph delivery score ({Math.Max(summaryA.GlyphDelivery, summaryB.GlyphDelivery):0.#} vs {Math.Min(summaryA.GlyphDelivery, summaryB.GlyphDelivery):0.#})",
             summaryA.GlyphDelivery, summaryB.GlyphDelivery);
+        int legendaryA = summaryA.Damage.GlyphMultipliers.Count, legendaryB = summaryB.Damage.GlyphMultipliers.Count;
+        Judge($"runs more legendary-rank glyphs (lvl {GlyphInfo.LegendaryUpgradeLevel}+) ({Math.Max(legendaryA, legendaryB)} vs {Math.Min(legendaryA, legendaryB)})",
+            legendaryA, legendaryB);
+        Judge($"has a higher expected damage multiplier (×{Math.Max(summaryA.Damage.ExpectedMultiplier, summaryB.Damage.ExpectedMultiplier):0.00} vs ×{Math.Min(summaryA.Damage.ExpectedMultiplier, summaryB.Damage.ExpectedMultiplier):0.00})",
+            summaryA.Damage.ExpectedMultiplier, summaryB.Damage.ExpectedMultiplier);
         Judge($"leads in more stats ({Math.Max(leadA, leadB)} vs {Math.Min(leadA, leadB)})", leadA, leadB);
 
         if (verdicts.Count == 0)
@@ -114,10 +140,12 @@ public static class BuildComparer
 
     private sealed record BuildSummary(
         int Points, int Rares, int Legendaries, int GlyphCount, string GlyphList,
-        int ThresholdsMet, int ThresholdCount, double GlyphDelivery,
+        int ThresholdsMet, int ThresholdCount, double GlyphDelivery, DamageProfile Damage,
         IReadOnlyDictionary<string, double> Stats);
 
-    private static BuildSummary Summarize(BuildSnapshot build, ParagonData data, NonParagonStats nonParagonStats)
+    private static BuildSummary Summarize(
+        BuildSnapshot build, ParagonData data, NonParagonStats nonParagonStats,
+        double additiveDamageOffset = 0, double situationalDamageOffset = 0)
     {
         var graph = ComposedGraph.Build(
             build.Layout, data.Nodes.ToDictionary(n => n.SnoId, StringComparer.OrdinalIgnoreCase));
@@ -159,6 +187,7 @@ public static class BuildComparer
 
         // Delivery: scalar(level) × source stat purchased in radius, summed across glyphs.
         double delivery = 0;
+        var socketedGlyphs = new List<(ParagonGlyphDef Glyph, int Level)>();
         var sockets = graph.Vertices
             .Where(v => v.Node.Kind == ParagonNodeKind.GlyphSocket)
             .ToDictionary(v => v.Cell.BoardSlot, v => v.Cell);
@@ -167,7 +196,10 @@ public static class BuildComparer
         {
             var glyph = data.Glyphs.FirstOrDefault(d =>
                 string.Equals(d.InternalName, assignment.GlyphInternalName, StringComparison.OrdinalIgnoreCase));
-            if (glyph is null || GlyphInfo.PrimarySourceAttribute(glyph) is not string source
+            if (glyph is null)
+                continue;
+            socketedGlyphs.Add((glyph, assignment.Level ?? 100));
+            if (GlyphInfo.PrimarySourceAttribute(glyph) is not string source
                 || !sockets.TryGetValue(assignment.BoardSlot, out var socket))
                 continue;
             int level = assignment.Level ?? 100;
@@ -176,6 +208,13 @@ public static class BuildComparer
             delivery += GlyphInfo.DeliveredBonus(glyph, level, totals.GetValueOrDefault(source)) ?? 0;
         }
 
+        // Damage-bucket profile from the same effective totals the thresholds used; the sheet
+        // main stat rides in so both builds are judged at the character's real multiplier.
+        string? className = build.Layout.Boards[0].Board.ClassName;
+        var damage = DamageModel.Profile(report.Totals, className,
+            DamageModel.MainStatAttribute(className) is string mainStat ? nonParagonStats.For(mainStat) : 0,
+            socketedGlyphs, additiveDamageOffset, situationalDamageOffset);
+
         var glyphNames = build.Glyphs
             .Select(g => data.Glyphs.FirstOrDefault(d =>
                 string.Equals(d.InternalName, g.GlyphInternalName, StringComparison.OrdinalIgnoreCase))?.Name
@@ -183,12 +222,30 @@ public static class BuildComparer
             .ToList();
         return new BuildSummary(points, rares, legendaries, glyphNames.Count,
             glyphNames.Count > 0 ? string.Join(", ", glyphNames) : "none",
-            report.ThresholdsMet, report.Thresholds.Count, delivery, stats);
+            report.ThresholdsMet, report.Thresholds.Count, delivery, damage, stats);
     }
 
     private static string Describe(BuildSummary s) =>
         $"{s.Points} points — {s.Rares} rare, {s.Legendaries} legendary, " +
         $"{s.ThresholdsMet}/{s.ThresholdCount} threshold bonus(es) active, glyphs: {s.GlyphList}.";
+
+    /// <summary>The bucket breakdown, expected multiplier at full uptime (see <see cref="DamageModel"/>).</summary>
+    private static string DescribeDamage(DamageProfile d)
+    {
+        string mults = d.GlyphMultipliers.Count == 0
+            ? "none"
+            : string.Join(" · ", d.GlyphMultipliers.Select(m => $"{m.GlyphName} ×{m.Percent:0.#}%"));
+        string gear = d.AdditiveOffsetFraction > 0
+            ? $" incl. +{d.AdditiveOffsetFraction * 100:0}% gear,"
+            : "";
+        return $"additive +{d.AdditiveFraction * 100:0}%{gear} " +
+               $"({d.SituationalAdditiveFraction * 100:0}% of it situational), " +
+               $"main stat ×{1 + d.MainStatTotal / d.MainStatCoefficient:0.00} " +
+               $"({d.MainStatTotal:0} {ParagonDisplay.FormatAttributeName(d.MainStatAttribute)}), " +
+               $"crit chance +{d.CritChanceBonusFraction * 100:0.#}%, legendary glyph mults: {mults} — " +
+               $"expected ×{d.ExpectedMultiplier:0.00} at full uptime " +
+               $"(×{d.ExpectedMultiplierUnconditional:0.00} always-on only).";
+    }
 
     /// <summary>Fractional values are percentages (matching <see cref="ParagonDisplay.FormatAttribute"/>).</summary>
     private static string FormatValue(double value) =>

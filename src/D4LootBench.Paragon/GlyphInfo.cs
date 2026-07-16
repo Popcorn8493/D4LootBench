@@ -68,6 +68,51 @@ public static class GlyphInfo
             ? null
             : IsAttributeMapped(glyph) ? scalar * statInRadius : scalar;
 
+    /// <summary>
+    /// Raw destination attribute of the scaling conversion (e.g. "Vulnerable_Health_Damage_Bonus").
+    /// Shares the board-node attribute namespace, so focus weights keyed by node attributes apply
+    /// directly. Null for rarity-bonus glyphs.
+    /// </summary>
+    public static string? DestinationAttribute(ParagonGlyphDef glyph) =>
+        ScalingAffix(glyph)?.AttributeMaps.FirstOrDefault() is { DestinationAttribute.Length: > 0 } map
+            ? map.DestinationAttribute
+            : null;
+
+    /// <summary>
+    /// Glyph level at which a glyph can be upgraded to legendary rank, unlocking its
+    /// multiplicative bonus. Engine-side, not in paragon-data.json — re-check after game patches.
+    /// </summary>
+    public const int LegendaryUpgradeLevel = 46;
+
+    /// <summary>The multiplicative bonus affix unlocked at legendary rank (requiredRarity 2).</summary>
+    public static GlyphAffixDef? LegendaryAffix(ParagonGlyphDef glyph) =>
+        glyph.Affixes.FirstOrDefault(a => a.RequiredRarity == 2 && a.StartingBonusScalar is > 0);
+
+    /// <summary>
+    /// The legendary-rank multiplicative bonus as an in-game percent (e.g. 5.0), or null below
+    /// <see cref="LegendaryUpgradeLevel"/> or when the glyph has no legendary affix. The scalar is
+    /// read as a fraction ×100 (Exploit: 0.005 + 0.001/lvl → 5% at 46) — consistent with live
+    /// values, but like the node-buff calibration it should be re-validated after balance patches.
+    /// </summary>
+    public static double? LegendaryMultiplierPercentAt(ParagonGlyphDef glyph, int level)
+    {
+        if (level < LegendaryUpgradeLevel || LegendaryAffix(glyph) is not { StartingBonusScalar: double start } affix)
+            return null;
+        return (start + (affix.AddedBonusScalarPerLevel ?? 0) * Math.Max(0, level - 1)) * 100;
+    }
+
+    /// <summary>
+    /// The flat "Additional Bonus" power granted while the glyph is activated (a bonusPower affix).
+    /// Only its identity is in the data — the magnitude lives in the game's power definition.
+    /// </summary>
+    public static GlyphAffixDef? AdditionalBonusAffix(ParagonGlyphDef glyph) =>
+        glyph.Affixes.FirstOrDefault(a => a.BonusPower is not null);
+
+    /// <summary>Readable hint of what an affix touches, from its tags ("Vulnerable, Damage").</summary>
+    public static string TagsLabel(GlyphAffixDef affix) =>
+        string.Join(", ", affix.Tags.Select(t =>
+            t.StartsWith("Keyword_", StringComparison.OrdinalIgnoreCase) ? t[8..] : t));
+
     /// <summary>Display name of what the bonus lands on: a mapped attribute, or the boosted node rarity.</summary>
     public static string DeliveryTarget(ParagonGlyphDef glyph)
     {

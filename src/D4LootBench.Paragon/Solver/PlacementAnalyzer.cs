@@ -649,7 +649,8 @@ public static class PlacementAnalyzer
             {
                 GlyphDeliveries = GlyphDelivery.For(pullGlyphs
                     .Where(g => socketBySlot.ContainsKey(g.BoardSlot))
-                    .Select(g => (socketBySlot[g.BoardSlot], g.Glyph, g.Level))),
+                    .Select(g => (socketBySlot[g.BoardSlot], g.Glyph, g.Level)),
+                    pipeline.Focus.Weights),
             }
             : pipeline.Focus;
         int budget = Math.Max(0, pipeline.TotalPoints - GateCrossings.PointCost(graph, purchased));
@@ -813,67 +814,11 @@ public static class PlacementAnalyzer
         return (newRequest, newGlyphs, moves);
     }
 
-    /// <summary>
-    /// Weighted, unit-normalized value the purchase set holds in the focused stats — the same
-    /// scoring the maximizer chases, so candidates are judged by what the user asked for.
-    /// </summary>
+    /// <summary>See <see cref="FocusScore"/> — shared with tests; includes the glyph delivery term.</summary>
     private static double FocusScoreOf(
         ComposedGraph graph, ISet<CellRef> purchased, MaximizeFocus focus,
-        IReadOnlyDictionary<CellRef, double>? multipliers = null)
-    {
-        var attributes = focus.Attributes.Count > 0 ? focus.Attributes : MaximizeFocus.CoreStats;
-        var attributeSet = new HashSet<string>(attributes, StringComparer.OrdinalIgnoreCase);
-        var mean = new Dictionary<string, (double Sum, int Count)>(StringComparer.OrdinalIgnoreCase);
-        foreach (var vertex in graph.Vertices)
-        {
-            foreach (var a in vertex.Node.Attributes)
-            {
-                if (a.IsThresholdBonus || a.Value is not double value || !attributeSet.Contains(a.Attribute))
-                    continue;
-                var (sum, count) = mean.GetValueOrDefault(a.Attribute);
-                mean[a.Attribute] = (sum + Math.Abs(value), count + 1);
-            }
-        }
-
-        // Defense counts toward a candidate's worth in proportion to the survivability share,
-        // so suggestions don't trade the defense slice away for marginal focus gains.
-        var defenseMean = new Dictionary<string, (double Sum, int Count)>(StringComparer.OrdinalIgnoreCase);
-        if (focus.DefenseShare > 0)
-        {
-            foreach (var vertex in graph.Vertices)
-            {
-                foreach (var a in vertex.Node.Attributes)
-                {
-                    if (a.IsThresholdBonus || a.Value is not double value || !MaximizeFocus.IsDefensive(a.Attribute))
-                        continue;
-                    var (sum, count) = defenseMean.GetValueOrDefault(a.Attribute);
-                    defenseMean[a.Attribute] = (sum + Math.Abs(value), count + 1);
-                }
-            }
-        }
-
-        double score = 0;
-        foreach (var vertex in graph.Vertices)
-        {
-            if (!purchased.Contains(vertex.Cell))
-                continue;
-            double multiplier = multipliers?.GetValueOrDefault(vertex.Cell, 1.0) ?? 1.0;
-            foreach (var a in vertex.Node.Attributes)
-            {
-                if (a.IsThresholdBonus || a.Value is not double value)
-                    continue;
-                if (attributeSet.Contains(a.Attribute))
-                {
-                    var (sum, count) = mean[a.Attribute];
-                    score += value * multiplier / (sum / count)
-                        * (focus.Weights?.GetValueOrDefault(a.Attribute, 1.0) ?? 1.0);
-                }
-                if (focus.DefenseShare > 0 && defenseMean.TryGetValue(a.Attribute, out var dm))
-                    score += value * multiplier / (dm.Sum / dm.Count) * focus.DefenseShare * 2;
-            }
-        }
-        return score;
-    }
+        IReadOnlyDictionary<CellRef, double>? multipliers = null) =>
+        FocusScore.Of(graph, purchased, focus, multipliers);
 
     /// <summary>
     /// When the evaluation assumed glyph moves, the suggestion must say so and apply them too —

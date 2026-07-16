@@ -29,6 +29,7 @@ public class ParagonProjectTests
                 [new ReferenceEmphasis("Willpower_Core", 8)]),
         ],
         PreferRareNodes = true,
+        IncludeLegendaryNodes = false, // non-default, so the round-trip proves it persists
         TotalPoints = 342,
         SheetStrength = 10,
         SheetIntelligence = 1200,
@@ -52,6 +53,10 @@ public class ParagonProjectTests
         parsed.Glyphs[0].EnsureActive.ShouldBeTrue();
         parsed.NodeRules[0].Mode.ShouldBe(NodeRuleMode.Limit);
         parsed.SheetIntelligence.ShouldBe(1200);
+        parsed.IncludeLegendaryNodes.ShouldBeFalse();
+        // Older project files predate the setting — it must default ON, not off.
+        ParagonProjectSerializer.FromJson("""{"className":"Sorcerer","boards":[{"boardInternalName":"Paragon_Sorc_00","parentSlot":null,"attachEdge":null,"rotationSteps":0}]}""")
+            .IncludeLegendaryNodes.ShouldBeTrue();
         parsed.References.Count.ShouldBe(2);
         parsed.References[0].Source.ShouldBe("Mobalytics 'Selig' (312 nodes)");
         parsed.References[0].Emphasis[0].ShouldBe(new ReferenceEmphasis("Intelligence_Core", 12.5));

@@ -4,9 +4,12 @@ namespace D4LootBench.Core.Compare;
 
 /// <summary>One affix on a candidate item; the roll value is optional but sharpens the verdict.
 /// Transfigured stats (Horadric transfiguration lines) score like natural affixes — the stat is
-/// just as real — but are annotated in the reasons and never count as Greater Affixes.</summary>
+/// just as real — but are annotated in the reasons and never count as Greater Affixes.
+/// <paramref name="ComponentIds"/> expands an aggregate stat (see <see cref="AggregateStats"/>)
+/// into the catalog affixes it grants — each component scores at the full value.</summary>
 public sealed record CandidateAffix(
-    uint AffixId, string Name, double? Value, bool IsGreater, bool IsTransfigured = false);
+    uint AffixId, string Name, double? Value, bool IsGreater, bool IsTransfigured = false,
+    IReadOnlyList<uint>? ComponentIds = null);
 
 /// <summary>A dropped item the user is weighing, e.g. one of two pairs of gloves.</summary>
 public sealed record CandidateItem(
@@ -21,6 +24,18 @@ public sealed record CandidateItem(
 /// </summary>
 public sealed record StatNeed(uint AffixId, string StatName, double Deficit, string NodeName);
 
+/// <summary>One priority slot of a user-provided wish list; several ids when the wished stat is
+/// an aggregate (any component on the item satisfies the slot).</summary>
+public sealed record WishEntry(IReadOnlyList<uint> AffixIds, bool GreaterWanted, string Name);
+
+/// <summary>
+/// A user-provided compare reference: desired affixes in priority order (index 0 weighs most)
+/// plus the uniques the user is hunting. When supplied, it replaces the loaded filter as the
+/// wish-list side of the comparison; paragon threshold needs still apply.
+/// </summary>
+public sealed record CompareWishList(
+    IReadOnlyList<WishEntry> Desired, IReadOnlyCollection<uint> TargetUniques);
+
 public sealed record ScoreLine(double Points, string Reason);
 
 public sealed record ItemScore(CandidateItem Item, double Total, IReadOnlyList<ScoreLine> Lines);
@@ -28,8 +43,9 @@ public sealed record ItemScore(CandidateItem Item, double Total, IReadOnlyList<S
 public sealed record CompareOutcome(IReadOnlyList<ItemScore> Scores, string Verdict);
 
 /// <summary>
-/// Scores candidate items against two objective references: the loaded filter (the build guide's
-/// wish list — desired affixes per slot in priority order, GA wishes, target uniques) and the
+/// Scores candidate items against two objective references: a wish list — either the loaded
+/// filter (the build guide's desired affixes per slot in priority order, GA wishes, target
+/// uniques) or a user-provided <see cref="CompareWishList"/> that overrides it — and the
 /// paragon board (unmet rare-node threshold deficits that gear core stats can close).
 /// Deterministic and explainable: every point comes with a reason line.
 /// </summary>
@@ -54,7 +70,8 @@ public static class ItemChoiceComparer
     public static CompareOutcome Compare(
         IReadOnlyList<CandidateItem> items,
         FilterRuleset? reference,
-        IReadOnlyList<StatNeed> statNeeds)
+        IReadOnlyList<StatNeed> statNeeds,
+        CompareWishList? custom = null)
     {
         // GA rolls are deterministic in-game (max natural roll × 1.5), so a GA line without an
         // entered value derives one from the best natural roll entered for the same affix.
@@ -71,14 +88,16 @@ public static class ItemChoiceComparer
 
         // Relative roll quality: the same desired affix on several candidates is scaled by the
         // best (entered or derived) value, so a higher roll of the same stat objectively wins.
+        // Keyed per identity, so an aggregate's value competes under each component it grants.
         var bestValueByAffix = items
             .SelectMany(i => i.Affixes)
-            .Select(a => (a.AffixId, Value: Effective(a)))
+            .SelectMany(a => IdentitiesOf(a).Select(id => (Id: id, Value: Effective(a))))
             .Where(t => t.Value is > 0)
-            .GroupBy(t => t.AffixId)
+            .GroupBy(t => t.Id)
             .ToDictionary(g => g.Key, g => g.Max(t => t.Value!.Value));
 
-        var scores = items.Select(item => ScoreItem(item, reference, statNeeds, bestValueByAffix, Effective)).ToList();
+        var scores = items.Select(item =>
+            ScoreItem(item, reference, custom, statNeeds, bestValueByAffix, Effective)).ToList();
 
         var ranked = scores.OrderByDescending(s => s.Total).ToList();
         string verdict;
@@ -91,29 +110,64 @@ public static class ItemChoiceComparer
         return new CompareOutcome(scores, verdict);
     }
 
+    /// <summary>An aggregate stat scores through the catalog affixes it grants; a plain affix
+    /// through its own id.</summary>
+    private static IReadOnlyList<uint> IdentitiesOf(CandidateAffix a) =>
+        a.ComponentIds is { Count: > 0 } components ? components : [a.AffixId];
+
     private static ItemScore ScoreItem(
         CandidateItem item,
         FilterRuleset? reference,
+        CompareWishList? custom,
         IReadOnlyList<StatNeed> statNeeds,
         IReadOnlyDictionary<uint, double> bestValueByAffix,
         Func<CandidateAffix, double?> effective)
     {
         var lines = new List<ScoreLine>();
 
-        var (slotRule, desired, optional, greaterWanted) = DesiredAffixesFor(item, reference);
-        if (reference is null)
-            lines.Add(new ScoreLine(0, "No filter loaded — scoring uses paragon threshold needs only."));
-        else if (slotRule is null && item.UniqueId is null)
-            lines.Add(new ScoreLine(0, "No filter rule covers this item type — affixes score against paragon needs only."));
-
-        if (item.UniqueId is uint uniqueId && reference is not null)
+        List<WishEntry> desired;
+        HashSet<uint> optional;
+        HashSet<uint> greaterWanted;
+        string source;
+        if (custom is not null)
         {
-            var uniqueRule = reference.Rules.FirstOrDefault(r =>
-                r.IsEnabled && r.Visibility == Visibility.Show
-                && r.Conditions.OfType<SpecificUniqueCondition>().Any(c => c.UniqueIds.Contains(uniqueId)));
-            lines.Add(uniqueRule is not null
-                ? new ScoreLine(TargetUniquePoints, $"Target unique of the build (rule '{uniqueRule.Name}').")
-                : new ScoreLine(0, "A unique, but not one the build is hunting."));
+            desired = custom.Desired.ToList();
+            optional = [];
+            greaterWanted = custom.Desired.Where(w => w.GreaterWanted).SelectMany(w => w.AffixIds).ToHashSet();
+            source = "your reference list";
+            if (desired.Count == 0)
+                lines.Add(new ScoreLine(0, "Your reference list has no affixes — scoring uses paragon threshold needs only."));
+        }
+        else
+        {
+            var (slotRule, filterDesired, filterOptional, filterGreater) = DesiredAffixesFor(item, reference);
+            desired = filterDesired.Select(id => new WishEntry([id], filterGreater.Contains(id), "")).ToList();
+            optional = filterOptional;
+            greaterWanted = filterGreater;
+            source = "the guide";
+            if (reference is null)
+                lines.Add(new ScoreLine(0, "No filter loaded — scoring uses paragon threshold needs only."));
+            else if (slotRule is null && item.UniqueId is null)
+                lines.Add(new ScoreLine(0, "No filter rule covers this item type — affixes score against paragon needs only."));
+        }
+
+        if (item.UniqueId is uint uniqueId)
+        {
+            if (custom is not null)
+            {
+                lines.Add(custom.TargetUniques.Contains(uniqueId)
+                    ? new ScoreLine(TargetUniquePoints, "Target unique of your reference list.")
+                    : new ScoreLine(0, "A unique, but not one your reference list is hunting."));
+            }
+            else if (reference is not null)
+            {
+                var uniqueRule = reference.Rules.FirstOrDefault(r =>
+                    r.IsEnabled && r.Visibility == Visibility.Show
+                    && r.Conditions.OfType<SpecificUniqueCondition>().Any(c => c.UniqueIds.Contains(uniqueId)));
+                lines.Add(uniqueRule is not null
+                    ? new ScoreLine(TargetUniquePoints, $"Target unique of the build (rule '{uniqueRule.Name}').")
+                    : new ScoreLine(0, "A unique, but not one the build is hunting."));
+            }
         }
 
         var needByAffix = statNeeds
@@ -122,25 +176,28 @@ public static class ItemChoiceComparer
 
         foreach (var affix in item.Affixes)
         {
+            var identities = IdentitiesOf(affix);
             bool scored = false;
             bool greater = affix.IsGreater && !affix.IsTransfigured;
             string name = affix.IsTransfigured ? $"{affix.Name} (transfigured)" : affix.Name;
 
-            int position = desired.IndexOf(affix.AffixId);
-            bool isOptional = position < 0 && optional.Contains(affix.AffixId);
-            if (position >= 0 || isOptional)
+            int position = desired.FindIndex(w => identities.Any(w.AffixIds.Contains));
+            uint? matchedId = position >= 0
+                ? identities.First(desired[position].AffixIds.Contains)
+                : identities.Where(optional.Contains).Cast<uint?>().FirstOrDefault();
+            if (matchedId is uint matched)
             {
                 double weight = position >= 0 ? Math.Max(1.0, TopAffixWeight - position) : 1.0;
-                double ratio = effective(affix) is double value && bestValueByAffix.TryGetValue(affix.AffixId, out double best)
+                double ratio = effective(affix) is double value && bestValueByAffix.TryGetValue(matched, out double best)
                     && best > 0
                     ? value / best
                     : 1.0;
                 double points = weight * ratio * (greater ? GreaterAffixFactor : 1.0);
                 string rank = position >= 0 ? $"priority {position + 1}" : "nice-to-have";
-                string detail = $"{name}: {rank} affix of the guide";
+                string detail = $"{name}: {rank} affix of {source}";
                 if (greater)
-                    detail += greaterWanted.Contains(affix.AffixId)
-                        ? ", Greater Affix exactly where the guide wants one"
+                    detail += greaterWanted.Overlaps(identities)
+                        ? $", Greater Affix exactly where {source} wants one"
                         : ", Greater Affix";
                 if (greater && affix.Value is null && effective(affix) is not null)
                     detail += $", roll derived as max × {GreaterAffixRollFactor}";
@@ -150,8 +207,10 @@ public static class ItemChoiceComparer
                 scored = true;
             }
 
-            if (needByAffix.TryGetValue(affix.AffixId, out var need))
+            foreach (uint id in identities)
             {
+                if (!needByAffix.TryGetValue(id, out var need))
+                    continue;
                 if (effective(affix) is double value && value > 0)
                 {
                     double closed = Math.Min(value / need.Deficit, 1.0);

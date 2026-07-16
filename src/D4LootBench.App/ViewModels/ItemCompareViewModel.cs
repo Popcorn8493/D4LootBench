@@ -78,21 +78,25 @@ public partial class CandidateItemViewModel : ObservableObject
 
     public string EffectiveLabel => string.IsNullOrWhiteSpace(Label) ? _defaultLabel : Label.Trim();
 
-    public CandidateItem ToCandidate()
+    /// <param name="componentsOf">Expands an aggregate stat's synthetic id to the catalog
+    /// affixes it grants (null for plain affixes).</param>
+    public CandidateItem ToCandidate(Func<uint, IReadOnlyList<uint>?> componentsOf)
     {
         var affixes = new List<CandidateAffix>();
         foreach (var row in AffixRows)
         {
             if (row.SelectedAffix is not CompareOption affix)
                 continue;
-            affixes.Add(new CandidateAffix(affix.Hash, affix.Name, ParseValue(row.ValueText), row.IsGreater));
+            affixes.Add(new CandidateAffix(affix.Hash, affix.Name, ParseValue(row.ValueText), row.IsGreater,
+                ComponentIds: componentsOf(affix.Hash)));
         }
         foreach (var row in TransfiguredRows)
         {
             if (row.SelectedAffix is not CompareOption affix)
                 continue;
             affixes.Add(new CandidateAffix(
-                affix.Hash, affix.Name, ParseValue(row.ValueText), IsGreater: false, IsTransfigured: true));
+                affix.Hash, affix.Name, ParseValue(row.ValueText), IsGreater: false, IsTransfigured: true,
+                ComponentIds: componentsOf(affix.Hash)));
         }
         return new CandidateItem(EffectiveLabel, SelectedItemType?.Hash,
             SelectedUnique is { Hash: > 0 } unique ? unique.Hash : null,
@@ -103,12 +107,23 @@ public partial class CandidateItemViewModel : ObservableObject
         double.TryParse(text, out double parsed) && parsed > 0 ? parsed : null;
 }
 
+/// <summary>One priority slot of the user's own reference wish list (top row weighs most).</summary>
+public partial class ReferenceRowViewModel : ObservableObject
+{
+    [ObservableProperty]
+    private CompareOption? _selectedAffix;
+
+    [ObservableProperty]
+    private bool _greaterWanted;
+}
+
 /// <summary>
 /// Item Compare: enter two candidate drops (e.g. two pairs of gloves) and score them against
-/// the loaded filter (the guide's per-slot affix wish list and target uniques) plus the open
-/// paragon build's unmet threshold deficits. Every point is itemized, so "objectively better"
-/// is auditable. Candidates can be filled by OCR from a tooltip screenshot on the clipboard and
-/// saved to a persistent gear library (typically the currently equipped piece).
+/// a reference — the loaded filter (the guide's per-slot affix wish list and target uniques)
+/// or the user's own persisted priority list — plus the open paragon build's unmet threshold
+/// deficits. Every point is itemized, so "objectively better" is auditable. Candidates can be
+/// filled by OCR from a tooltip screenshot on the clipboard and saved to a persistent gear
+/// library (typically the currently equipped piece).
 /// </summary>
 public partial class ItemCompareViewModel : ObservableObject
 {
@@ -116,15 +131,30 @@ public partial class ItemCompareViewModel : ObservableObject
     private readonly IReadOnlyList<StatNeed> _statNeeds;
     private readonly NameResolver _resolver;
     private readonly SavedGearService _savedGear;
+    private readonly CompareReferenceService _referenceStore;
+
+    /// <summary>Synthetic aggregate id → the catalog affix hashes it grants (e.g. All Stats →
+    /// the four core stats), resolved once against the live catalog.</summary>
+    private readonly Dictionary<uint, IReadOnlyList<uint>> _aggregateComponents;
 
     public ItemCompareViewModel(
         IFilterDataService data, FilterRuleset? reference, IReadOnlyList<StatNeed> statNeeds,
-        SavedGearService? savedGear = null)
+        SavedGearService? savedGear = null, CompareReferenceService? referenceStore = null)
     {
         _reference = reference;
         _statNeeds = statNeeds;
         _resolver = new NameResolver(data);
         _savedGear = savedGear ?? new SavedGearService();
+        _referenceStore = referenceStore ?? new CompareReferenceService();
+
+        _aggregateComponents = AggregateStats.All.ToDictionary(
+            s => s.Id,
+            s => (IReadOnlyList<uint>)s.ComponentAffixNames
+                .SelectMany(n => data.Affixes.All.Where(a =>
+                    a.Name.TrimStart('+', '%', ' ').Equals(n, StringComparison.OrdinalIgnoreCase)))
+                .Select(a => a.Hash)
+                .Distinct()
+                .ToList());
 
         ItemTypeOptions = data.ItemTypes.All
             .Select(t => new CompareOption(t.Hash, t.Name))
@@ -132,6 +162,7 @@ public partial class ItemCompareViewModel : ObservableObject
             .ToList();
         AffixOptions = data.Affixes.All
             .Select(a => new CompareOption(a.Hash, a.Name))
+            .Concat(AggregateStats.All.Select(s => new CompareOption(s.Id, s.Name)))
             .OrderBy(o => o.Name, StringComparer.OrdinalIgnoreCase)
             .ToList();
         UniqueOptions = new List<CompareOption> { new(0, "— not a unique —") }
@@ -144,15 +175,8 @@ public partial class ItemCompareViewModel : ObservableObject
         ItemA.SelectedUnique = UniqueOptions[0];
         ItemB.SelectedUnique = UniqueOptions[0];
         RefreshSavedNames();
-
-        string filterPart = reference is null
-            ? "No filter loaded — open or import one so guide affix priorities can score."
-            : $"Filter reference: \"{reference.Name}\" ({reference.Rules.Count} rule(s)).";
-        string paragonPart = statNeeds.Count == 0
-            ? "No unmet paragon thresholds — open the Paragon Planner with a solved build to weigh core stats."
-            : "Paragon needs: " + string.Join("; ",
-                statNeeds.Select(n => $"{n.NodeName} is {n.Deficit:0} {n.StatName} short")) + ".";
-        ReferenceSummary = filterPart + Environment.NewLine + paragonPart;
+        LoadStoredReference();
+        ReferenceSummary = BuildReferenceSummary();
     }
 
     public IReadOnlyList<CompareOption> ItemTypeOptions { get; }
@@ -164,7 +188,8 @@ public partial class ItemCompareViewModel : ObservableObject
     public CandidateItemViewModel ItemA { get; } = new("Item A");
     public CandidateItemViewModel ItemB { get; } = new("Item B");
 
-    public string ReferenceSummary { get; }
+    [ObservableProperty]
+    private string _referenceSummary = "";
 
     [ObservableProperty]
     private string _verdict = "";
@@ -172,6 +197,140 @@ public partial class ItemCompareViewModel : ObservableObject
     /// <summary>Feedback from scan/save/load actions, shown under the reference summary.</summary>
     [ObservableProperty]
     private string _statusText = "";
+
+    // ── Custom reference ─────────────────────────────────────────────────
+
+    /// <summary>When on, the user's own priority list replaces the loaded filter as the
+    /// wish-list side of the score (paragon threshold needs always apply).</summary>
+    [ObservableProperty]
+    private bool _useCustomReference;
+
+    /// <summary>Radio-button counterpart of <see cref="UseCustomReference"/>.</summary>
+    public bool UseLoadedFilter
+    {
+        get => !UseCustomReference;
+        set => UseCustomReference = !value;
+    }
+
+    partial void OnUseCustomReferenceChanged(bool value)
+    {
+        OnPropertyChanged(nameof(UseLoadedFilter));
+        ReferenceSummary = BuildReferenceSummary();
+    }
+
+    public ObservableCollection<ReferenceRowViewModel> ReferenceRows { get; } = [];
+
+    /// <summary>The unique the custom reference hunts (hash 0 = none).</summary>
+    [ObservableProperty]
+    private CompareOption? _selectedReferenceUnique;
+
+    partial void OnSelectedReferenceUniqueChanged(CompareOption? value)
+    {
+        if (UseCustomReference)
+            ReferenceSummary = BuildReferenceSummary();
+    }
+
+    [RelayCommand]
+    private void AddReferenceRow() => ReferenceRows.Add(new());
+
+    [RelayCommand]
+    private void RemoveReferenceRow(ReferenceRowViewModel row) => ReferenceRows.Remove(row);
+
+    [RelayCommand]
+    private void MoveReferenceRowUp(ReferenceRowViewModel row)
+    {
+        int at = ReferenceRows.IndexOf(row);
+        if (at > 0)
+            ReferenceRows.Move(at, at - 1);
+    }
+
+    [RelayCommand]
+    private void MoveReferenceRowDown(ReferenceRowViewModel row)
+    {
+        int at = ReferenceRows.IndexOf(row);
+        if (at >= 0 && at < ReferenceRows.Count - 1)
+            ReferenceRows.Move(at, at + 1);
+    }
+
+    private void LoadStoredReference()
+    {
+        var stored = _referenceStore.Current;
+        foreach (var affix in stored.Affixes)
+        {
+            if (AffixOptions.FirstOrDefault(o => o.Hash == affix.AffixId) is not CompareOption option)
+                continue;
+            ReferenceRows.Add(new ReferenceRowViewModel
+            {
+                SelectedAffix = option,
+                GreaterWanted = affix.GreaterWanted,
+            });
+        }
+        if (ReferenceRows.Count == 0)
+            ReferenceRows.Add(new());
+        SelectedReferenceUnique = stored.TargetUniqueId is uint uniqueId
+            ? UniqueOptions.FirstOrDefault(o => o.Hash == uniqueId) ?? UniqueOptions[0]
+            : UniqueOptions[0];
+        UseCustomReference = stored.UseCustom;
+    }
+
+    /// <summary>Saves the custom reference to disk; called on Compare and by the window on
+    /// close, so a hand-built list survives the session.</summary>
+    public void PersistReference()
+    {
+        _referenceStore.Save(new StoredCompareReference(
+            UseCustomReference,
+            ReferenceRows
+                .Where(r => r.SelectedAffix is not null)
+                .Select(r => new StoredReferenceAffix(
+                    r.SelectedAffix!.Hash, r.SelectedAffix.Name, r.GreaterWanted))
+                .ToList(),
+            SelectedReferenceUnique is { Hash: > 0 } unique ? unique.Hash : null));
+    }
+
+    private CompareWishList? BuildCustomReference()
+    {
+        if (!UseCustomReference)
+            return null;
+        var desired = ReferenceRows
+            .Where(r => r.SelectedAffix is not null)
+            .Select(r => new WishEntry(
+                ComponentsOf(r.SelectedAffix!.Hash) is { } components
+                    ? [r.SelectedAffix.Hash, .. components]
+                    : [r.SelectedAffix.Hash],
+                r.GreaterWanted, r.SelectedAffix.Name))
+            .ToList();
+        var uniques = new HashSet<uint>();
+        if (SelectedReferenceUnique is { Hash: > 0 } unique)
+            uniques.Add(unique.Hash);
+        return new CompareWishList(desired, uniques);
+    }
+
+    private IReadOnlyList<uint>? ComponentsOf(uint hash) =>
+        _aggregateComponents.TryGetValue(hash, out var components) && components.Count > 0
+            ? components
+            : null;
+
+    private string BuildReferenceSummary()
+    {
+        string referencePart;
+        if (UseCustomReference)
+        {
+            int count = ReferenceRows.Count(r => r.SelectedAffix is not null);
+            referencePart = $"Custom reference: {count} affix priorit{(count == 1 ? "y" : "ies")}"
+                + (SelectedReferenceUnique is { Hash: > 0 } unique ? $", hunting {unique.Name}." : ".");
+        }
+        else
+        {
+            referencePart = _reference is null
+                ? "No filter loaded — open or import one, or switch to a custom reference below."
+                : $"Filter reference: \"{_reference.Name}\" ({_reference.Rules.Count} rule(s)).";
+        }
+        string paragonPart = _statNeeds.Count == 0
+            ? "No unmet paragon thresholds — open the Paragon Planner with a solved build to weigh core stats."
+            : "Paragon needs: " + string.Join("; ",
+                _statNeeds.Select(n => $"{n.NodeName} is {n.Deficit:0} {n.StatName} short")) + ".";
+        return referencePart + Environment.NewLine + paragonPart;
+    }
 
     // ── Gear library ─────────────────────────────────────────────────────
 
@@ -342,8 +501,16 @@ public partial class ItemCompareViewModel : ObservableObject
         int at = 0;
         foreach (var stat in list)
         {
-            if (!_resolver.TryResolveAffix(stat.StatText, out uint hash, out _)
-                || AffixOptions.FirstOrDefault(o => o.Hash == hash) is not CompareOption option)
+            // Aggregates first: "All Stats" would otherwise fuzzy-land on a single core stat.
+            uint hash;
+            if (AggregateStats.MatchName(stat.StatText) is AggregateStat aggregate)
+                hash = aggregate.Id;
+            else if (!_resolver.TryResolveAffix(stat.StatText, out hash, out _))
+            {
+                notes.Add($"stat \"{stat.StatText}\" not matched");
+                continue;
+            }
+            if (AffixOptions.FirstOrDefault(o => o.Hash == hash) is not CompareOption option)
             {
                 notes.Add($"stat \"{stat.StatText}\" not matched");
                 continue;
@@ -396,9 +563,12 @@ public partial class ItemCompareViewModel : ObservableObject
     private void Compare()
     {
         AutoFillGreaterRolls();
+        PersistReference();
+        ReferenceSummary = BuildReferenceSummary();
         var candidates = new[] { ItemA, ItemB };
         var outcome = ItemChoiceComparer.Compare(
-            candidates.Select(c => c.ToCandidate()).ToList(), _reference, _statNeeds);
+            candidates.Select(c => c.ToCandidate(ComponentsOf)).ToList(), _reference, _statNeeds,
+            BuildCustomReference());
 
         double best = outcome.Scores.Max(s => s.Total);
         for (int i = 0; i < candidates.Length; i++)

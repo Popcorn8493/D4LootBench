@@ -176,6 +176,77 @@ public sealed class ItemChoiceComparerTests
     }
 
     [Fact]
+    public void AggregateStatScoresThroughItsComponents()
+    {
+        // "All Stats" expands to Strength+Willpower here: it should satisfy the wish-list slot
+        // for Willpower(=4) AND feed the Willpower threshold need, with no per-component noise.
+        var allStats = new CandidateAffix(
+            AggregateStats.AllStatsId, "All Stats", 100, false, ComponentIds: [Willpower, 77]);
+        var needs = new[] { new StatNeed(Willpower, "Willpower", 200, "Tenacity") };
+        var custom = new CompareWishList([new WishEntry([Willpower], false, "Willpower")], []);
+
+        var outcome = ItemChoiceComparer.Compare(
+            [Item("Aggregate", allStats), Item("Plain", Affix(Willpower, value: 100))],
+            reference: null, needs, custom);
+
+        // Both close 50% of the threshold and hit priority 1; identical totals.
+        outcome.Scores[0].Total.ShouldBe(outcome.Scores[1].Total, 0.001);
+        outcome.Scores[0].Lines.ShouldContain(l => l.Reason.Contains("priority 1"));
+        outcome.Scores[0].Lines.ShouldContain(l => l.Reason.Contains("Tenacity"));
+        outcome.Scores[0].Lines.ShouldNotContain(l => l.Reason.Contains("not sought"));
+    }
+
+    [Fact]
+    public void CustomWishListOverridesTheLoadedFilter()
+    {
+        // The filter wants crit on gloves; the user's own list wants max life above all.
+        var custom = new CompareWishList(
+            [new WishEntry([MaxLife], false, "Maximum Life"), new WishEntry([CritChance], false, "Crit")],
+            []);
+
+        var outcome = ItemChoiceComparer.Compare(
+            [
+                Item("Life gloves", Affix(MaxLife)),
+                Item("Crit gloves", Affix(CritChance)),
+            ],
+            Reference(), [], custom);
+
+        outcome.Scores[0].Total.ShouldBeGreaterThan(outcome.Scores[1].Total);
+        outcome.Verdict.ShouldStartWith("Life gloves is the better choice");
+        outcome.Scores[0].Lines.ShouldContain(l => l.Reason.Contains("your reference list"));
+    }
+
+    [Fact]
+    public void CustomWishListTargetUniqueScores()
+    {
+        var custom = new CompareWishList([], [OtherUnique]);
+
+        var outcome = ItemChoiceComparer.Compare(
+            [
+                new CandidateItem("Hunted", Gloves, OtherUnique, []),
+                new CandidateItem("Filter's unique", Gloves, TargetUnique, []),
+            ],
+            Reference(), [], custom);
+
+        outcome.Scores[0].Lines.ShouldContain(l => l.Reason.Contains("Target unique of your reference list"));
+        outcome.Scores[1].Lines.ShouldContain(l => l.Reason.Contains("not one your reference list is hunting"));
+        outcome.Scores[0].Total.ShouldBeGreaterThan(outcome.Scores[1].Total);
+    }
+
+    [Fact]
+    public void CustomWishListGreaterWantedIsCalledOut()
+    {
+        var custom = new CompareWishList([new WishEntry([CritChance], true, "Crit")], []);
+
+        var outcome = ItemChoiceComparer.Compare(
+            [Item("GA", Affix(CritChance, value: 8, greater: true))],
+            reference: null, [], custom);
+
+        outcome.Scores[0].Lines.ShouldContain(l =>
+            l.Reason.Contains("exactly where your reference list wants one"));
+    }
+
+    [Fact]
     public void CloseScoresAreCalledATie()
     {
         var outcome = ItemChoiceComparer.Compare(

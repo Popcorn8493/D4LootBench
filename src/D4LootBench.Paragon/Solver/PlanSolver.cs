@@ -1,3 +1,5 @@
+using D4LootBench.Paragon.Models;
+
 namespace D4LootBench.Paragon.Solver;
 
 public sealed class PlanRequest
@@ -49,6 +51,16 @@ public static class PlanSolver
 
     /// <summary>Weights tried in turn on groups whose Limit is still exceeded.</summary>
     private static readonly int[] LimitEscalation = [AvoidWeight, 20, 80];
+
+    /// <summary>
+    /// Every legendary node cell of the layout, minus any the caller excludes — boards are
+    /// attached FOR their legendary power, so planners treat these as always-on targets.
+    /// </summary>
+    public static IReadOnlyList<CellRef> LegendaryCells(ComposedGraph graph, ISet<CellRef>? excluded = null) =>
+        graph.Vertices
+            .Where(v => v.Node.Kind == ParagonNodeKind.Legendary && excluded?.Contains(v.Cell) != true)
+            .Select(v => v.Cell)
+            .ToList();
 
     public static PlanResult Solve(ComposedGraph graph, PlanRequest request)
     {

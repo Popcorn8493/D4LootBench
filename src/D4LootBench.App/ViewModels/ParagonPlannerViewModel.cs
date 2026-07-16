@@ -4,6 +4,7 @@ using System.Net.Http;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using D4LootBench.App.Services;
 using D4LootBench.App.Views;
 using D4LootBench.Paragon;
 using D4LootBench.Paragon.Data;
@@ -102,6 +103,13 @@ public partial class ParagonPlannerViewModel : ObservableObject
                 && rule.DisplayName.Contains(RuleFilter, StringComparison.OrdinalIgnoreCase));
         SelectedClass = Classes[0];
         RefreshRecentProjects();
+        foreach (var character in _characterLibrary.Characters)
+            Characters.Add(character);
+        if (_characterLibrary.ActiveName is string active)
+        {
+            SelectedCharacter = Characters.FirstOrDefault(c =>
+                string.Equals(c.Name, active, StringComparison.OrdinalIgnoreCase));
+        }
     }
 
     /// <summary>The rules list filtered by <see cref="RuleFilter"/> (the list has ~50 rows).</summary>
@@ -143,9 +151,38 @@ public partial class ParagonPlannerViewModel : ObservableObject
     [ObservableProperty]
     private bool _preferRareNodes;
 
+    /// <summary>
+    /// Solve/Re-analyze always route the path through every board's legendary node — boards
+    /// are attached FOR their legendary power, so imports and optimizations must not path
+    /// around them. Default on; user-toggleable for exotic stat-stick layouts.
+    /// </summary>
+    [ObservableProperty]
+    private bool _includeLegendaryNodes = true;
+
     /// <summary>Buy rares by threshold attainability (met, then realistically meetable) first.</summary>
     [ObservableProperty]
     private bool _realisticRares;
+
+    /// <summary>
+    /// Value additive "+% damage" stats at their marginal real contribution (D4 sums them all
+    /// into ONE bucket — see <see cref="DamageModel"/>), so a saturated bucket stops
+    /// outcompeting main stat, crit chance, and utility in the spend and placement analysis.
+    /// </summary>
+    [ObservableProperty]
+    private bool _balanceDamageBuckets = true;
+
+    /// <summary>Current build's damage-bucket profile (refreshed with the Build Summary).</summary>
+    private DamageProfile? _damageProfile;
+
+    /// <summary>The paragon totals' own additive bucket (whole, situational slice) — what the
+    /// stat-sheet scan subtracts, since the in-game sheet folds paragon and gear together.</summary>
+    private (double Additive, double Situational) _paragonAdditiveSlices;
+
+    [ObservableProperty]
+    private string _damageSummary = "";
+
+    [ObservableProperty]
+    private string _damageSummaryDetail = "";
 
     public static IReadOnlyList<string> SurvivabilityLevels { get; } = ["None", "Light", "Balanced", "Heavy"];
 
@@ -193,10 +230,29 @@ public partial class ParagonPlannerViewModel : ObservableObject
     [ObservableProperty]
     private double _sheetDexterity;
 
+    /// <summary>
+    /// The gear's ALWAYS-ON "+X% damage" sum as a PERCENT (350 = +350%): additive damage affixes
+    /// with no condition attached. Feeds the damage-bucket model so saturation starts from the
+    /// character's real bucket, not the paragon-only slice.
+    /// </summary>
+    [ObservableProperty]
+    private double _sheetAdditiveDamage;
+
+    /// <summary>
+    /// The conditional slice of the gear's "+X% damage" as a PERCENT: vulnerable/close/crit
+    /// damage and other "damage while/vs/to …" affixes. Joins the same additive bucket but is
+    /// reported as situational — the expected multiplier shows a full-uptime ceiling and an
+    /// always-on floor.
+    /// </summary>
+    [ObservableProperty]
+    private double _sheetSituationalDamage;
+
     partial void OnSheetStrengthChanged(double value) => RefreshBuildSummary();
     partial void OnSheetIntelligenceChanged(double value) => RefreshBuildSummary();
     partial void OnSheetWillpowerChanged(double value) => RefreshBuildSummary();
     partial void OnSheetDexterityChanged(double value) => RefreshBuildSummary();
+    partial void OnSheetAdditiveDamageChanged(double value) => RefreshBuildSummary();
+    partial void OnSheetSituationalDamageChanged(double value) => RefreshBuildSummary();
     partial void OnTotalPointsChanged(int value) => RefreshBuildSummary();
 
     private NonParagonStats SheetStatOffsets() => NonParagonStats.PerStat(new Dictionary<string, double>
@@ -902,15 +958,88 @@ public partial class ParagonPlannerViewModel : ObservableObject
 
         var imported = new BuildSnapshot(
             "Import", import.Build.Layout, import.Build.AllocatedCells, import.Build.Glyphs);
+
+        // Judge BOTH builds at this planner's current glyph levels — imports carry the guide's
+        // (often default-100) levels, and glyph radius/delivery scale with level. Same glyph =
+        // my level; a glyph not socketed here gets the average of my levels.
+        var myLevels = GlyphSockets
+            .Where(s => s.SelectedGlyph is not null)
+            .GroupBy(s => s.SelectedGlyph!.InternalName, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.First().Level, StringComparer.OrdinalIgnoreCase);
+        // The character library knows glyphs that aren't currently socketed here.
+        if (SelectedCharacter is { } activeCharacter)
+        {
+            foreach (var (glyph, level) in activeCharacter.GlyphLevels)
+                myLevels.TryAdd(glyph, level);
+        }
+        int fallbackLevel = myLevels.Count > 0 ? (int)Math.Round(myLevels.Values.Average()) : 100;
+        current = BuildComparer.WithGlyphLevels(current, myLevels, fallbackLevel);
+        imported = BuildComparer.WithGlyphLevels(imported, myLevels, fallbackLevel);
+
         using var busy = BeginBusy();
         SetStatus("Comparing…");
         var sheetStats = SheetStatOffsets();
         // Point parity keeps the verdict about build quality, not budget: the smaller build is
         // grown by its own priorities (or the larger trimmed) until both spend the same.
+        double gearAdditive = SheetAdditiveDamage / 100.0;
+        double gearSituational = SheetSituationalDamage / 100.0;
         string report = await Task.Run(() =>
-            BuildComparer.Compare(current, imported, ParagonDatabase.Data, sheetStats, matchPoints: true));
+            BuildComparer.Compare(current, imported, ParagonDatabase.Data, sheetStats,
+                matchPoints: true, additiveDamageOffset: gearAdditive,
+                situationalDamageOffset: gearSituational));
+        if (current.Glyphs.Count > 0 || imported.Glyphs.Count > 0)
+        {
+            report = "Glyph levels: both builds judged at this planner's current levels" +
+                     $" (glyphs not socketed here assume lvl {fallbackLevel})." + Environment.NewLine + report;
+        }
         SolveDetails = report;
         SetStatus($"Compared the current build against {import.Source} at matched points — see the report below.");
+    }
+
+    /// <summary>
+    /// Fills the two gear-damage fields from a screenshot of the in-game stats details panel
+    /// (Offense section). The sheet aggregates every source per category but never splits
+    /// always-on from conditional or gear from paragon, so OCR'd rows are classified by
+    /// <see cref="StatSheetParser"/> (built-in bases excluded), the current build's own paragon
+    /// additive is subtracted, and every row is reviewed in a dialog before anything is applied.
+    /// </summary>
+    [RelayCommand]
+    private async Task ScanSheetDamage()
+    {
+        // No screenshot is fine — the dialog supports manual rows and in-dialog rescans.
+        IReadOnlyList<SheetStatLine> parsed = [];
+        if (Clipboard.ContainsImage() && Clipboard.GetImage() is { } image)
+        {
+            try
+            {
+                SetStatus("Reading the stat-sheet screenshot…");
+                var lines = await TooltipOcrService.ReadLineInfosAsync(image);
+                // The panel's label and value columns come back as separate OCR lines — the
+                // parser rebuilds the rows from their vertical positions.
+                parsed = StatSheetParser.Parse(
+                    [.. lines.Select(l => new SheetOcrLine(l.Text, l.CenterY, l.Height))]);
+            }
+            catch (Exception ex)
+            {
+                SetStatus($"Scan failed ({ex.Message}) — enter the rows manually.", error: true);
+            }
+        }
+
+        var dialog = new StatSheetImportWindow(parsed,
+            paragonAlwaysOnPercent: (_paragonAdditiveSlices.Additive - _paragonAdditiveSlices.Situational) * 100,
+            paragonSituationalPercent: _paragonAdditiveSlices.Situational * 100)
+        {
+            Owner = Application.Current?.Windows.OfType<ParagonPlannerWindow>().FirstOrDefault(),
+        };
+        if (dialog.ShowDialog() != true)
+        {
+            SetStatus("Stat-sheet scan discarded — the gear damage fields are unchanged.");
+            return;
+        }
+        SheetAdditiveDamage = Math.Round(dialog.AdditiveResult, 1);
+        SheetSituationalDamage = Math.Round(dialog.SituationalResult, 1);
+        SetStatus($"Gear damage set from the stat sheet: +{SheetAdditiveDamage:0.#}% always-on, " +
+                  $"+{SheetSituationalDamage:0.#}% situational.");
     }
 
     [RelayCommand]
@@ -962,9 +1091,58 @@ public partial class ParagonPlannerViewModel : ObservableObject
         }
     }
 
+    /// <summary>The engine-side glyph activation default the socket editor also starts from.</summary>
+    private const double DefaultGlyphActivationStat = 40;
+
+    /// <summary>
+    /// The import's glyphs as activation goals, so trimming an over-budget import spares the
+    /// in-radius stat that keeps them active for as long as the budget allows. The active
+    /// character's real glyph level (and so radius) beats the guide's assumption.
+    /// </summary>
+    private IReadOnlyList<GlyphGoal> ImportGlyphGoals(ConvertedMaxrollBuild build)
+    {
+        var graph = ComposedGraph.Build(build.Layout);
+        var socketBySlot = graph.Vertices
+            .Where(v => v.Node.Kind == ParagonNodeKind.GlyphSocket)
+            .ToDictionary(v => v.Cell.BoardSlot, v => v.Cell);
+        var goals = new List<GlyphGoal>();
+        foreach (var assignment in build.Glyphs)
+        {
+            var glyph = ParagonDatabase.Data.Glyphs.FirstOrDefault(g =>
+                string.Equals(g.InternalName, assignment.GlyphInternalName, StringComparison.OrdinalIgnoreCase));
+            if (glyph is null || GlyphInfo.PrimarySourceAttribute(glyph) is not string sourceAttribute
+                || !socketBySlot.TryGetValue(assignment.BoardSlot, out var socket))
+                continue;
+            int level = SelectedCharacter?.GlyphLevels.TryGetValue(assignment.GlyphInternalName, out int owned) == true
+                ? owned
+                : assignment.Level ?? 100;
+            goals.Add(new GlyphGoal(socket, sourceAttribute, DefaultGlyphActivationStat,
+                GlyphRadius.RadiusForLevel(level), glyph.Name));
+        }
+        return goals;
+    }
+
     private void ApplyImportedBuild(ConvertedMaxrollBuild build, string source)
     {
         RecordUndo();
+
+        // Fit the import to the current point pool: a guide build usually spends a max-level
+        // budget, and a leveling player can't buy it all yet. Trim the least-valued nodes (by
+        // the build's own priorities, glyph activations spared while the budget allows) and
+        // surface the removed nodes as the buy-back plan for the way up.
+        TrimToBudgetResult? trim = null;
+        if (TotalPoints > 0)
+        {
+            var fitted = PointParity.TrimToBudget(
+                new BuildSnapshot(source, build.Layout, build.AllocatedCells, build.Glyphs),
+                TotalPoints, ParagonDatabase.Data, ImportGlyphGoals(build));
+            if (fitted.RemovedCells.Count > 0)
+            {
+                trim = fitted;
+                build = build with { AllocatedCells = fitted.Build.AllocatedCells };
+            }
+        }
+
         string? className = build.Layout.Boards[0].Board.ClassName;
         if (className is not null && className != SelectedClass)
             SelectedClass = className;
@@ -983,6 +1161,10 @@ public partial class ParagonPlannerViewModel : ObservableObject
             if (glyph.Level is int level)
                 socket.Level = level;
         }
+        // The import carries the guide's glyph levels; the active character's REAL levels win.
+        int characterGlyphs = SelectedCharacter is { } activeCharacter
+            ? ApplyCharacterGlyphLevels(activeCharacter)
+            : 0;
 
         var allocated = build.AllocatedCells.ToHashSet();
         foreach (var cell in Cells)
@@ -994,7 +1176,35 @@ public partial class ParagonPlannerViewModel : ObservableObject
         SolveDetails = assigned.Count == 0
             ? ""
             : "Imported glyphs: " + string.Join(", ", assigned.Select(DescribeGlyph));
-        SetStatus($"Imported {source} build: {_placedBoards.Count} board(s), {allocated.Count} allocated node(s).");
+
+        string trimSuffix = "";
+        if (trim is not null)
+        {
+            string BuyBackName(CellRef cell) => _graph is not null && _graph.TryGetVertex(cell, out int v)
+                ? $"{_graph.Vertices[v].Node.Name ?? _graph.Vertices[v].Node.InternalName} (slot {cell.BoardSlot})"
+                : $"(slot {cell.BoardSlot}: {cell.X},{cell.Y})";
+            // Removal took the least valuable first, so the reverse is the buy-back order.
+            var buyBack = trim.RemovedCells.Reverse().Select(BuyBackName).ToList();
+            var lines = new List<string>
+            {
+                $"Fitted the import to your {TotalPoints}-point pool " +
+                $"({trim.PointsBefore} → {trim.PointsAfter}): removed the " +
+                $"{trim.RemovedCells.Count} node(s) the build values least.",
+            };
+            lines.AddRange(trim.Notes);
+            lines.Add("Buy back in this order while leveling: " + string.Join(", ", buyBack.Take(30)) +
+                      (buyBack.Count > 30 ? $", … and {buyBack.Count - 30} more" : "") + ".");
+            SolveDetails = string.Join(Environment.NewLine, lines) +
+                           (SolveDetails.Length > 0 ? Environment.NewLine + SolveDetails : "");
+            trimSuffix = $" Trimmed {trim.RemovedCells.Count} node(s) to fit {TotalPoints} points — " +
+                         "buy-back order is in the details below.";
+        }
+
+        string characterSuffix = characterGlyphs > 0
+            ? $" {characterGlyphs} glyph level(s) set from character '{SelectedCharacter!.Name}'."
+            : "";
+        SetStatus($"Imported {source} build: {_placedBoards.Count} board(s), {allocated.Count} allocated node(s)."
+                  + trimSuffix + characterSuffix);
         NotifyLayoutReplaced();
     }
 
@@ -1037,6 +1247,120 @@ public partial class ParagonPlannerViewModel : ObservableObject
         RecentProjects.Clear();
         foreach (var path in _recentProjects.Paths)
             RecentProjects.Add(new RecentProject(path));
+    }
+
+    // ── Saved characters: durable level / stats / glyph levels ───────────
+
+    private readonly Services.SavedCharacterService _characterLibrary = new();
+
+    /// <summary>The character library; the selected one is re-imposed after imports and loads.</summary>
+    public ObservableCollection<SavedCharacter> Characters { get; } = [];
+
+    [ObservableProperty]
+    private SavedCharacter? _selectedCharacter;
+
+    /// <summary>Name for saving; follows the selection so Save updates the active character.</summary>
+    [ObservableProperty]
+    private string _characterName = "";
+
+    /// <summary>Character level, stored with the character (informational).</summary>
+    [ObservableProperty]
+    private int _characterLevel = 60;
+
+    partial void OnSelectedCharacterChanged(SavedCharacter? value)
+    {
+        _characterLibrary.ActiveName = value?.Name;
+        DeleteCharacterCommand.NotifyCanExecuteChanged();
+        if (value is null)
+            return;
+        CharacterName = value.Name;
+        ImposeCharacter(value);
+        SetStatus($"Character '{value.Name}' active — its stats, point pool and glyph levels now apply." +
+                  (string.Equals(value.ClassName, SelectedClass, StringComparison.OrdinalIgnoreCase)
+                      ? ""
+                      : $" (Saved for {value.ClassName}; the current layout is {SelectedClass}.)"));
+    }
+
+    /// <summary>Re-applies the character's durable facts to the session (stats, pool, glyph levels).</summary>
+    private void ImposeCharacter(SavedCharacter character)
+    {
+        CharacterLevel = character.Level;
+        if (character.TotalPoints > 0)
+            TotalPoints = character.TotalPoints;
+        SheetStrength = character.SheetStrength;
+        SheetIntelligence = character.SheetIntelligence;
+        SheetWillpower = character.SheetWillpower;
+        SheetDexterity = character.SheetDexterity;
+        SheetAdditiveDamage = character.SheetAdditiveDamage;
+        SheetSituationalDamage = character.SheetSituationalDamage;
+        ApplyCharacterGlyphLevels(character);
+    }
+
+    /// <summary>Sets every socketed glyph the character owns to ITS recorded level; returns how many.</summary>
+    private int ApplyCharacterGlyphLevels(SavedCharacter character)
+    {
+        int applied = 0;
+        foreach (var socket in GlyphSockets)
+        {
+            if (socket.SelectedGlyph is null
+                || !character.GlyphLevels.TryGetValue(socket.SelectedGlyph.InternalName, out int level))
+                continue;
+            socket.Level = level;
+            applied++;
+        }
+        return applied;
+    }
+
+    [RelayCommand]
+    private void SaveCharacter()
+    {
+        string name = CharacterName.Trim();
+        if (name.Length == 0)
+        {
+            SetStatus("Give the character a name first (Character section on the Build tab).", error: true);
+            return;
+        }
+        // Glyph levels ACCUMULATE: what's socketed now merges over what the character already
+        // recorded, so a glyph saved earlier isn't forgotten while it's not in use.
+        var levels = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        foreach (var (glyph, level) in _characterLibrary.Find(name)?.GlyphLevels
+                                       ?? new Dictionary<string, int>())
+            levels[glyph] = level;
+        foreach (var socket in GlyphSockets.Where(s => s.SelectedGlyph is not null))
+            levels[socket.SelectedGlyph!.InternalName] = socket.Level;
+
+        _characterLibrary.Save(new SavedCharacter(name, SelectedClass, CharacterLevel, TotalPoints,
+            SheetStrength, SheetIntelligence, SheetWillpower, SheetDexterity, levels)
+        {
+            SheetAdditiveDamage = SheetAdditiveDamage,
+            SheetSituationalDamage = SheetSituationalDamage,
+        });
+        RefreshCharacters(selectName: name);
+        SetStatus($"Saved character '{name}': level {CharacterLevel}, {TotalPoints}-point pool, " +
+                  $"{levels.Count} glyph level(s) recorded.");
+    }
+
+    [RelayCommand(CanExecute = nameof(CanDeleteCharacter))]
+    private void DeleteCharacter()
+    {
+        if (SelectedCharacter is not { } character)
+            return;
+        _characterLibrary.Delete(character.Name);
+        RefreshCharacters(selectName: null);
+        SetStatus($"Deleted character '{character.Name}'.");
+    }
+
+    private bool CanDeleteCharacter() => SelectedCharacter is not null;
+
+    private void RefreshCharacters(string? selectName)
+    {
+        Characters.Clear();
+        foreach (var character in _characterLibrary.Characters)
+            Characters.Add(character);
+        SelectedCharacter = selectName is null
+            ? null
+            : Characters.FirstOrDefault(c =>
+                string.Equals(c.Name, selectName, StringComparison.OrdinalIgnoreCase));
     }
 
     private void RememberRecentProject(string path)
@@ -1223,10 +1547,14 @@ public partial class ParagonPlannerViewModel : ObservableObject
             var project = ParagonProjectSerializer.FromJson(File.ReadAllText(path));
             RecordUndo();
             ApplyProject(project);
+            // The active character's real facts beat whatever the project file was saved with.
+            if (SelectedCharacter is { } character)
+                ImposeCharacter(character);
             SetCurrentProject(path);
             RememberRecentProject(path);
             SetStatus($"Opened project \"{Path.GetFileName(path)}\": {_placedBoards.Count} board(s), " +
-                      $"{Cells.Count(c => c.IsPurchased)} allocated node(s).");
+                      $"{Cells.Count(c => c.IsPurchased)} allocated node(s)." +
+                      (SelectedCharacter is { } c ? $" Character '{c.Name}' re-applied." : ""));
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or FormatException
                                        or ArgumentException or InvalidOperationException)
@@ -1267,13 +1595,17 @@ public partial class ParagonPlannerViewModel : ObservableObject
             .ToDictionary(f => f.Attribute, f => f.Weight),
         PreferRareNodes = PreferRareNodes,
         RealisticRares = RealisticRares,
+        BalanceDamageBuckets = BalanceDamageBuckets,
         DefenseShare = DefenseShareOf(),
         ActivateThresholds = ActivateThresholds,
+        IncludeLegendaryNodes = IncludeLegendaryNodes,
         TotalPoints = TotalPoints,
         SheetStrength = SheetStrength,
         SheetIntelligence = SheetIntelligence,
         SheetWillpower = SheetWillpower,
         SheetDexterity = SheetDexterity,
+        SheetAdditiveDamage = SheetAdditiveDamage,
+        SheetSituationalDamage = SheetSituationalDamage,
     };
 
     /// <summary>Restores a saved session; validates everything before touching the live state.</summary>
@@ -1320,10 +1652,14 @@ public partial class ParagonPlannerViewModel : ObservableObject
         SheetIntelligence = project.SheetIntelligence;
         SheetWillpower = project.SheetWillpower;
         SheetDexterity = project.SheetDexterity;
+        SheetAdditiveDamage = project.SheetAdditiveDamage;
+        SheetSituationalDamage = project.SheetSituationalDamage;
         PreferRareNodes = project.PreferRareNodes;
         RealisticRares = project.RealisticRares;
+        BalanceDamageBuckets = project.BalanceDamageBuckets;
         SurvivabilityLevel = SurvivabilityLevelFor(project.DefenseShare);
         ActivateThresholds = project.ActivateThresholds;
+        IncludeLegendaryNodes = project.IncludeLegendaryNodes;
 
         foreach (var glyph in project.Glyphs)
         {
@@ -1439,6 +1775,19 @@ public partial class ParagonPlannerViewModel : ObservableObject
             {
                 delivery += string.Join("", GlyphNodeBuffs.BuffsAt(socket.SelectedGlyph, socket.Level)
                     .Select(b => $", +{b.Percent:0.#}% to {b.Kind} nodes in radius (counted in the stat totals)"));
+                // Placement-invariant extras: they depend only on glyph choice + activation, so
+                // they inform the reader rather than the solve.
+                if (GlyphInfo.LegendaryAffix(socket.SelectedGlyph) is GlyphAffixDef legendary)
+                {
+                    delivery += GlyphInfo.LegendaryMultiplierPercentAt(socket.SelectedGlyph, socket.Level) is double percent
+                        ? $", legendary rank: ×{percent:0.#}% ({GlyphInfo.TagsLabel(legendary)})"
+                        : $", legendary rank at lvl {GlyphInfo.LegendaryUpgradeLevel}+ adds a multiplicative bonus ({GlyphInfo.TagsLabel(legendary)})";
+                }
+                if (GlyphInfo.AdditionalBonusAffix(socket.SelectedGlyph) is GlyphAffixDef extra
+                    && GlyphInfo.TagsLabel(extra) is { Length: > 0 } tags)
+                {
+                    delivery += $", additional bonus while active: {tags} (magnitude not in the data)";
+                }
             }
 
             lines.Add($"Socket on {socket.BoardName} ({glyph}): " +
@@ -1519,17 +1868,31 @@ public partial class ParagonPlannerViewModel : ObservableObject
         .ToList();
 
     /// <summary>Targets, rules, per-cell overrides and glyph goals as one immutable solver request.</summary>
-    private PlanRequest BuildPlanRequest() => new()
+    private PlanRequest BuildPlanRequest()
     {
-        Targets = _targets.ToList(),
-        NodeRules = CurrentNodeRules(),
-        AvoidCells = Cells.Where(c => c.Constraint == CellConstraint.Avoid).Select(c => c.Cell).ToList(),
-        ExcludeCells = Cells.Where(c => c.Constraint == CellConstraint.Exclude).Select(c => c.Cell).ToList(),
-        GlyphGoals = GlyphSockets
-            .Where(s => s.EnsureActive && s.SourceAttribute is not null)
-            .Select(s => new GlyphGoal(s.Socket, s.SourceAttribute!, s.RequiredStat, s.Radius, s.SelectedGlyph?.Name))
-            .ToList(),
-    };
+        var excludeCells = Cells.Where(c => c.Constraint == CellConstraint.Exclude).Select(c => c.Cell).ToList();
+        var targets = _targets.ToList();
+        // Boards are attached FOR their legendary nodes — route through every one unless the
+        // user turned the setting off or excluded the cell explicitly.
+        if (IncludeLegendaryNodes && _graph is not null)
+        {
+            targets = targets
+                .Concat(PlanSolver.LegendaryCells(_graph, excludeCells.ToHashSet()))
+                .Distinct()
+                .ToList();
+        }
+        return new PlanRequest
+        {
+            Targets = targets,
+            NodeRules = CurrentNodeRules(),
+            AvoidCells = Cells.Where(c => c.Constraint == CellConstraint.Avoid).Select(c => c.Cell).ToList(),
+            ExcludeCells = excludeCells,
+            GlyphGoals = GlyphSockets
+                .Where(s => s.EnsureActive && s.SourceAttribute is not null)
+                .Select(s => new GlyphGoal(s.Socket, s.SourceAttribute!, s.RequiredStat, s.Radius, s.SelectedGlyph?.Name))
+                .ToList(),
+        };
+    }
 
     [RelayCommand]
     private async Task Solve()
@@ -1601,7 +1964,11 @@ public partial class ParagonPlannerViewModel : ObservableObject
             ? ""
             : $" ⚠ {result.Notes[0]}" +
               (result.Notes.Count > 1 ? $" (+{result.Notes.Count - 1} more — see details below)" : "");
-        SetStatus($"{result.PointsSpent} paragon points for {_targets.Count} target(s) ({quality}) — {perBoard}.{budget}{warning}",
+        int legendaries = request.Targets.Count - _targets.Count;
+        string targetSummary = legendaries > 0
+            ? $"{_targets.Count} target(s) + {legendaries} legendary node(s)"
+            : $"{_targets.Count} target(s)";
+        SetStatus($"{result.PointsSpent} paragon points for {targetSummary} ({quality}) — {perBoard}.{budget}{warning}",
             error: budget.Length > 0 || result.Notes.Count > 0);
         return true;
     }
@@ -2394,10 +2761,16 @@ public partial class ParagonPlannerViewModel : ObservableObject
             RealisticRares = RealisticRares,
             DefenseShare = DefenseShareOf(),
             // Every socketed attribute-mapped glyph pulls — not just the ones with an
-            // activation goal — weighted by its scalar so stronger glyphs attract more stat.
+            // activation goal — weighted by its scalar so stronger glyphs attract more stat,
+            // and by the focus weight of what it converts INTO, so a glyph feeding a focused
+            // stat outranks an equal-scalar glyph feeding an off-build one.
             GlyphDeliveries = GlyphDelivery.For(GlyphSockets
                 .Where(s => s.SelectedGlyph is not null)
-                .Select(s => (s.Socket, s.SelectedGlyph!, s.Level))),
+                .Select(s => (s.Socket, s.SelectedGlyph!, s.Level)),
+                weights.Count > 0 ? weights : null),
+            // The build's current additive bucket — additive "+% damage" attrs are then valued
+            // at their marginal real contribution instead of face value.
+            AdditiveDamageFraction = BalanceDamageBuckets ? _damageProfile?.AdditiveFraction : null,
         };
     }
 
@@ -2464,6 +2837,59 @@ public partial class ParagonPlannerViewModel : ObservableObject
             : GateCrossings.PointCost(_graph, Cells.Where(c => c.IsPurchased).Select(c => c.Cell).ToList());
 
     /// <summary>Recomputes the pinned build summary and the effective stat totals panel.</summary>
+    /// <summary>
+    /// The build's damage-formula breakdown (see <see cref="DamageModel"/>): one shared additive
+    /// "+%" bucket with diminishing returns, the class main-stat multiplier, crit chance, and the
+    /// legendary-rank glyph "×%" multipliers. The tooltip carries marginal guidance so "+10%
+    /// damage" can be weighed against main stat or a full multiplier.
+    /// </summary>
+    private void RefreshDamageBalance(BuildStatsReport report, ISet<CellRef> purchased)
+    {
+        var socketed = GlyphSockets
+            .Where(s => s.SelectedGlyph is not null && purchased.Contains(s.Socket))
+            .Select(s => (s.SelectedGlyph!, s.Level))
+            .ToList();
+        string? mainStat = DamageModel.MainStatAttribute(SelectedClass);
+        var profile = DamageModel.Profile(report.Totals, SelectedClass,
+            mainStat is not null ? SheetStatOffsets().For(mainStat) : 0, socketed,
+            additiveOffset: SheetAdditiveDamage / 100.0,
+            situationalAdditiveOffset: SheetSituationalDamage / 100.0);
+        _damageProfile = profile;
+        _paragonAdditiveSlices = DamageModel.AdditiveSlices(report.Totals);
+
+        string mults = profile.GlyphMultipliers.Count == 0
+            ? "no ×% glyph mults"
+            : $"{profile.GlyphMultipliers.Count} legendary glyph mult(s)";
+        DamageSummary =
+            $"Damage: additive +{profile.AdditiveFraction * 100:0}% · " +
+            $"main stat ×{1 + profile.MainStatTotal / profile.MainStatCoefficient:0.00} · {mults} · " +
+            $"expected ×{profile.ExpectedMultiplier:0.00} (×{profile.ExpectedMultiplierUnconditional:0.00} always-on)";
+
+        string gearShare = profile.AdditiveOffsetFraction > 0
+            ? $" incl. +{profile.AdditiveOffsetFraction * 100:0}% from gear;"
+            : "";
+        var detail = new List<string>
+        {
+            $"Additive bucket +{profile.AdditiveFraction * 100:0}%{gearShare} " +
+            $"({profile.SituationalAdditiveFraction * 100:0}% of it situational) — " +
+            $"another +10% additive ≈ +{profile.MarginalAdditive(0.10) * 100:0.#}% real damage.",
+            $"Expected ×{profile.ExpectedMultiplier:0.00} assumes every condition holds " +
+            $"(vulnerable/close/crit damage …); ×{profile.ExpectedMultiplierUnconditional:0.00} is the " +
+            "always-on floor with the situational slice dropped.",
+            $"Main stat {profile.MainStatTotal:0} {ParagonDisplay.FormatAttributeName(profile.MainStatAttribute)} " +
+            $"(×{1 + profile.MainStatTotal / profile.MainStatCoefficient:0.00}) — " +
+            $"+50 more ≈ +{profile.MarginalMainStat(50) * 100:0.#}% real damage.",
+        };
+        if (profile.CritChanceBonusFraction > 0)
+            detail.Add($"Crit chance +{profile.CritChanceBonusFraction * 100:0.#}% from boards.");
+        detail.AddRange(profile.GlyphMultipliers.Select(m =>
+            $"{m.GlyphName} legendary rank ×{m.Percent:0.#}% ({m.Label}) — multiplies in full."));
+        if (profile.AdditiveOffsetFraction <= 0)
+            detail.Add("Gear's additive damage isn't entered (Character Stats → Additive dmg % / Situational dmg %): " +
+                       "the bucket is a lower bound, the additive marginal an upper bound.");
+        DamageSummaryDetail = string.Join(Environment.NewLine, detail);
+    }
+
     private void RefreshBuildSummary()
     {
         UpdateGettingStarted();
@@ -2486,6 +2912,10 @@ public partial class ParagonPlannerViewModel : ObservableObject
             AttachOrderSummary = "";
             GlyphSummary = "";
             ThresholdSummary = "";
+            DamageSummary = "";
+            DamageSummaryDetail = "";
+            _damageProfile = null;
+            _paragonAdditiveSlices = default;
             UnmetThresholdNeeds = [];
             PathEdges.Clear();
             foreach (var rule in NodeRules)
@@ -2568,6 +2998,8 @@ public partial class ParagonPlannerViewModel : ObservableObject
         ThresholdSummary = report.Thresholds.Count == 0
             ? ""
             : $"{report.ThresholdsMet} of {report.Thresholds.Count} rare-node threshold bonus(es) active";
+
+        RefreshDamageBalance(report, purchased);
 
         UnmetThresholdNeeds = report.Thresholds
             .Where(t => !t.Met)

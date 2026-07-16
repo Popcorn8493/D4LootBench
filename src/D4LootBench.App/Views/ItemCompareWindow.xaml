@@ -5,16 +5,19 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:vm="clr-namespace:D4LootBench.App.ViewModels"
+    xmlns:controls="clr-namespace:D4LootBench.App.Controls"
     mc:Ignorable="d"
     d:DataContext="{d:DesignInstance Type=vm:ItemCompareViewModel, IsDesignTimeCreatable=False}"
     Title="Item Compare — D4LootBench"
-    Width="940" Height="680"
+    Width="940" Height="720"
     MinWidth="720" MinHeight="520"
     WindowStartupLocation="CenterOwner"
     ShowInTaskbar="False"
     ResizeMode="CanResizeWithGrip">
 
     <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+
         <DataTemplate x:Key="CandidateTemplate" DataType="{x:Type vm:CandidateItemViewModel}">
             <Border BorderThickness="1" CornerRadius="4" Padding="10" Margin="4">
                 <Border.Style>
@@ -71,11 +74,11 @@
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="Slot:" VerticalAlignment="Center" FontSize="11" />
-                            <ComboBox Grid.Column="1" FontSize="11"
+                            <controls:FilteringComboBox Grid.Column="1" FontSize="11" MaxDropDownHeight="320"
                                       ItemsSource="{Binding DataContext.ItemTypeOptions, RelativeSource={RelativeSource AncestorType=Window}}"
                                       SelectedItem="{Binding SelectedItemType}"
-                                      DisplayMemberPath="Name" TextSearch.TextPath="Name"
-                                      ToolTip="The item's slot/type — finds the matching filter rule (the guide's wish list for this slot)" />
+                                      DisplayMemberPath="Name"
+                                      ToolTip="The item's slot/type — finds the matching filter rule (the guide's wish list for this slot). Type to search, e.g. 'mace'." />
                         </Grid>
                         <Grid Margin="0,0,0,6">
                             <Grid.ColumnDefinitions>
@@ -83,17 +86,17 @@
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="Unique:" VerticalAlignment="Center" FontSize="11" />
-                            <ComboBox Grid.Column="1" FontSize="11" MaxDropDownHeight="320"
+                            <controls:FilteringComboBox Grid.Column="1" FontSize="11" MaxDropDownHeight="320"
                                       ItemsSource="{Binding DataContext.UniqueOptions, RelativeSource={RelativeSource AncestorType=Window}}"
                                       SelectedItem="{Binding SelectedUnique}"
-                                      DisplayMemberPath="Name" TextSearch.TextPath="Name"
-                                      ToolTip="Pick the unique if this drop is one — with the list open, type a name to jump to it">
-                                <ComboBox.ItemsPanel>
+                                      DisplayMemberPath="Name"
+                                      ToolTip="Pick the unique if this drop is one — type any part of its name to search">
+                                <controls:FilteringComboBox.ItemsPanel>
                                     <ItemsPanelTemplate>
                                         <VirtualizingStackPanel />
                                     </ItemsPanelTemplate>
-                                </ComboBox.ItemsPanel>
-                            </ComboBox>
+                                </controls:FilteringComboBox.ItemsPanel>
+                            </controls:FilteringComboBox>
                         </Grid>
                         <DockPanel Margin="0,0,0,3">
                             <Button DockPanel.Dock="Right" Content="+" Width="20" FontSize="11" Padding="0"
@@ -111,17 +114,17 @@
                                             <ColumnDefinition Width="52" />
                                             <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
-                                        <ComboBox FontSize="11" MaxDropDownHeight="320"
+                                        <controls:FilteringComboBox FontSize="11" MaxDropDownHeight="320"
                                                   ItemsSource="{Binding DataContext.AffixOptions, RelativeSource={RelativeSource AncestorType=Window}}"
                                                   SelectedItem="{Binding SelectedAffix}"
-                                                  DisplayMemberPath="Name" TextSearch.TextPath="Name"
-                                                  ToolTip="With the list open, type an affix name to jump to it">
-                                            <ComboBox.ItemsPanel>
+                                                  DisplayMemberPath="Name"
+                                                  ToolTip="Type any part of the stat's name to search — 'crit chance' finds +Critical Strike Chance">
+                                            <controls:FilteringComboBox.ItemsPanel>
                                                 <ItemsPanelTemplate>
                                                     <VirtualizingStackPanel />
                                                 </ItemsPanelTemplate>
-                                            </ComboBox.ItemsPanel>
-                                        </ComboBox>
+                                            </controls:FilteringComboBox.ItemsPanel>
+                                        </controls:FilteringComboBox>
                                         <TextBox Grid.Column="1" Text="{Binding ValueText, UpdateSourceTrigger=PropertyChanged}"
                                                  FontSize="11" Margin="4,0,0,0"
                                                  ToolTip="The rolled value — used to compare rolls of the same affix and to weigh paragon threshold deficits. Leave empty on a GA line: the roll is fixed at max × 1.5 and fills in automatically from the other item's roll on Compare." />
@@ -147,17 +150,17 @@
                                             <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="52" />
                                         </Grid.ColumnDefinitions>
-                                        <ComboBox FontSize="11" MaxDropDownHeight="320"
+                                        <controls:FilteringComboBox FontSize="11" MaxDropDownHeight="320"
                                                   ItemsSource="{Binding DataContext.AffixOptions, RelativeSource={RelativeSource AncestorType=Window}}"
                                                   SelectedItem="{Binding SelectedAffix}"
-                                                  DisplayMemberPath="Name" TextSearch.TextPath="Name"
-                                                  ToolTip="A stat granted by Horadric transfiguration — scores like an affix but can never be a Greater Affix">
-                                            <ComboBox.ItemsPanel>
+                                                  DisplayMemberPath="Name"
+                                                  ToolTip="A stat granted by Horadric transfiguration — scores like an affix but can never be a Greater Affix. Type to search; 'All Stats' counts as all four core stats.">
+                                            <controls:FilteringComboBox.ItemsPanel>
                                                 <ItemsPanelTemplate>
                                                     <VirtualizingStackPanel />
                                                 </ItemsPanelTemplate>
-                                            </ComboBox.ItemsPanel>
-                                        </ComboBox>
+                                            </controls:FilteringComboBox.ItemsPanel>
+                                        </controls:FilteringComboBox>
                                         <TextBox Grid.Column="1" Text="{Binding ValueText, UpdateSourceTrigger=PropertyChanged}"
                                                  FontSize="11" Margin="4,0,0,0"
                                                  ToolTip="The transfigured stat's value" />
@@ -180,7 +183,82 @@
                    Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
                    FontSize="11" Margin="0,0,0,4" />
         <TextBlock DockPanel.Dock="Top" Text="{Binding StatusText}" TextWrapping="Wrap"
-                   FontSize="11" Margin="0,0,0,8" />
+                   FontSize="11" Margin="0,0,0,4" />
+
+        <Expander DockPanel.Dock="Top" Margin="0,0,0,8"
+                  IsExpanded="{Binding UseCustomReference, Mode=OneWay}">
+            <Expander.Header>
+                <TextBlock Text="Reference — what the items are judged against" FontWeight="SemiBold" FontSize="11" />
+            </Expander.Header>
+            <StackPanel Margin="18,4,4,0">
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                    <RadioButton Content="The loaded filter (the guide's wish list)" FontSize="11"
+                                 IsChecked="{Binding UseLoadedFilter}"
+                                 ToolTip="Score affixes by the per-slot priority order of the loaded filter's rules" />
+                    <RadioButton Content="My own priority list" FontSize="11" Margin="16,0,0,0"
+                                 IsChecked="{Binding UseCustomReference}"
+                                 ToolTip="Score affixes by your own hand-picked priorities — saved automatically for next time" />
+                </StackPanel>
+                <StackPanel Visibility="{Binding UseCustomReference, Converter={StaticResource BoolToVis}}">
+                    <TextBlock Text="Affixes in priority order (top weighs most; applies to both items regardless of slot):"
+                               FontSize="11" Foreground="#888" Margin="0,0,0,3" />
+                    <ItemsControl ItemsSource="{Binding ReferenceRows}" MaxWidth="560" HorizontalAlignment="Left">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type vm:ReferenceRowViewModel}">
+                                <Grid Margin="0,0,0,3">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="360" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <controls:FilteringComboBox FontSize="11" MaxDropDownHeight="320"
+                                              ItemsSource="{Binding DataContext.AffixOptions, RelativeSource={RelativeSource AncestorType=Window}}"
+                                              SelectedItem="{Binding SelectedAffix}"
+                                              DisplayMemberPath="Name"
+                                              ToolTip="Type any part of the stat's name to search">
+                                        <controls:FilteringComboBox.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <VirtualizingStackPanel />
+                                            </ItemsPanelTemplate>
+                                        </controls:FilteringComboBox.ItemsPanel>
+                                    </controls:FilteringComboBox>
+                                    <CheckBox Grid.Column="1" IsChecked="{Binding GreaterWanted}" Content="GA wanted"
+                                              FontSize="11" VerticalAlignment="Center" Margin="6,0,0,0"
+                                              ToolTip="A Greater Affix here is exactly what you're hunting" />
+                                    <Button Grid.Column="2" Content="▲" Width="20" FontSize="9" Padding="0" Margin="6,0,0,0"
+                                            Command="{Binding DataContext.MoveReferenceRowUpCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            CommandParameter="{Binding}" ToolTip="Raise this affix's priority" />
+                                    <Button Grid.Column="3" Content="▼" Width="20" FontSize="9" Padding="0" Margin="2,0,0,0"
+                                            Command="{Binding DataContext.MoveReferenceRowDownCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            CommandParameter="{Binding}" ToolTip="Lower this affix's priority" />
+                                    <Button Grid.Column="4" Content="✕" Width="20" FontSize="9" Padding="0" Margin="2,0,0,0"
+                                            Command="{Binding DataContext.RemoveReferenceRowCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            CommandParameter="{Binding}" ToolTip="Remove this affix from the list" />
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                        <Button Content="+ Add affix" Padding="8,1" FontSize="11"
+                                Command="{Binding AddReferenceRowCommand}" />
+                        <TextBlock Text="Hunting unique:" FontSize="11" VerticalAlignment="Center" Margin="16,0,4,0" />
+                        <controls:FilteringComboBox Width="240" FontSize="11" MaxDropDownHeight="320"
+                                  ItemsSource="{Binding UniqueOptions}"
+                                  SelectedItem="{Binding SelectedReferenceUnique}"
+                                  DisplayMemberPath="Name"
+                                  ToolTip="A candidate that IS this unique gets the target-unique bonus">
+                            <controls:FilteringComboBox.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <VirtualizingStackPanel />
+                                </ItemsPanelTemplate>
+                            </controls:FilteringComboBox.ItemsPanel>
+                        </controls:FilteringComboBox>
+                    </StackPanel>
+                </StackPanel>
+            </StackPanel>
+        </Expander>
 
         <DockPanel DockPanel.Dock="Bottom" Margin="0,10,0,0">
             <Button DockPanel.Dock="Right" Content="Compare" Width="110" Height="28"

@@ -9,5 +9,6 @@ public partial class ItemCompareWindow : Window
     {
         InitializeComponent();
         DataContext = viewModel;
+        Closed += (_, _) => viewModel.PersistReference();
     }
 }

@@ -48,15 +48,28 @@ public sealed record ParagonProject
     /// <summary>Buy rares by threshold attainability first (see MaximizeFocus.RealisticRares).</summary>
     public bool RealisticRares { get; init; }
 
+    /// <summary>Value additive "+% damage" at its marginal real contribution (default on; see DamageModel).</summary>
+    public bool BalanceDamageBuckets { get; init; } = true;
+
     /// <summary>Share of leftover points reserved for defensive stats (MaximizeFocus.DefenseShare).</summary>
     public double DefenseShare { get; init; }
 
     public bool ActivateThresholds { get; init; }
+
+    /// <summary>Solve always routes through every board's legendary node (default on).</summary>
+    public bool IncludeLegendaryNodes { get; init; } = true;
+
     public int TotalPoints { get; init; }
     public double SheetStrength { get; init; }
     public double SheetIntelligence { get; init; }
     public double SheetWillpower { get; init; }
     public double SheetDexterity { get; init; }
+
+    /// <summary>Gear ALWAYS-ON "+X% damage" sum as a percent (350 = +350%) — seeds the damage-bucket model.</summary>
+    public double SheetAdditiveDamage { get; init; }
+
+    /// <summary>Gear conditional "+X% damage" sum as a percent (vulnerable/close/crit damage …).</summary>
+    public double SheetSituationalDamage { get; init; }
 }
 
 public static class ParagonProjectSerializer

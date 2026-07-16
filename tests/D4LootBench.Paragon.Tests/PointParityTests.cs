@@ -1,3 +1,4 @@
+using D4LootBench.Paragon.Import;
 using D4LootBench.Paragon.Models;
 using D4LootBench.Paragon.Solver;
 using Shouldly;
@@ -57,6 +58,7 @@ public class PointParityTests
         result.A.AllocatedCells.ShouldContain(new CellRef(0, 2, 0)); // b bought
         result.A.AllocatedCells.ShouldContain(new CellRef(0, 3, 0)); // c bought
         result.Notes.Count.ShouldBe(1);
+        result.Notes[0].ShouldContain("Current spends 1 point(s), Import 4"); // originals stay visible
         result.Notes[0].ShouldContain("granted 2 point(s)");
         result.Notes[0].ShouldContain("lost its 1 least-valued node(s)");
     }
@@ -124,6 +126,23 @@ public class PointParityTests
         result.A.AllocatedCells.ShouldBe(small.AllocatedCells);
         result.B.AllocatedCells.ShouldBe(large.AllocatedCells);
         result.Notes.Single().ShouldContain("1 point(s) of difference remain");
+    }
+
+    [Fact]
+    public void WithGlyphLevels_relevels_known_glyphs_and_falls_back_for_the_rest()
+    {
+        var defs = new Dictionary<char, ParagonNodeDef> { ['a'] = Magic("wa", "Dexterity_Core", 5) };
+        var build = new BuildSnapshot("x",
+            ParagonLayout.Single(SyntheticBoards.Board(["Sa"], defs, "wboard")),
+            [new CellRef(0, 1, 0)],
+            [new MaxrollGlyphAssignment(0, "glyph_x", 100), new MaxrollGlyphAssignment(1, "glyph_y", null)]);
+
+        var releveled = BuildComparer.WithGlyphLevels(build,
+            new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase) { ["GLYPH_X"] = 46 },
+            fallbackLevel: 21);
+
+        releveled.Glyphs.Single(g => g.GlyphInternalName == "glyph_x").Level.ShouldBe(46);
+        releveled.Glyphs.Single(g => g.GlyphInternalName == "glyph_y").Level.ShouldBe(21);
     }
 
     [Fact]

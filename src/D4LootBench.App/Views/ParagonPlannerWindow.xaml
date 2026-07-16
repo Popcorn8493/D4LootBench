@@ -357,6 +357,9 @@
                         </Button>
                         <TextBlock Text="{Binding GlyphSummary}" Style="{StaticResource SummaryLine}" />
                         <TextBlock Text="{Binding ThresholdSummary}" Style="{StaticResource SummaryLine}" />
+                        <!-- Damage-bucket balance; the tooltip carries the marginal-value guidance -->
+                        <TextBlock Text="{Binding DamageSummary}" Style="{StaticResource SummaryLine}"
+                                   ToolTip="{Binding DamageSummaryDetail}" />
                         <!-- Many unmet thresholds must not push the tabs off-screen — cap and scroll -->
                         <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="96"
                                       PreviewMouseWheel="InnerScroll_PreviewMouseWheel">
@@ -376,6 +379,27 @@
                     <TabItem Header="Build">
                         <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="10,8">
+                        <TextBlock Text="Character" FontWeight="SemiBold" Margin="0,0,0,4" />
+                        <TextBlock Text="Save your character once (level, stats, point pool, glyph levels) and imports stop overwriting them — the active character's real values are re-applied after every import and project open."
+                                   FontSize="11" Foreground="#888" TextWrapping="Wrap" Margin="0,0,0,4" />
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,3">
+                            <TextBlock Text="Active" Width="66" VerticalAlignment="Center" FontSize="11" />
+                            <ComboBox ItemsSource="{Binding Characters}" SelectedItem="{Binding SelectedCharacter}"
+                                      DisplayMemberPath="Name" Width="110" FontSize="11"
+                                      ToolTip="Selecting a character applies its stats, point pool and glyph levels, and keeps re-applying them after imports. Clear the selection to plan without one." />
+                            <Button Command="{Binding DeleteCharacterCommand}" Content="Delete" Padding="8,1" Margin="6,0,0,0" FontSize="11"
+                                    ToolTip="Remove the selected character from the library" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,3">
+                            <TextBlock Text="Name" Width="66" VerticalAlignment="Center" FontSize="11" />
+                            <TextBox Text="{Binding CharacterName, UpdateSourceTrigger=PropertyChanged}" Width="110" FontSize="11" />
+                            <TextBlock Text="Level" VerticalAlignment="Center" FontSize="11" Margin="8,0,4,0" />
+                            <TextBox Text="{Binding CharacterLevel, UpdateSourceTrigger=PropertyChanged}" Width="36" FontSize="11" />
+                        </StackPanel>
+                        <Button Command="{Binding SaveCharacterCommand}" Content="Save Character" Padding="10,3" Margin="0,2,0,4" HorizontalAlignment="Left"
+                                ToolTip="Save (or update) this character: class, level, sheet stats, point pool, and the level of every currently socketed glyph. Glyph levels accumulate across saves — glyphs recorded earlier are kept even when not currently socketed." />
+
+                        <Separator Margin="0,10,0,8" />
                         <TextBlock Text="Character Stats" FontWeight="SemiBold" Margin="0,0,0,4" />
                             <StackPanel>
                                 <TextBlock Text="Core stats from everything except paragon (level, gear, item bonuses). Rare-node threshold bonuses check the character TOTAL — these are added to the paragon-provided stat."
@@ -403,6 +427,20 @@
                                     <TextBox Text="{Binding TotalPoints, UpdateSourceTrigger=PropertyChanged}" Width="44" FontSize="11"
                                              ToolTip="Your total paragon points (300 from levels + seasonal rank rewards)" />
                                 </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,3,0,0">
+                                    <TextBlock Text="Additive dmg %" Width="86" VerticalAlignment="Center" FontSize="11" />
+                                    <TextBox Text="{Binding SheetAdditiveDamage, UpdateSourceTrigger=PropertyChanged}" Width="44" FontSize="11"
+                                             ToolTip="The ALWAYS-ON '+X% damage' affixes on your GEAR — no condition attached (enter 350 for +350%). Everything shares one additive bucket with the paragon nodes, so this seeds the Damage line's saturation math and the 'Balance damage buckets' valuation with your real bucket instead of the paragon-only slice. Conditional affixes go in the Situational field below." />
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,3,0,0">
+                                    <TextBlock Text="Situational dmg %" Width="86" VerticalAlignment="Center" FontSize="11" TextTrimming="CharacterEllipsis"
+                                               ToolTip="The conditional '+X% damage' slice of the additive bucket — see the field's tooltip." />
+                                    <TextBox Text="{Binding SheetSituationalDamage, UpdateSourceTrigger=PropertyChanged}" Width="44" FontSize="11"
+                                             ToolTip="The CONDITIONAL '+X% damage' affixes on your gear: vulnerable, close/distant, crit damage tempers, 'damage while/vs …'. Same additive bucket for saturation, but the Damage line reports it separately — expected damage shows a full-uptime ceiling and an always-on floor without this slice." />
+                                </StackPanel>
+                                <Button Content="From stat sheet…" Command="{Binding ScanSheetDamageCommand}"
+                                        HorizontalAlignment="Left" Margin="0,4,0,0" Padding="8,2" FontSize="11"
+                                        ToolTip="Fill both fields from the in-game stats details panel (Offense section): snip it with Win+Shift+S, then click. OCR reads the rows, always-on and conditional lines are split (built-in bases like crit 50% / vulnerable 20% excluded), the planner build's own paragon additive is subtracted so it isn't counted twice, and you review every row before anything is applied — values are editable, rows can be added manually, and snipping a single stat's hover tooltip ('You have +X% of this stat from items and Paragon') reads in its exact additive share. Works with an empty clipboard too, for fully manual entry." />
                             </StackPanel>
 
                         <Separator Margin="0,10,0,8" />
@@ -622,6 +660,8 @@
                                 <CheckBox IsChecked="{Binding RealisticRares}" Content="Rank rares by attainable thresholds" FontSize="11" Margin="18,0,0,4"
                                           IsEnabled="{Binding PreferRareNodes}"
                                           ToolTip="Buy 'good' rares first: threshold bonuses already met, then ones the boards can realistically still supply the stat for, then plain rares — rares whose bonus is out of reach come last. Requirements count your Character Stats (level/gear)." />
+                                <CheckBox IsChecked="{Binding BalanceDamageBuckets}" Content="Balance damage buckets" FontSize="11" Margin="0,0,0,4"
+                                          ToolTip="D4 sums every '+X% damage' stat (vulnerable, close, vs elites, crit damage …) into ONE additive bucket, so stacking it has diminishing returns. When on, the spend and placement analysis value additive damage at its real marginal contribution — a saturated bucket stops outcompeting main stat, crit chance, and utility. The Build Summary's Damage line shows the current bucket and marginal values." />
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
                                     <TextBlock Text="Survivability:" FontSize="11" VerticalAlignment="Center" Margin="0,0,5,0" />
                                     <ComboBox ItemsSource="{x:Static vm:ParagonPlannerViewModel.SurvivabilityLevels}"
@@ -630,6 +670,8 @@
                                 </StackPanel>
                                 <CheckBox IsChecked="{Binding ActivateThresholds}" Content="Activate rare-node thresholds" FontSize="11" Margin="0,0,0,4"
                                           ToolTip="Buy whatever core stat unmet rare-node threshold bonuses are short of (smallest deficit first) before spending on focused stats. Requirements check the character TOTAL — enter your level/gear stats under Character Stats. Warns when the boards can't supply enough." />
+                                <CheckBox IsChecked="{Binding IncludeLegendaryNodes}" Content="Always route to legendary nodes" FontSize="11" Margin="0,0,0,4"
+                                          ToolTip="Solve and Re-analyze treat every board's legendary node as a target — boards are attached FOR their legendary power, so the optimal path always reaches it. Turn off only for stat-stick boards you attached without wanting the legendary. Explicitly excluded legendary cells are respected." />
                                 <Button Command="{Binding MaximizePointsCommand}" Content="Spend Remaining Points" Padding="10,3" Margin="0,2,0,0"
                                         ToolTip="Grow the current path with the leftover points; no stats selected means the four core stats" />
 

@@ -13,7 +13,8 @@ public class GlyphDeliveryTests
 {
     private static readonly PlanRequest EmptyRequest = new() { Targets = [] };
 
-    private static ParagonGlyphDef MappedGlyph(string snoId, double scalar) => new()
+    private static ParagonGlyphDef MappedGlyph(
+        string snoId, double scalar, string destination = "Damage_Percent") => new()
     {
         SnoId = snoId,
         InternalName = snoId,
@@ -25,7 +26,7 @@ public class GlyphDeliveryTests
                 AttributeMaps =
                 [
                     new GlyphAttributeMap
-                        { SourceAttribute = "Dexterity_Core", DestinationAttribute = "Damage_Percent" },
+                        { SourceAttribute = "Dexterity_Core", DestinationAttribute = destination },
                 ],
                 StartingBonusScalar = scalar,
             },
@@ -58,6 +59,26 @@ public class GlyphDeliveryTests
         deliveries.Single(d => d.Socket.BoardSlot == 0).Weight.ShouldBe(1.5, 0.001);
         deliveries.Single(d => d.Socket.BoardSlot == 1).Weight.ShouldBe(0.5, 0.001);
         deliveries.ShouldAllBe(d => d.SourceAttribute == "Dexterity_Core" && d.Radius == 5);
+    }
+
+    [Fact]
+    public void Destination_weights_scale_the_pull_by_build_relevance()
+    {
+        // Equal scalars — only what each glyph converts INTO differs. The focused destination
+        // pulls at its focus weight; the unfocused one stays neutral (never muted).
+        var focused = MappedGlyph("focused", 100, "Vulnerable_Health_Damage_Bonus");
+        var offBuild = MappedGlyph("off-build", 100, "Damage_Bonus_To_Near");
+        var weights = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase)
+            { ["Vulnerable_Health_Damage_Bonus"] = 3.0 };
+
+        var deliveries = GlyphDelivery.For(
+        [
+            (new CellRef(0, 1, 1), focused, 50),
+            (new CellRef(1, 1, 1), offBuild, 50),
+        ], weights);
+
+        deliveries.Single(d => d.Socket.BoardSlot == 0).Weight.ShouldBe(3.0, 0.001);
+        deliveries.Single(d => d.Socket.BoardSlot == 1).Weight.ShouldBe(1.0, 0.001);
     }
 
     [Fact]

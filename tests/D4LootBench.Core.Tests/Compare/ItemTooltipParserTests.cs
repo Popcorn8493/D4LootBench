@@ -97,6 +97,33 @@ public sealed class ItemTooltipParserTests
     }
 
     [Fact]
+    public void StatLineWithOcrDroppedPlusIsStillAStat_ButBaseLinesAreNot()
+    {
+        var parsed = ItemTooltipParser.Parse(
+        [
+            "CRUSHER",
+            "Ancestral Legendary Two-Handed Mace",
+            "925 Item Power",
+            "1,391 Damage Per Second",
+            "[1,090 - 1,674] Damage per Hit",
+            "1.10 Attacks per Second",
+            "165 All Stats [150 - 180]",              // OCR lost the '+'
+            "1,076 Maximum Life",                      // OCR lost the '+'
+            "+7.5% Critical Strike Chance [6.5 -",     // OCR wrapped the roll range mid-bracket
+            "Requires Level 60",
+        ]);
+
+        parsed.SlotText.ShouldBe("Two-Handed Mace");
+        parsed.Stats.Count.ShouldBe(3);
+        parsed.Stats[0].StatText.ShouldBe("All Stats");
+        parsed.Stats[0].Value.ShouldBe(165);
+        parsed.Stats[1].StatText.ShouldBe("Maximum Life");
+        parsed.Stats[1].Value.ShouldBe(1076);
+        parsed.Stats[2].StatText.ShouldBe("Critical Strike Chance");
+        parsed.Stats[2].Value.ShouldBe(7.5);
+    }
+
+    [Fact]
     public void MissingRarityLineFallsBackToFirstLineAsName()
     {
         var parsed = ItemTooltipParser.Parse(["SOMETHING OCR MANGLED", "+30 Dexterity"]);

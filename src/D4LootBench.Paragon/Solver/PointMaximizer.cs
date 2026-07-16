@@ -46,6 +46,17 @@ public sealed record MaximizeFocus(
     /// </summary>
     public IReadOnlyList<GlyphDelivery>? GlyphDeliveries { get; init; }
 
+    /// <summary>
+    /// The build's current additive damage bucket as a fraction (0.85 = +85%), or null for no
+    /// bucket damping. D4 sums ALL "+% damage" stats into ONE additive bucket (see
+    /// <see cref="DamageModel"/>), so their marginal real value is 1/(1 + bucket) — when set,
+    /// additive-damage attributes (and the glyph delivery term, whose destinations live in that
+    /// bucket) are valued at that marginal instead of face value, and a saturated bucket stops
+    /// outcompeting main stat, crit chance, and utility. Sampled once at spend start — the few
+    /// percent the spend itself adds doesn't meaningfully move the factor.
+    /// </summary>
+    public double? AdditiveDamageFraction { get; init; }
+
     /// <summary>Attributes that keep the character alive — the defense basket's membership.</summary>
     public static bool IsDefensive(string attribute)
     {
@@ -174,9 +185,17 @@ public static class PointMaximizer
             }
         }
 
+        // Bucket damping: additive-damage attrs are valued at their marginal real contribution.
+        double additiveDamp = focus.AdditiveDamageFraction is double bucket ? 1.0 / (1.0 + bucket) : 1.0;
+        double DampOf(string attribute) =>
+            additiveDamp < 1.0 && DamageModel.Classify(attribute) == DamageBucket.AdditiveDamage
+                ? additiveDamp
+                : 1.0;
+
         // Glyph delivery: a point of source stat inside an active glyph's radius is worth its raw
         // value AND what the glyph converts it into — count it again for each covering glyph,
-        // scaled by that glyph's weight (activation math elsewhere stays raw).
+        // scaled by that glyph's weight (activation math elsewhere stays raw). Deliveries land in
+        // the additive damage bucket, so the term damps with it.
         var glyphBonus = new double[n];
         foreach (var delivery in deliveries)
         {
@@ -192,7 +211,7 @@ public static class PointMaximizer
                 {
                     if (!a.IsThresholdBonus && a.Value is double value
                         && string.Equals(a.Attribute, delivery.SourceAttribute, StringComparison.OrdinalIgnoreCase))
-                        glyphBonus[v] += value / (mean.Sum / mean.Count) * delivery.Weight;
+                        glyphBonus[v] += value / (mean.Sum / mean.Count) * delivery.Weight * additiveDamp;
                 }
             }
         }
@@ -210,7 +229,7 @@ public static class PointMaximizer
                     continue;
                 if (!attributeMean.TryGetValue(a.Attribute, out var mean))
                     continue; // the attribute exists only on excluded cells
-                total += value * factor / (mean.Sum / mean.Count) * WeightOf(a.Attribute);
+                total += value * factor / (mean.Sum / mean.Count) * WeightOf(a.Attribute) * DampOf(a.Attribute);
             }
             return total;
         }

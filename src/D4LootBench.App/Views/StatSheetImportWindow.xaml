@@ -1,0 +1,76 @@
+<Window
+    x:Class="D4LootBench.App.Views.StatSheetImportWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Gear Damage from the Stat Sheet"
+    Height="580" Width="760" MinHeight="420" MinWidth="640"
+    WindowStartupLocation="CenterOwner"
+    ShowInTaskbar="False">
+
+    <DockPanel Margin="12">
+        <TextBlock DockPanel.Dock="Top" Margin="0,0,0,8" TextWrapping="Wrap"
+                   Text="Each row feeds Additive (always-on), Situational (conditional), or neither — the defaults are guesses, so re-bucket or EDIT the 'Adds %' number where they're wrong (hover a row for why it landed where it did). Built-in bases (crit 50%, vulnerable 20%, overpower 50%) are pre-subtracted, but panel headlines also fold in multiplicative ×% sources: for the exact additive share of a stat, hover it in game, snip the tooltip ('You have +X% of this stat from items and Paragon'), and use Scan clipboard again — that line is precise and replaces the row." />
+        <CheckBox x:Name="SubtractParagon" DockPanel.Dock="Top" Margin="0,0,0,8"
+                  Checked="OnRecompute" Unchecked="OnRecompute">
+            <TextBlock x:Name="SubtractLabel" TextWrapping="Wrap" />
+        </CheckBox>
+        <DockPanel DockPanel.Dock="Top" Margin="0,0,0,6" LastChildFill="True">
+            <Button DockPanel.Dock="Left" Content="Add row" Padding="8,2" Margin="0,0,8,0" Click="OnAddRow"
+                    ToolTip="Add a manual entry — type the stat, the +% it adds, and pick its field." />
+            <Button DockPanel.Dock="Left" Content="Scan clipboard again" Padding="8,2" Click="OnScanClipboard"
+                    ToolTip="Snip another screenshot (Win+Shift+S) and read it in: the stats panel adds/updates its rows; a single stat's hover tooltip replaces that stat's row with the exact 'items and Paragon' value." />
+            <TextBlock x:Name="ScanStatus" Margin="10,0,0,0" VerticalAlignment="Center"
+                       FontSize="11" Foreground="#888" TextTrimming="CharacterEllipsis" />
+        </DockPanel>
+        <DockPanel DockPanel.Dock="Bottom" Margin="0,10,0,0">
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Bottom">
+                <Button Content="Apply" Width="80" Margin="8,0,8,0" IsDefault="True" Click="OnApply" />
+                <Button Content="Cancel" Width="80" IsCancel="True" />
+            </StackPanel>
+            <TextBlock x:Name="Totals" FontWeight="SemiBold" TextWrapping="Wrap" VerticalAlignment="Center" />
+        </DockPanel>
+        <ListView x:Name="RowList" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+            <ListView.ItemContainerStyle>
+                <Style TargetType="ListViewItem">
+                    <Setter Property="ToolTip" Value="{Binding Note}" />
+                    <Setter Property="ToolTipService.InitialShowDelay" Value="200" />
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                </Style>
+            </ListView.ItemContainerStyle>
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn Header="Field" Width="112">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <ComboBox Width="98" FontSize="11"
+                                          SelectedIndex="{Binding BucketIndex, Mode=TwoWay}">
+                                    <ComboBoxItem Content="Additive" />
+                                    <ComboBoxItem Content="Situational" />
+                                    <ComboBoxItem Content="Ignore" />
+                                </ComboBox>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="Stat" Width="270">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBox Text="{Binding Label, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                         FontSize="11" BorderThickness="0" Background="Transparent" />
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="Sheet" Width="80" DisplayMemberBinding="{Binding SheetText}" />
+                    <GridViewColumn Header="Adds %" Width="90">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBox Text="{Binding ContributionText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                         FontSize="11" Width="70" />
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="" Width="90" DisplayMemberBinding="{Binding BaseText}" />
+                </GridView>
+            </ListView.View>
+        </ListView>
+    </DockPanel>
+</Window>
