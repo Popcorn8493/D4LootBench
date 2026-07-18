@@ -62,6 +62,9 @@
                     <Button Content="&#xEA99;" Command="{Binding RemoveDuplicateRulesCommand}"
                             ToolTip="Clean up — find and remove rules that duplicate an earlier rule"
                             Width="26" Height="22" FontSize="13" FontFamily="Segoe MDL2 Assets" />
+                    <Button Content="Combine" Command="{Binding CombineRulesCommand}"
+                            ToolTip="Combine rules that differ only in one item type, unique, or affix list (the merge suggestions Validate reports)"
+                            Height="22" Padding="6,0" />
                 </ToolBar>
             </ToolBarTray>
 

@@ -632,7 +632,8 @@ public partial class ParagonPlannerViewModel : ObservableObject
         // Keep glyph picks for board slots that survive the layout change (e.g. a rotation).
         var previousGlyphs = GlyphSockets.ToDictionary(
             s => s.Socket.BoardSlot,
-            s => (Glyph: s.SelectedGlyph?.InternalName, s.Level, s.RequiredStat, s.EnsureActive, s.HighlightRadius));
+            s => (Glyph: s.SelectedGlyph?.InternalName, s.Level, s.RequiredStat, s.EnsureActive,
+                s.HighlightRadius, s.IsGlyphLocked, s.IsBoardLocked));
         GlyphSockets.Clear();
         foreach (var vertex in _graph.Vertices
                      .Where(v => v.Node.Kind == ParagonNodeKind.GlyphSocket)
@@ -652,6 +653,8 @@ public partial class ParagonPlannerViewModel : ObservableObject
                 socket.RequiredStat = previous.RequiredStat;
                 socket.EnsureActive = previous.EnsureActive && socket.SelectedGlyph is not null;
                 socket.HighlightRadius = previous.HighlightRadius;
+                socket.IsGlyphLocked = previous.IsGlyphLocked;
+                socket.IsBoardLocked = previous.IsBoardLocked;
             }
             socket.PropertyChanged += OnGlyphSocketChanged;
             GlyphSockets.Add(socket);
@@ -767,8 +770,8 @@ public partial class ParagonPlannerViewModel : ObservableObject
         string text = Clipboard.ContainsText() ? Clipboard.GetText().Trim() : "";
         if (string.IsNullOrWhiteSpace(text))
         {
-            SetStatus("Copy a Maxroll variant code, a maxroll.gg or mobalytics.gg URL, " +
-                      "or a build page's HTML to the clipboard first.", error: true);
+            SetStatus("Copy a Maxroll variant code, a maxroll.gg, mobalytics.gg, or d4builds.gg " +
+                      "URL, or a build page's HTML to the clipboard first.", error: true);
             return null;
         }
 
@@ -780,7 +783,10 @@ public partial class ParagonPlannerViewModel : ObservableObject
                     return await ImportMobalyticsBuildsAsync(text, allowMultiple);
                 if (text.Contains("maxroll.gg", StringComparison.OrdinalIgnoreCase))
                     return await ImportMaxrollUrlAsync(text, allowMultiple);
-                SetStatus("The clipboard URL is neither a maxroll.gg nor a mobalytics.gg page.", error: true);
+                if (text.Contains("d4builds.gg", StringComparison.OrdinalIgnoreCase))
+                    return await ImportD4BuildsUrlAsync(text, allowMultiple);
+                SetStatus("The clipboard URL is not a maxroll.gg, mobalytics.gg, or d4builds.gg page.",
+                    error: true);
                 return null;
             }
             if (text.StartsWith('['))
@@ -898,6 +904,53 @@ public partial class ParagonPlannerViewModel : ObservableObject
             var build = MaxrollParagonCodec.ToLayout(variants[index].Entries, ParagonDatabase.BoardsByInternalName);
             ComposedGraph.Build(build.Layout);
             builds.Add(new ParagonImport(build, $"Maxroll '{variants[index].Title}'"));
+        }
+        return builds;
+    }
+
+    /// <summary>
+    /// d4builds.gg pages render client-side from a public Firestore document, so the build's
+    /// uuid from the URL fetches every variant's paragon setup without touching the page itself.
+    /// </summary>
+    private async Task<IReadOnlyList<ParagonImport>?>
+        ImportD4BuildsUrlAsync(string url, bool allowMultiple)
+    {
+        if (!D4BuildsImporter.TryParseBuildUrl(url, out string buildId))
+        {
+            // Curated meta builds use a pretty slug; its prerendered page-data names the uuid.
+            if (!D4BuildsImporter.TryParseBuildSlugUrl(url, out string slug))
+            {
+                SetStatus("The d4builds.gg link has no build id — copy a build page's URL " +
+                          "(d4builds.gg/builds/…).", error: true);
+                return null;
+            }
+            SetStatus("Resolving the d4builds.gg build…");
+            buildId = D4BuildsImporter.ExtractBuildId(
+                await FetchPageAsync(string.Format(D4BuildsImporter.PageDataApiFormat, slug)));
+        }
+
+        SetStatus("Fetching the d4builds.gg build…");
+        string json = await FetchPageAsync(string.Format(D4BuildsImporter.BuildDocumentApiFormat, buildId));
+        var variants = D4BuildsImporter.ExtractVariants(json);
+
+        IReadOnlyList<int> indices = [0];
+        if (variants.Count > 1)
+        {
+            indices = PickIndices(
+                variants.Select(v => $"{v.Title} — {v.Boards.Count} board(s)").ToList(), allowMultiple);
+            if (indices.Count == 0)
+            {
+                SetStatus("Import cancelled.");
+                return null;
+            }
+        }
+
+        var builds = new List<ParagonImport>();
+        foreach (int index in indices)
+        {
+            var build = D4BuildsImporter.ToBuild(variants[index], ParagonDatabase.Data);
+            ComposedGraph.Build(build.Layout);
+            builds.Add(new ParagonImport(build, $"d4builds '{variants[index].Title}'"));
         }
         return builds;
     }
@@ -1582,7 +1635,11 @@ public partial class ParagonPlannerViewModel : ObservableObject
         Glyphs = GlyphSockets
             .Where(s => s.SelectedGlyph is not null)
             .Select(s => new ParagonProjectGlyph(
-                s.Socket.BoardSlot, s.SelectedGlyph!.InternalName, s.Level, s.RequiredStat, s.EnsureActive))
+                s.Socket.BoardSlot, s.SelectedGlyph!.InternalName, s.Level, s.RequiredStat, s.EnsureActive)
+            {
+                LockGlyph = s.IsGlyphLocked,
+                LockBoard = s.IsBoardLocked,
+            })
             .ToList(),
         NodeRules = NodeRules
             .Where(r => r.Mode != NodeRuleMode.Allow)
@@ -1671,6 +1728,8 @@ public partial class ParagonPlannerViewModel : ObservableObject
             socket.Level = glyph.Level;
             socket.RequiredStat = glyph.RequiredStat;
             socket.EnsureActive = glyph.EnsureActive && socket.SelectedGlyph is not null;
+            socket.IsGlyphLocked = glyph.LockGlyph;
+            socket.IsBoardLocked = glyph.LockBoard;
         }
 
         var ruleByKey = project.NodeRules.ToDictionary(r => r.GroupKey, StringComparer.OrdinalIgnoreCase);
@@ -2079,6 +2138,106 @@ public partial class ParagonPlannerViewModel : ObservableObject
         SetStatus($"Placement analysis complete — {suggestions.Count} suggestion(s).");
     }
 
+    /// <summary>
+    /// Searches SEQUENCES of placement changes — rotations, board swaps, leaf re-attachments,
+    /// glyph moves, and glyph substitutions — and presents the top final setups, so the user
+    /// jumps straight to an end state instead of applying one suggestion at a time. Each option
+    /// applies all its steps as one composite; Revert restores the current setup.
+    /// </summary>
+    [RelayCommand]
+    private async Task DeepAnalyzePlacement()
+    {
+        if (_graph is null || _layout is null)
+            return;
+        var request = BuildPlanRequest();
+        if (request.Targets.Count == 0 && request.GlyphGoals.Count == 0)
+        {
+            SetStatus("Mark targets (or enable a glyph activation goal) before analyzing placement.", error: true);
+            return;
+        }
+
+        var layout = _layout;
+        var placedNames = _placedBoards.Select(b => b.Board.InternalName)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var spareBoards = ParagonDatabase.BoardsForClass(SelectedClass)
+            .Where(b => b.BoardIndex != 0 && !placedNames.Contains(b.InternalName))
+            .ToList();
+        var socketedGlyphs = GlyphSockets
+            .Where(s => s.SelectedGlyph is not null)
+            .Select(s => new PipelineGlyph(s.Socket.BoardSlot, s.SelectedGlyph!, s.Level))
+            .ToList();
+        // Substitution candidates: every class glyph not already socketed — recommendations are
+        // deliberately independent of what the player has leveled (each step says which level
+        // the numbers assume).
+        var socketedNames = socketedGlyphs.Select(g => g.Glyph.InternalName)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var spareGlyphs = ParagonDatabase.GlyphsForClass(SelectedClass)
+            .Where(g => !socketedNames.Contains(g.InternalName))
+            .ToList();
+        var pipeline = new PlacementPipeline(
+            TotalPoints,
+            CurrentMaximizeFocus(),
+            new ThresholdContext(ParagonDatabase.Data, SelectedClass, SheetStatOffsets()),
+            socketedGlyphs);
+
+        // Locks from the Glyphs tab: required boards never swap out, required glyphs are never
+        // substituted away (both may still rotate/re-attach/re-socket — they stay in the build).
+        var lockedBoards = GlyphSockets.Where(s => s.IsBoardLocked)
+            .Select(s => s.Socket.BoardSlot).ToHashSet();
+        var lockedGlyphs = GlyphSockets.Where(s => s.IsGlyphLocked && s.SelectedGlyph is not null)
+            .Select(s => s.Socket.BoardSlot).ToHashSet();
+
+        using var busy = BeginBusy();
+        SetStatus("Deep placement search — four passes (current glyph levels; all glyphs at level 51; " +
+                  "all at level 100; keep current glyphs) over sequences of rotations, swaps, " +
+                  "re-attachments, glyph moves, and substitutions at full point spend. " +
+                  "This can take a minute…");
+        var passes = await Task.Run(() =>
+        {
+            IReadOnlyList<PlacementPlan> Run(PlanRequest req, PlacementPipeline pipe,
+                IReadOnlyList<ParagonGlyphDef> glyphPool) =>
+                PlacementSearch.FindPlans(layout, req, pipe, spareBoards, glyphPool,
+                    lockedBoardSlots: lockedBoards, lockedGlyphSlots: lockedGlyphs);
+
+            // Level-pinned passes (51 = radius 5 + legendary rank, 100 = maxed) normalize every
+            // glyph — including ones leveled beyond the pin — so placements are judged
+            // independent of current glyph investment.
+            var (request51, pipeline51) = PlacementSearch.AtGlyphLevel(request, pipeline, 51);
+            var (request100, pipeline100) = PlacementSearch.AtGlyphLevel(request, pipeline, 100);
+            return new (string Label, IReadOnlyList<PlacementPlan> Plans)[]
+            {
+                ("at current glyph levels", Run(request, pipeline, spareGlyphs)),
+                ("all glyphs at level 51", Run(request51, pipeline51, spareGlyphs)),
+                ("all glyphs at level 100", Run(request100, pipeline100, spareGlyphs)),
+                ("keep current glyphs", Run(request, pipeline, [])),
+            };
+        });
+
+        Suggestions.Clear();
+        int total = 0;
+        foreach (var (label, plans) in passes)
+        {
+            for (int i = 0; i < plans.Count; i++)
+            {
+                var plan = plans[i];
+                Suggestions.Add(new PlacementSuggestion(
+                    plan.Describe(i + 1, plans.Count, label),
+                    Math.Max(0, plan.Baseline.PointsUsed - plan.Result.PointsUsed),
+                    plan.Change));
+                total++;
+            }
+        }
+
+        SolveDetails = total == 0
+            ? "Deep placement search: no sequence of changes beats the current setup at full spend " +
+              "in any pass (current levels, level 51, level 100, keep-glyphs)."
+            : "The top final setups are listed per pass — Apply one to jump straight to it " +
+              "(all steps at once), then Revert to restore the current setup and compare. " +
+              "Level-pinned options assume that level for every glyph (applying does not change " +
+              "glyph levels); locked boards/glyphs from the Glyphs tab were respected.";
+        SetStatus($"Deep placement search complete — {total} option(s) across four passes.");
+    }
+
     // ── Applying and reverting placement suggestions ─────────────────────
 
     private PlannerState? _revertState;
@@ -2145,7 +2304,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
         var purchasesBefore = CurrentPurchases();
         int pointsBefore = purchasesBefore.Count;
 
-        ApplyChange(suggestion.Change, before);
+        ApplyChange(suggestion.Change);
 
         _revertState = before;
         RevertPlacementCommand.NotifyCanExecuteChanged();
@@ -2156,14 +2315,19 @@ public partial class ParagonPlannerViewModel : ObservableObject
                   "Revert flips back to compare.", error: StatusIsError);
     }
 
-    private void ApplyChange(PlacementChange change, PlannerState before)
+    /// <summary>Live per-cell constraints — captured per change step, so a composite of several
+    /// board changes remaps each step's result instead of resetting to the pre-composite state.</summary>
+    private List<(CellRef Cell, CellConstraint Constraint)> CurrentConstraints() =>
+        Cells.Where(c => c.Constraint != CellConstraint.None).Select(c => (c.Cell, c.Constraint)).ToList();
+
+    private void ApplyChange(PlacementChange change)
     {
         switch (change)
         {
             case CompositeChange composite:
             {
                 foreach (var child in composite.Changes)
-                    ApplyChange(child, before);
+                    ApplyChange(child);
                 break;
             }
             case ReattachChange reattach:
@@ -2180,7 +2344,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
                     return cell with { X = x, Y = y };
                 }
                 var targets = _targets.Select(Remap).ToList();
-                var constraints = before.Constraints.Select(c => (Remap(c.Cell), c.Constraint)).ToList();
+                var constraints = CurrentConstraints().Select(c => (Remap(c.Cell), c.Constraint)).ToList();
                 _placedBoards[reattach.Slot] = new PlacedBoard
                 {
                     Board = placed.Board,
@@ -2233,7 +2397,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
                     return cell with { X = x, Y = y };
                 }
                 var targets = _targets.Select(Remap).ToList();
-                var constraints = before.Constraints.Select(c => (Remap(c.Cell), c.Constraint)).ToList();
+                var constraints = CurrentConstraints().Select(c => (Remap(c.Cell), c.Constraint)).ToList();
                 _placedBoards[rotation.Slot] = new PlacedBoard
                 {
                     Board = placed.Board,
@@ -2251,7 +2415,7 @@ public partial class ParagonPlannerViewModel : ObservableObject
                 // Targets and per-cell constraints on the outgoing board don't exist on the new
                 // one; the new board's legendary node(s) become the slot's targets instead.
                 var keepTargets = _targets.Where(t => t.BoardSlot != swap.Slot).ToList();
-                var constraints = before.Constraints.Where(c => c.Cell.BoardSlot != swap.Slot).ToList();
+                var constraints = CurrentConstraints().Where(c => c.Cell.BoardSlot != swap.Slot).ToList();
                 _placedBoards[swap.Slot] = new PlacedBoard
                 {
                     Board = swap.NewBoard,
@@ -2264,6 +2428,20 @@ public partial class ParagonPlannerViewModel : ObservableObject
                     .Where(c => c.Cell.BoardSlot == swap.Slot && c.Node.Kind == ParagonNodeKind.Legendary)
                     .Select(c => c.Cell);
                 RestoreCells(keepTargets.Concat(newTargets), constraints);
+                break;
+            }
+            case GlyphSwapChange glyphSwap:
+            {
+                // The search judged the new glyph at the socket's current level, so level,
+                // required stat, and the activation flag stay as they are.
+                var socket = GlyphSockets.FirstOrDefault(s => s.Socket.BoardSlot == glyphSwap.Slot);
+                if (socket is not null)
+                {
+                    socket.SelectedGlyph = socket.Glyphs.FirstOrDefault(g =>
+                        string.Equals(g.InternalName, glyphSwap.NewGlyph.InternalName,
+                            StringComparison.OrdinalIgnoreCase));
+                    socket.EnsureActive = socket.EnsureActive && socket.SelectedGlyph is not null;
+                }
                 break;
             }
             case GlyphReassignment reassignment:

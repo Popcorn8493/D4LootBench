@@ -5,5 +5,7 @@ public enum BuildGuideFormat
     Auto,
     Mobalytics,
     Maxroll,
-    IcyVeins
+    IcyVeins,
+    /// <summary>d4builds.gg — URL import only; there is no pasted-text form.</summary>
+    D4Builds
 }

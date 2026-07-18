@@ -110,6 +110,8 @@ public partial class FilterRuleViewModel : ObservableObject
 
         foreach (var itemType in Conditions.OfType<ItemTypeConditionViewModel>())
             itemType.Picker.Selected.CollectionChanged += OnItemTypeSelectionChanged;
+        foreach (var condition in Conditions)
+            WireAffixEntryMove(condition);
 
         Conditions.CollectionChanged += (_, e) =>
         {
@@ -120,6 +122,8 @@ public partial class FilterRuleViewModel : ObservableObject
                 itemType.Picker.Selected.CollectionChanged -= OnItemTypeSelectionChanged;
             foreach (var itemType in (e.NewItems ?? Array.Empty<object>()).OfType<ItemTypeConditionViewModel>())
                 itemType.Picker.Selected.CollectionChanged += OnItemTypeSelectionChanged;
+            foreach (var condition in (e.NewItems ?? Array.Empty<object>()).OfType<ConditionViewModel>())
+                WireAffixEntryMove(condition);
 
             RefreshAllowedClasses();
         };
@@ -234,6 +238,67 @@ public partial class FilterRuleViewModel : ObservableObject
         OptionalAffixConditionViewModel => !Conditions.OfType<AffixConditionViewModel>().Any(),
         _ => false
     };
+
+    /// <summary>
+    /// Offers "move this affix to the counterpart condition" on an affix picker's Selected
+    /// entries (Required ⇄ Optional), creating the counterpart condition when the rule
+    /// doesn't have one yet.
+    /// </summary>
+    private void WireAffixEntryMove(ConditionViewModel condition)
+    {
+        switch (condition)
+        {
+            case AffixConditionViewModel required:
+                required.Picker.EntryActionLabel = "Move to Optional Affixes";
+                required.Picker.EntryAction = entries =>
+                    MoveAffixEntries(required.Picker, ConditionType.OptionalAffixes, entries);
+                break;
+            case OptionalAffixConditionViewModel optional:
+                optional.Picker.EntryActionLabel = "Move to Required Affixes";
+                optional.Picker.EntryAction = entries =>
+                    MoveAffixEntries(optional.Picker, ConditionType.RequiredAffixes, entries);
+                break;
+        }
+    }
+
+    private void MoveAffixEntries(PickerViewModel source, ConditionType targetType, IReadOnlyList<PickerEntry> entries)
+    {
+        ConditionViewModel? target = targetType == ConditionType.RequiredAffixes
+            ? Conditions.OfType<AffixConditionViewModel>().FirstOrDefault()
+            : Conditions.OfType<OptionalAffixConditionViewModel>().FirstOrDefault();
+        if (target is null)
+        {
+            target = _conditionFactory.CreateNew(targetType);
+            target.ApplyClassFilter(_classFilter);
+            Conditions.Add(target);
+        }
+
+        var targetPicker = target switch
+        {
+            AffixConditionViewModel a         => a.Picker,
+            OptionalAffixConditionViewModel o => o.Picker,
+            _                                 => null
+        };
+        if (targetPicker is null || ReferenceEquals(targetPicker, source)) return;
+
+        var moved = false;
+        foreach (var entry in entries)
+        {
+            // Already in the target — just take it out of the source.
+            if (targetPicker.Selected.Any(s => s.Hash == entry.Hash))
+            {
+                source.Selected.Remove(entry);
+                moved = true;
+                continue;
+            }
+            // Target full (game-enforced 15) — leave the remainder where they are.
+            if (targetPicker.IsAtMax) continue;
+            targetPicker.Selected.Add(entry);
+            source.Selected.Remove(entry);
+            moved = true;
+        }
+        if (moved) target.IsExpanded = true;
+    }
 
     [RelayCommand]
     private void DeleteCondition(ConditionViewModel condition)

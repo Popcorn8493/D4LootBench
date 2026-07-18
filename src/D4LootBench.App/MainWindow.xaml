@@ -179,7 +179,8 @@
         </ToolBarTray>
 
         <!-- ── Issues panel (collapsed when empty) ─────────────────── -->
-        <views:IssuesPanel DockPanel.Dock="Top" Issues="{Binding Issues}">
+        <views:IssuesPanel DockPanel.Dock="Top" Issues="{Binding Issues}"
+                           IssueActivated="OnIssueActivated">
             <views:IssuesPanel.Style>
                 <Style TargetType="views:IssuesPanel">
                     <Setter Property="Visibility" Value="Collapsed" />

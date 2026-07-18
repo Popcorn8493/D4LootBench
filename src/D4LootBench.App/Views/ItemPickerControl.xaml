@@ -89,7 +89,16 @@
                          PreviewMouseMove="List_PreviewMouseMove"
                          AllowDrop="True"
                          DragOver="SelectedList_DragOver"
-                         Drop="SelectedList_Drop" />
+                         Drop="SelectedList_Drop"
+                         PreviewMouseRightButtonDown="SelectedList_PreviewMouseRightButtonDown"
+                         ContextMenuOpening="SelectedList_ContextMenuOpening">
+                    <ListBox.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Header="{Binding EntryActionLabel}"
+                                      Click="MoveEntryMenuItem_Click" />
+                        </ContextMenu>
+                    </ListBox.ContextMenu>
+                </ListBox>
             </StackPanel>
         </Grid>
     </StackPanel>

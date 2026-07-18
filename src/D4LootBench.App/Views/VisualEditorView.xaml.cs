@@ -21,6 +21,12 @@ public partial class VisualEditorView : UserControl
         InitializeComponent();
         Loaded   += OnLoaded;
         Unloaded += OnUnloaded;
+        // Selection can change programmatically (issues panel jump-to-rule) — keep it visible.
+        RuleList.SelectionChanged += (_, _) =>
+        {
+            if (RuleList.SelectedItem is not null)
+                RuleList.ScrollIntoView(RuleList.SelectedItem);
+        };
     }
 
     private void OnLoaded(object sender, RoutedEventArgs e)

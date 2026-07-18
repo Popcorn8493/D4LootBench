@@ -24,25 +24,42 @@
             </ItemsControl.Template>
             <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                    <Grid Margin="2,1">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-                        <TextBlock
-                            Grid.Column="0"
-                            Text="{Binding Severity, Converter={StaticResource SeverityGlyph}}"
-                            Foreground="{Binding Severity, Converter={StaticResource SeverityBrush}}"
-                            FontWeight="Bold"
-                            Width="18"
-                            TextAlignment="Center"
-                            VerticalAlignment="Top" />
-                        <TextBlock
-                            Grid.Column="1"
-                            Text="{Binding Message}"
-                            TextWrapping="Wrap"
-                            VerticalAlignment="Top" />
-                    </Grid>
+                    <!-- Rows tied to a rule are clickable: selects that rule in the editor. -->
+                    <Border Background="Transparent"
+                            Padding="2,1"
+                            MouseLeftButtonUp="IssueRow_MouseLeftButtonUp">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding RuleIndex}" Value="{x:Null}">
+                                        <Setter Property="Cursor" Value="Arrow" />
+                                        <Setter Property="ToolTip" Value="{x:Null}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                                <Setter Property="Cursor" Value="Hand" />
+                                <Setter Property="ToolTip" Value="Click to select the rule" />
+                            </Style>
+                        </Border.Style>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock
+                                Grid.Column="0"
+                                Text="{Binding Severity, Converter={StaticResource SeverityGlyph}}"
+                                Foreground="{Binding Severity, Converter={StaticResource SeverityBrush}}"
+                                FontWeight="Bold"
+                                Width="18"
+                                TextAlignment="Center"
+                                VerticalAlignment="Top" />
+                            <TextBlock
+                                Grid.Column="1"
+                                Text="{Binding Message}"
+                                TextWrapping="Wrap"
+                                VerticalAlignment="Top" />
+                        </Grid>
+                    </Border>
                 </DataTemplate>
             </ItemsControl.ItemTemplate>
         </ItemsControl>

@@ -39,6 +39,17 @@ public sealed partial class PickerViewModel : ObservableObject
     /// <summary>Optional external limit check (e.g., shared limit across pickers).</summary>
     public Func<bool>? ExternalAtMax { get; set; }
 
+    /// <summary>
+    /// Optional per-entry action offered on the Selected list's context menu (e.g. "Move to
+    /// Required Affixes"). Wired by the owning rule for pickers that have a counterpart;
+    /// the menu stays hidden while unset.
+    /// </summary>
+    [ObservableProperty]
+    private string? _entryActionLabel;
+
+    /// <summary>Invoked with the entries the user chose when the <see cref="EntryActionLabel"/> menu item is clicked.</summary>
+    public Action<IReadOnlyList<PickerEntry>>? EntryAction { get; set; }
+
     public bool IsAtMax =>
         (MaxSelectionCount.HasValue && Selected.Count >= MaxSelectionCount.Value) ||
         (ExternalAtMax is not null && ExternalAtMax());

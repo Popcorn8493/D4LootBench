@@ -105,7 +105,12 @@ public partial class BuildGuideImportViewModel(
             await ImportMaxrollUrlAsync(url);
             return;
         }
-        SetError("The URL is neither a mobalytics.gg nor a maxroll.gg page. " +
+        if (url.Contains("d4builds.gg", StringComparison.OrdinalIgnoreCase))
+        {
+            await ImportD4BuildsUrlAsync(url);
+            return;
+        }
+        SetError("The URL is not a mobalytics.gg, maxroll.gg, or d4builds.gg page. " +
                  "For other sites, paste the guide's gear text instead.");
     }
 
@@ -170,6 +175,46 @@ public partial class BuildGuideImportViewModel(
         var ruleset = FilterCodec.Decode(filters[index].Code);
         ruleset.Name = $"{buildName} ({filters[index].Name})";
         Succeed(ruleset, []);
+    }
+
+    /// <summary>
+    /// d4builds.gg pages render client-side from a public Firestore document, so the build's
+    /// uuid from the URL fetches the whole thing — gear, uniques, and the author's stat
+    /// priorities — without touching the page itself.
+    /// </summary>
+    private async Task ImportD4BuildsUrlAsync(string url)
+    {
+        if (!D4BuildsGearImporter.TryParseBuildUrl(url, out string buildId))
+        {
+            // Curated meta builds use a pretty slug; its prerendered page-data names the uuid.
+            if (!D4BuildsGearImporter.TryParseBuildSlugUrl(url, out string slug))
+            {
+                SetError("The d4builds.gg link has no build id — copy a build page's URL " +
+                         "(d4builds.gg/builds/…).");
+                return;
+            }
+            SetProgress("Resolving the d4builds.gg build…");
+            buildId = D4BuildsGearImporter.ExtractBuildId(
+                await GuidePageFetcher.FetchPageAsync(string.Format(D4BuildsGearImporter.PageDataApiFormat, slug)));
+        }
+
+        SetProgress("Fetching the d4builds.gg build…");
+        string json = await GuidePageFetcher.FetchPageAsync(
+            string.Format(D4BuildsGearImporter.BuildDocumentApiFormat, buildId));
+        var variants = D4BuildsGearImporter.ExtractVariants(json);
+
+        int index = variants.Count == 1
+            ? 0
+            : Pick(variants.Select(v => $"{v.Title} — {v.Slots.Count} slot(s)").ToList());
+        if (index < 0)
+        {
+            SetProgress("Import cancelled.");
+            return;
+        }
+
+        var result = generator.Generate(D4BuildsGearImporter.ToParsedGuide(variants[index]));
+        result.Ruleset.Name = $"d4builds {variants[index].Title}";
+        Succeed(result.Ruleset, result.Warnings);
     }
 
     // ── Pasted-text import (the original path) ───────────────────────────

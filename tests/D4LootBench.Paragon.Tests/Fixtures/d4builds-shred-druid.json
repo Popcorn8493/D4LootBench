@@ -1,0 +1,3959 @@
+{
+ "name": "projects/d4builds-a3254/databases/(default)/documents/builds/43003e89-bb97-4963-b172-ecc41cf33417",
+ "fields": {
+  "name": {
+   "stringValue": "Shred Druid (S14)"
+  },
+  "class": {
+   "stringValue": "Druid"
+  },
+  "variantName": {
+   "stringValue": "Dont this. Play Push Vers"
+  },
+  "order": {
+   "integerValue": "0"
+  },
+  "dropdownOrder": {
+   "integerValue": "1"
+  },
+  "paragon": {
+   "mapValue": {
+    "fields": {
+     "selectedTiles": {
+      "arrayValue": {
+       "values": [
+        {
+         "stringValue": "startingboard_r15c11"
+        },
+        {
+         "stringValue": "startingboard_r14c11"
+        },
+        {
+         "stringValue": "startingboard_r14c12"
+        },
+        {
+         "stringValue": "startingboard_r14c13"
+        },
+        {
+         "stringValue": "startingboard_r13c13"
+        },
+        {
+         "stringValue": "startingboard_r12c13"
+        },
+        {
+         "stringValue": "startingboard_r12c12"
+        },
+        {
+         "stringValue": "startingboard_r11c13"
+        },
+        {
+         "stringValue": "startingboard_r10c13"
+        },
+        {
+         "stringValue": "startingboard_r9c13"
+        },
+        {
+         "stringValue": "startingboard_r8c13"
+        },
+        {
+         "stringValue": "startingboard_r7c13"
+        },
+        {
+         "stringValue": "startingboard_r7c12"
+        },
+        {
+         "stringValue": "startingboard_r7c11"
+        },
+        {
+         "stringValue": "startingboard_r7c10"
+        },
+        {
+         "stringValue": "startingboard_r7c9"
+        },
+        {
+         "stringValue": "startingboard_r5c10"
+        },
+        {
+         "stringValue": "startingboard_r14c10"
+        },
+        {
+         "stringValue": "startingboard_r14c9"
+        },
+        {
+         "stringValue": "startingboard_r13c9"
+        },
+        {
+         "stringValue": "startingboard_r12c9"
+        },
+        {
+         "stringValue": "startingboard_r12c10"
+        },
+        {
+         "stringValue": "startingboard_r11c9"
+        },
+        {
+         "stringValue": "startingboard_r5c12"
+        },
+        {
+         "stringValue": "startingboard_r4c12"
+        },
+        {
+         "stringValue": "startingboard_r3c12"
+        },
+        {
+         "stringValue": "startingboard_r2c12"
+        },
+        {
+         "stringValue": "startingboard_r2c11"
+        },
+        {
+         "stringValue": "thunderstruck_r11c20"
+        },
+        {
+         "stringValue": "thunderstruck_r10c20"
+        },
+        {
+         "stringValue": "thunderstruck_r9c20"
+        },
+        {
+         "stringValue": "thunderstruck_r8c20"
+        },
+        {
+         "stringValue": "thunderstruck_r7c20"
+        },
+        {
+         "stringValue": "thunderstruck_r6c20"
+        },
+        {
+         "stringValue": "thunderstruck_r6c19"
+        },
+        {
+         "stringValue": "thunderstruck_r6c18"
+        },
+        {
+         "stringValue": "thunderstruck_r6c17"
+        },
+        {
+         "stringValue": "thunderstruck_r6c16"
+        },
+        {
+         "stringValue": "thunderstruck_r6c15"
+        },
+        {
+         "stringValue": "thunderstruck_r6c14"
+        },
+        {
+         "stringValue": "thunderstruck_r7c14"
+        },
+        {
+         "stringValue": "thunderstruck_r7c13"
+        },
+        {
+         "stringValue": "thunderstruck_r8c13"
+        },
+        {
+         "stringValue": "thunderstruck_r9c13"
+        },
+        {
+         "stringValue": "thunderstruck_r9c12"
+        },
+        {
+         "stringValue": "thunderstruck_r10c12"
+        },
+        {
+         "stringValue": "thunderstruck_r10c11"
+        },
+        {
+         "stringValue": "thunderstruck_r10c10"
+        },
+        {
+         "stringValue": "thunderstruck_r10c9"
+        },
+        {
+         "stringValue": "thunderstruck_r10c8"
+        },
+        {
+         "stringValue": "thunderstruck_r9c8"
+        },
+        {
+         "stringValue": "thunderstruck_r9c7"
+        },
+        {
+         "stringValue": "thunderstruck_r8c6"
+        },
+        {
+         "stringValue": "thunderstruck_r11c9"
+        },
+        {
+         "stringValue": "thunderstruck_r12c9"
+        },
+        {
+         "stringValue": "thunderstruck_r12c8"
+        },
+        {
+         "stringValue": "thunderstruck_r13c8"
+        },
+        {
+         "stringValue": "thunderstruck_r13c7"
+        },
+        {
+         "stringValue": "thunderstruck_r14c7"
+        },
+        {
+         "stringValue": "thunderstruck_r15c7"
+        },
+        {
+         "stringValue": "thunderstruck_r15c6"
+        },
+        {
+         "stringValue": "thunderstruck_r16c6"
+        },
+        {
+         "stringValue": "thunderstruck_r17c6"
+        },
+        {
+         "stringValue": "thunderstruck_r17c5"
+        },
+        {
+         "stringValue": "thunderstruck_r18c5"
+        },
+        {
+         "stringValue": "thunderstruck_r18c4"
+        },
+        {
+         "stringValue": "thunderstruck_r18c3"
+        },
+        {
+         "stringValue": "thunderstruck_r19c3"
+        },
+        {
+         "stringValue": "thunderstruck_r19c2"
+        },
+        {
+         "stringValue": "thunderstruck_r20c3"
+        },
+        {
+         "stringValue": "thunderstruck_r19c4"
+        },
+        {
+         "stringValue": "thunderstruck_r7c16"
+        },
+        {
+         "stringValue": "thunderstruck_r8c16"
+        },
+        {
+         "stringValue": "thunderstruck_r9c16"
+        },
+        {
+         "stringValue": "thunderstruck_r9c15"
+        },
+        {
+         "stringValue": "thunderstruck_r10c16"
+        },
+        {
+         "stringValue": "thunderstruck_r5c16"
+        },
+        {
+         "stringValue": "thunderstruck_r4c16"
+        },
+        {
+         "stringValue": "thunderstruck_r3c16"
+        },
+        {
+         "stringValue": "thunderstruck_r3c15"
+        },
+        {
+         "stringValue": "thunderstruck_r2c16"
+        },
+        {
+         "stringValue": "thunderstruck_r2c15"
+        },
+        {
+         "stringValue": "thunderstruck_r2c14"
+        },
+        {
+         "stringValue": "thunderstruck_r2c13"
+        },
+        {
+         "stringValue": "thunderstruck_r2c12"
+        },
+        {
+         "stringValue": "thunderstruck_r2c11"
+        },
+        {
+         "stringValue": "constrictingtendrils_r20c11"
+        },
+        {
+         "stringValue": "constrictingtendrils_r19c11"
+        },
+        {
+         "stringValue": "constrictingtendrils_r19c10"
+        },
+        {
+         "stringValue": "constrictingtendrils_r19c9"
+        },
+        {
+         "stringValue": "constrictingtendrils_r18c9"
+        },
+        {
+         "stringValue": "constrictingtendrils_r18c8"
+        },
+        {
+         "stringValue": "constrictingtendrils_r17c8"
+        },
+        {
+         "stringValue": "constrictingtendrils_r16c8"
+        },
+        {
+         "stringValue": "constrictingtendrils_r16c7"
+        },
+        {
+         "stringValue": "constrictingtendrils_r16c6"
+        },
+        {
+         "stringValue": "constrictingtendrils_r16c5"
+        },
+        {
+         "stringValue": "constrictingtendrils_r16c4"
+        },
+        {
+         "stringValue": "constrictingtendrils_r16c3"
+        },
+        {
+         "stringValue": "constrictingtendrils_r15c3"
+        },
+        {
+         "stringValue": "constrictingtendrils_r16c2"
+        },
+        {
+         "stringValue": "constrictingtendrils_r17c4"
+        },
+        {
+         "stringValue": "constrictingtendrils_r17c6"
+        },
+        {
+         "stringValue": "constrictingtendrils_r18c6"
+        },
+        {
+         "stringValue": "constrictingtendrils_r19c6"
+        },
+        {
+         "stringValue": "constrictingtendrils_r18c11"
+        },
+        {
+         "stringValue": "constrictingtendrils_r18c12"
+        },
+        {
+         "stringValue": "constrictingtendrils_r18c13"
+        },
+        {
+         "stringValue": "constrictingtendrils_r17c13"
+        },
+        {
+         "stringValue": "constrictingtendrils_r17c14"
+        },
+        {
+         "stringValue": "constrictingtendrils_r16c14"
+        },
+        {
+         "stringValue": "constrictingtendrils_r15c14"
+        },
+        {
+         "stringValue": "constrictingtendrils_r16c15"
+        },
+        {
+         "stringValue": "constrictingtendrils_r15c15"
+        },
+        {
+         "stringValue": "constrictingtendrils_r14c15"
+        },
+        {
+         "stringValue": "constrictingtendrils_r13c16"
+        },
+        {
+         "stringValue": "constrictingtendrils_r12c16"
+        },
+        {
+         "stringValue": "constrictingtendrils_r12c17"
+        },
+        {
+         "stringValue": "constrictingtendrils_r11c18"
+        },
+        {
+         "stringValue": "constrictingtendrils_r11c19"
+        },
+        {
+         "stringValue": "constrictingtendrils_r11c20"
+        },
+        {
+         "stringValue": "constrictingtendrils_r9c16"
+        },
+        {
+         "stringValue": "constrictingtendrils_r9c15"
+        },
+        {
+         "stringValue": "constrictingtendrils_r10c15"
+        },
+        {
+         "stringValue": "constrictingtendrils_r10c14"
+        },
+        {
+         "stringValue": "constrictingtendrils_r11c14"
+        },
+        {
+         "stringValue": "constrictingtendrils_r11c13"
+        },
+        {
+         "stringValue": "constrictingtendrils_r11c12"
+        },
+        {
+         "stringValue": "constrictingtendrils_r11c11"
+        },
+        {
+         "stringValue": "constrictingtendrils_r11c10"
+        },
+        {
+         "stringValue": "constrictingtendrils_r12c10"
+        },
+        {
+         "stringValue": "constrictingtendrils_r12c9"
+        },
+        {
+         "stringValue": "constrictingtendrils_r13c9"
+        },
+        {
+         "stringValue": "heightenedmalice_r20c11"
+        },
+        {
+         "stringValue": "heightenedmalice_r19c11"
+        },
+        {
+         "stringValue": "heightenedmalice_r18c11"
+        },
+        {
+         "stringValue": "heightenedmalice_r18c10"
+        },
+        {
+         "stringValue": "heightenedmalice_r18c9"
+        },
+        {
+         "stringValue": "heightenedmalice_r18c8"
+        },
+        {
+         "stringValue": "heightenedmalice_r17c7"
+        },
+        {
+         "stringValue": "heightenedmalice_r17c6"
+        },
+        {
+         "stringValue": "heightenedmalice_r16c6"
+        },
+        {
+         "stringValue": "heightenedmalice_r19c8"
+        },
+        {
+         "stringValue": "heightenedmalice_r19c7"
+        },
+        {
+         "stringValue": "heightenedmalice_r19c6"
+        },
+        {
+         "stringValue": "heightenedmalice_r17c5"
+        },
+        {
+         "stringValue": "heightenedmalice_r17c4"
+        },
+        {
+         "stringValue": "heightenedmalice_r17c3"
+        },
+        {
+         "stringValue": "heightenedmalice_r16c3"
+        },
+        {
+         "stringValue": "heightenedmalice_r15c3"
+        },
+        {
+         "stringValue": "heightenedmalice_r14c13"
+        },
+        {
+         "stringValue": "heightenedmalice_r14c14"
+        },
+        {
+         "stringValue": "heightenedmalice_r14c15"
+        },
+        {
+         "stringValue": "heightenedmalice_r13c15"
+        },
+        {
+         "stringValue": "heightenedmalice_r12c15"
+        },
+        {
+         "stringValue": "heightenedmalice_r11c15"
+        },
+        {
+         "stringValue": "heightenedmalice_r11c14"
+        },
+        {
+         "stringValue": "heightenedmalice_r11c13"
+        },
+        {
+         "stringValue": "heightenedmalice_r10c13"
+        },
+        {
+         "stringValue": "heightenedmalice_r9c13"
+        },
+        {
+         "stringValue": "heightenedmalice_r8c13"
+        },
+        {
+         "stringValue": "heightenedmalice_r8c14"
+        },
+        {
+         "stringValue": "heightenedmalice_r7c14"
+        },
+        {
+         "stringValue": "heightenedmalice_r7c15"
+        },
+        {
+         "stringValue": "heightenedmalice_r6c15"
+        },
+        {
+         "stringValue": "heightenedmalice_r6c16"
+        },
+        {
+         "stringValue": "heightenedmalice_r6c17"
+        },
+        {
+         "stringValue": "heightenedmalice_r5c17"
+        },
+        {
+         "stringValue": "heightenedmalice_r5c18"
+        },
+        {
+         "stringValue": "heightenedmalice_r4c18"
+        },
+        {
+         "stringValue": "heightenedmalice_r13c4"
+        },
+        {
+         "stringValue": "heightenedmalice_r12c4"
+        },
+        {
+         "stringValue": "heightenedmalice_r12c3"
+        },
+        {
+         "stringValue": "heightenedmalice_r12c2"
+        },
+        {
+         "stringValue": "heightenedmalice_r11c2"
+        },
+        {
+         "stringValue": "lustforcarnage_r2c11"
+        },
+        {
+         "stringValue": "lustforcarnage_r2c10"
+        },
+        {
+         "stringValue": "lustforcarnage_r3c10"
+        },
+        {
+         "stringValue": "lustforcarnage_r4c10"
+        },
+        {
+         "stringValue": "lustforcarnage_r5c10"
+        },
+        {
+         "stringValue": "lustforcarnage_r6c10"
+        },
+        {
+         "stringValue": "lustforcarnage_r7c10"
+        },
+        {
+         "stringValue": "lustforcarnage_r7c11"
+        },
+        {
+         "stringValue": "lustforcarnage_r8c11"
+        },
+        {
+         "stringValue": "lustforcarnage_r9c11"
+        },
+        {
+         "stringValue": "lustforcarnage_r9c10"
+        },
+        {
+         "stringValue": "lustforcarnage_r9c9"
+        },
+        {
+         "stringValue": "lustforcarnage_r9c8"
+        },
+        {
+         "stringValue": "lustforcarnage_r10c8"
+        },
+        {
+         "stringValue": "lustforcarnage_r9c7"
+        },
+        {
+         "stringValue": "lustforcarnage_r9c12"
+        },
+        {
+         "stringValue": "lustforcarnage_r9c13"
+        },
+        {
+         "stringValue": "lustforcarnage_r9c14"
+        },
+        {
+         "stringValue": "lustforcarnage_r10c14"
+        },
+        {
+         "stringValue": "lustforcarnage_r9c15"
+        },
+        {
+         "stringValue": "lustforcarnage_r8c14"
+        },
+        {
+         "stringValue": "lustforcarnage_r10c11"
+        },
+        {
+         "stringValue": "lustforcarnage_r10c10"
+        },
+        {
+         "stringValue": "lustforcarnage_r11c10"
+        },
+        {
+         "stringValue": "lustforcarnage_r12c10"
+        },
+        {
+         "stringValue": "lustforcarnage_r13c10"
+        },
+        {
+         "stringValue": "lustforcarnage_r14c10"
+        },
+        {
+         "stringValue": "lustforcarnage_r15c10"
+        },
+        {
+         "stringValue": "lustforcarnage_r15c11"
+        },
+        {
+         "stringValue": "lustforcarnage_r16c11"
+        },
+        {
+         "stringValue": "lustforcarnage_r14c9"
+        },
+        {
+         "stringValue": "lustforcarnage_r14c7"
+        },
+        {
+         "stringValue": "lustforcarnage_r15c9"
+        },
+        {
+         "stringValue": "lustforcarnage_r16c9"
+        },
+        {
+         "stringValue": "lustforcarnage_r17c9"
+        },
+        {
+         "stringValue": "lustforcarnage_r17c8"
+        },
+        {
+         "stringValue": "lustforcarnage_r17c7"
+        },
+        {
+         "stringValue": "lustforcarnage_r16c7"
+        },
+        {
+         "stringValue": "heightenedmalice_r11c12"
+        },
+        {
+         "stringValue": "heightenedmalice_r11c11"
+        },
+        {
+         "stringValue": "thunderstruck_r9c6"
+        },
+        {
+         "stringValue": "thunderstruck_r8c5"
+        },
+        {
+         "stringValue": "startingboard_r8c9"
+        },
+        {
+         "stringValue": "startingboard_r9c9"
+        },
+        {
+         "stringValue": "startingboard_r9c12"
+        },
+        {
+         "stringValue": "startingboard_r9c11"
+        },
+        {
+         "stringValue": "startingboard_r4c13"
+        },
+        {
+         "stringValue": "startingboard_r5c13"
+        },
+        {
+         "stringValue": "startingboard_r6c13"
+        },
+        {
+         "stringValue": "startingboard_r6c14"
+        },
+        {
+         "stringValue": "startingboard_r6c10"
+        },
+        {
+         "stringValue": "startingboard_r6c12"
+        },
+        {
+         "stringValue": "thunderstruck_r7c19"
+        },
+        {
+         "stringValue": "heightenedmalice_r10c11"
+        },
+        {
+         "stringValue": "heightenedmalice_r12c11"
+        },
+        {
+         "stringValue": "lustforcarnage_r14c11"
+        },
+        {
+         "stringValue": "lustforcarnage_r14c12"
+        },
+        {
+         "stringValue": "lustforcarnage_r14c13"
+        },
+        {
+         "stringValue": "lustforcarnage_r14c14"
+        },
+        {
+         "stringValue": "lustforcarnage_r14c15"
+        },
+        {
+         "stringValue": "lustforcarnage_r14c16"
+        },
+        {
+         "stringValue": "lustforcarnage_r14c17"
+        },
+        {
+         "stringValue": "lustforcarnage_r15c17"
+        },
+        {
+         "stringValue": "lustforcarnage_r15c18"
+        },
+        {
+         "stringValue": "lustforcarnage_r15c19"
+        },
+        {
+         "stringValue": "lustforcarnage_r14c18"
+        },
+        {
+         "stringValue": "lustforcarnage_r13c17"
+        },
+        {
+         "stringValue": "startingboard_r6c9"
+        },
+        {
+         "stringValue": "startingboard_r4c10"
+        },
+        {
+         "stringValue": "heightenedmalice_r13c7"
+        },
+        {
+         "stringValue": "heightenedmalice_r13c8"
+        },
+        {
+         "stringValue": "heightenedmalice_r13c9"
+        },
+        {
+         "stringValue": "heightenedmalice_r12c9"
+        },
+        {
+         "stringValue": "heightenedmalice_r12c10"
+        },
+        {
+         "stringValue": "heightenedmalice_r5c16"
+        },
+        {
+         "stringValue": "heightenedmalice_r13c6"
+        },
+        {
+         "stringValue": "lustforcarnage_r18c7"
+        },
+        {
+         "stringValue": "lustforcarnage_r17c6"
+        },
+        {
+         "stringValue": "lustforcarnage_r14c8"
+        },
+        {
+         "stringValue": "lustforcarnage_r14c6"
+        },
+        {
+         "stringValue": "lustforcarnage_r14c5"
+        },
+        {
+         "stringValue": "lustforcarnage_r15c5"
+        },
+        {
+         "stringValue": "lustforcarnage_r15c4"
+        },
+        {
+         "stringValue": "lustforcarnage_r13c5"
+        },
+        {
+         "stringValue": "heightenedmalice_r16c2"
+        },
+        {
+         "stringValue": "constrictingtendrils_r17c3"
+        },
+        {
+         "stringValue": "constrictingtendrils_r15c2"
+        },
+        {
+         "stringValue": "constrictingtendrils_r19c5"
+        },
+        {
+         "stringValue": "constrictingtendrils_r18c5"
+        },
+        {
+         "stringValue": "constrictingtendrils_r20c6"
+        },
+        {
+         "stringValue": "constrictingtendrils_r20c7"
+        },
+        {
+         "stringValue": "constrictingtendrils_r19c7"
+        },
+        {
+         "stringValue": "thunderstruck_r3c17"
+        },
+        {
+         "stringValue": "startingboard_r6c8"
+        },
+        {
+         "stringValue": "startingboard_r5c8"
+        },
+        {
+         "stringValue": "startingboard_r11c12"
+        },
+        {
+         "stringValue": "constrictingtendrils_r12c14"
+        },
+        {
+         "stringValue": "constrictingtendrils_r13c14"
+        },
+        {
+         "stringValue": "constrictingtendrils_r13c15"
+        },
+        {
+         "stringValue": "constrictingtendrils_r12c18"
+        },
+        {
+         "stringValue": "heightenedmalice_r19c5"
+        },
+        {
+         "stringValue": "heightenedmalice_r20c7"
+        },
+        {
+         "stringValue": "heightenedmalice_r18c7"
+        },
+        {
+         "stringValue": "heightenedmalice_r13c5"
+        },
+        {
+         "stringValue": "heightenedmalice_r14c4"
+        },
+        {
+         "stringValue": "heightenedmalice_r15c4"
+        }
+       ]
+      }
+     },
+     "boards": {
+      "arrayValue": {
+       "values": [
+        {
+         "mapValue": {
+          "fields": {
+           "name": {
+            "stringValue": "Starting Board"
+           },
+           "glyph": {
+            "stringValue": "Spirit"
+           },
+           "y": {
+            "integerValue": "0"
+           },
+           "rotation": {
+            "integerValue": "0"
+           },
+           "boardNumber": {
+            "integerValue": "1"
+           },
+           "x": {
+            "integerValue": "0"
+           },
+           "glyphLevel": {
+            "integerValue": "100"
+           }
+          }
+         }
+        },
+        {
+         "mapValue": {
+          "fields": {
+           "glyphLevel": {
+            "integerValue": "100"
+           },
+           "x": {
+            "integerValue": "0"
+           },
+           "boardNumber": {
+            "integerValue": "2"
+           },
+           "y": {
+            "integerValue": "1"
+           },
+           "rotation": {
+            "integerValue": "90"
+           },
+           "name": {
+            "stringValue": "Thunderstruck"
+           },
+           "glyph": {
+            "stringValue": "Earth and Sky"
+           }
+          }
+         }
+        },
+        {
+         "mapValue": {
+          "fields": {
+           "rotation": {
+            "integerValue": "90"
+           },
+           "y": {
+            "integerValue": "1"
+           },
+           "glyph": {
+            "stringValue": "Fang and Claw"
+           },
+           "name": {
+            "stringValue": "Constricting Tendrils"
+           },
+           "glyphLevel": {
+            "integerValue": "100"
+           },
+           "boardNumber": {
+            "integerValue": "3"
+           },
+           "x": {
+            "integerValue": "1"
+           }
+          }
+         }
+        },
+        {
+         "mapValue": {
+          "fields": {
+           "glyph": {
+            "stringValue": "Dominate"
+           },
+           "name": {
+            "stringValue": "Heightened Malice"
+           },
+           "y": {
+            "integerValue": "0"
+           },
+           "rotation": {
+            "integerValue": "180"
+           },
+           "glyphLevel": {
+            "integerValue": "100"
+           },
+           "x": {
+            "integerValue": "1"
+           },
+           "boardNumber": {
+            "integerValue": "4"
+           }
+          }
+         }
+        },
+        {
+         "mapValue": {
+          "fields": {
+           "name": {
+            "stringValue": "Lust for Carnage"
+           },
+           "glyph": {
+            "stringValue": "Keeper"
+           },
+           "rotation": {
+            "integerValue": "270"
+           },
+           "y": {
+            "integerValue": "0"
+           },
+           "boardNumber": {
+            "integerValue": "5"
+           },
+           "x": {
+            "integerValue": "2"
+           },
+           "glyphLevel": {
+            "integerValue": "100"
+           }
+          }
+         }
+        }
+       ]
+      }
+     }
+    }
+   }
+  },
+  "variants": {
+   "arrayValue": {
+    "values": [
+     {
+      "mapValue": {
+       "fields": {
+        "name": {
+         "stringValue": "No Uniques - Budget Version"
+        },
+        "class": {
+         "stringValue": "Druid"
+        },
+        "variantName": {
+         "stringValue": "Shred - Standard"
+        },
+        "order": {
+         "integerValue": "1"
+        },
+        "dropdownOrder": {
+         "integerValue": "2"
+        },
+        "paragon": {
+         "mapValue": {
+          "fields": {
+           "selectedTiles": {
+            "arrayValue": {
+             "values": [
+              {
+               "stringValue": "startingboard_r15c11"
+              },
+              {
+               "stringValue": "startingboard_r14c11"
+              },
+              {
+               "stringValue": "startingboard_r14c12"
+              },
+              {
+               "stringValue": "startingboard_r14c13"
+              },
+              {
+               "stringValue": "startingboard_r13c13"
+              },
+              {
+               "stringValue": "startingboard_r12c13"
+              },
+              {
+               "stringValue": "startingboard_r11c13"
+              },
+              {
+               "stringValue": "startingboard_r10c13"
+              },
+              {
+               "stringValue": "startingboard_r9c13"
+              },
+              {
+               "stringValue": "startingboard_r8c13"
+              },
+              {
+               "stringValue": "startingboard_r7c13"
+              },
+              {
+               "stringValue": "startingboard_r7c12"
+              },
+              {
+               "stringValue": "startingboard_r7c11"
+              },
+              {
+               "stringValue": "startingboard_r7c10"
+              },
+              {
+               "stringValue": "startingboard_r5c10"
+              },
+              {
+               "stringValue": "startingboard_r5c12"
+              },
+              {
+               "stringValue": "startingboard_r4c12"
+              },
+              {
+               "stringValue": "startingboard_r3c12"
+              },
+              {
+               "stringValue": "startingboard_r2c12"
+              },
+              {
+               "stringValue": "startingboard_r2c11"
+              },
+              {
+               "stringValue": "thunderstruck_r11c20"
+              },
+              {
+               "stringValue": "thunderstruck_r10c20"
+              },
+              {
+               "stringValue": "thunderstruck_r9c20"
+              },
+              {
+               "stringValue": "thunderstruck_r8c20"
+              },
+              {
+               "stringValue": "thunderstruck_r7c20"
+              },
+              {
+               "stringValue": "thunderstruck_r6c20"
+              },
+              {
+               "stringValue": "thunderstruck_r6c19"
+              },
+              {
+               "stringValue": "thunderstruck_r6c18"
+              },
+              {
+               "stringValue": "thunderstruck_r6c17"
+              },
+              {
+               "stringValue": "thunderstruck_r6c16"
+              },
+              {
+               "stringValue": "thunderstruck_r6c15"
+              },
+              {
+               "stringValue": "thunderstruck_r6c14"
+              },
+              {
+               "stringValue": "thunderstruck_r7c14"
+              },
+              {
+               "stringValue": "thunderstruck_r7c13"
+              },
+              {
+               "stringValue": "thunderstruck_r8c13"
+              },
+              {
+               "stringValue": "thunderstruck_r9c13"
+              },
+              {
+               "stringValue": "thunderstruck_r9c12"
+              },
+              {
+               "stringValue": "thunderstruck_r10c12"
+              },
+              {
+               "stringValue": "thunderstruck_r10c11"
+              },
+              {
+               "stringValue": "thunderstruck_r10c10"
+              },
+              {
+               "stringValue": "thunderstruck_r10c9"
+              },
+              {
+               "stringValue": "thunderstruck_r11c9"
+              },
+              {
+               "stringValue": "thunderstruck_r12c9"
+              },
+              {
+               "stringValue": "thunderstruck_r12c8"
+              },
+              {
+               "stringValue": "thunderstruck_r13c8"
+              },
+              {
+               "stringValue": "thunderstruck_r13c7"
+              },
+              {
+               "stringValue": "thunderstruck_r14c7"
+              },
+              {
+               "stringValue": "thunderstruck_r15c7"
+              },
+              {
+               "stringValue": "thunderstruck_r15c6"
+              },
+              {
+               "stringValue": "thunderstruck_r16c6"
+              },
+              {
+               "stringValue": "thunderstruck_r17c6"
+              },
+              {
+               "stringValue": "thunderstruck_r17c5"
+              },
+              {
+               "stringValue": "thunderstruck_r18c5"
+              },
+              {
+               "stringValue": "thunderstruck_r18c4"
+              },
+              {
+               "stringValue": "thunderstruck_r18c3"
+              },
+              {
+               "stringValue": "thunderstruck_r19c3"
+              },
+              {
+               "stringValue": "thunderstruck_r19c2"
+              },
+              {
+               "stringValue": "thunderstruck_r20c3"
+              },
+              {
+               "stringValue": "thunderstruck_r19c4"
+              },
+              {
+               "stringValue": "thunderstruck_r7c16"
+              },
+              {
+               "stringValue": "thunderstruck_r5c16"
+              },
+              {
+               "stringValue": "thunderstruck_r4c16"
+              },
+              {
+               "stringValue": "thunderstruck_r3c16"
+              },
+              {
+               "stringValue": "thunderstruck_r2c16"
+              },
+              {
+               "stringValue": "thunderstruck_r2c15"
+              },
+              {
+               "stringValue": "thunderstruck_r2c14"
+              },
+              {
+               "stringValue": "thunderstruck_r2c13"
+              },
+              {
+               "stringValue": "thunderstruck_r2c12"
+              },
+              {
+               "stringValue": "thunderstruck_r2c11"
+              },
+              {
+               "stringValue": "constrictingtendrils_r20c11"
+              },
+              {
+               "stringValue": "constrictingtendrils_r19c11"
+              },
+              {
+               "stringValue": "constrictingtendrils_r19c10"
+              },
+              {
+               "stringValue": "constrictingtendrils_r19c9"
+              },
+              {
+               "stringValue": "constrictingtendrils_r18c9"
+              },
+              {
+               "stringValue": "constrictingtendrils_r18c8"
+              },
+              {
+               "stringValue": "constrictingtendrils_r17c8"
+              },
+              {
+               "stringValue": "constrictingtendrils_r16c8"
+              },
+              {
+               "stringValue": "constrictingtendrils_r16c7"
+              },
+              {
+               "stringValue": "constrictingtendrils_r16c6"
+              },
+              {
+               "stringValue": "constrictingtendrils_r16c5"
+              },
+              {
+               "stringValue": "constrictingtendrils_r16c4"
+              },
+              {
+               "stringValue": "constrictingtendrils_r16c3"
+              },
+              {
+               "stringValue": "constrictingtendrils_r17c6"
+              },
+              {
+               "stringValue": "constrictingtendrils_r18c6"
+              },
+              {
+               "stringValue": "constrictingtendrils_r19c6"
+              },
+              {
+               "stringValue": "constrictingtendrils_r18c11"
+              },
+              {
+               "stringValue": "constrictingtendrils_r18c12"
+              },
+              {
+               "stringValue": "constrictingtendrils_r18c13"
+              },
+              {
+               "stringValue": "constrictingtendrils_r17c13"
+              },
+              {
+               "stringValue": "constrictingtendrils_r17c14"
+              },
+              {
+               "stringValue": "constrictingtendrils_r16c14"
+              },
+              {
+               "stringValue": "constrictingtendrils_r15c14"
+              },
+              {
+               "stringValue": "constrictingtendrils_r15c15"
+              },
+              {
+               "stringValue": "constrictingtendrils_r14c15"
+              },
+              {
+               "stringValue": "constrictingtendrils_r13c16"
+              },
+              {
+               "stringValue": "constrictingtendrils_r12c16"
+              },
+              {
+               "stringValue": "constrictingtendrils_r12c17"
+              },
+              {
+               "stringValue": "constrictingtendrils_r11c18"
+              },
+              {
+               "stringValue": "constrictingtendrils_r11c19"
+              },
+              {
+               "stringValue": "constrictingtendrils_r11c20"
+              },
+              {
+               "stringValue": "constrictingtendrils_r11c14"
+              },
+              {
+               "stringValue": "constrictingtendrils_r11c13"
+              },
+              {
+               "stringValue": "constrictingtendrils_r11c12"
+              },
+              {
+               "stringValue": "constrictingtendrils_r11c11"
+              },
+              {
+               "stringValue": "constrictingtendrils_r11c10"
+              },
+              {
+               "stringValue": "constrictingtendrils_r12c10"
+              },
+              {
+               "stringValue": "constrictingtendrils_r12c9"
+              },
+              {
+               "stringValue": "constrictingtendrils_r13c9"
+              },
+              {
+               "stringValue": "heightenedmalice_r20c11"
+              },
+              {
+               "stringValue": "heightenedmalice_r19c11"
+              },
+              {
+               "stringValue": "heightenedmalice_r18c11"
+              },
+              {
+               "stringValue": "heightenedmalice_r18c10"
+              },
+              {
+               "stringValue": "heightenedmalice_r18c9"
+              },
+              {
+               "stringValue": "heightenedmalice_r18c8"
+              },
+              {
+               "stringValue": "heightenedmalice_r17c8"
+              },
+              {
+               "stringValue": "heightenedmalice_r17c7"
+              },
+              {
+               "stringValue": "heightenedmalice_r17c6"
+              },
+              {
+               "stringValue": "heightenedmalice_r16c6"
+              },
+              {
+               "stringValue": "heightenedmalice_r19c8"
+              },
+              {
+               "stringValue": "heightenedmalice_r19c7"
+              },
+              {
+               "stringValue": "heightenedmalice_r19c6"
+              },
+              {
+               "stringValue": "heightenedmalice_r17c5"
+              },
+              {
+               "stringValue": "heightenedmalice_r17c4"
+              },
+              {
+               "stringValue": "heightenedmalice_r17c3"
+              },
+              {
+               "stringValue": "heightenedmalice_r16c3"
+              },
+              {
+               "stringValue": "heightenedmalice_r15c3"
+              },
+              {
+               "stringValue": "heightenedmalice_r11c13"
+              },
+              {
+               "stringValue": "heightenedmalice_r10c13"
+              },
+              {
+               "stringValue": "heightenedmalice_r9c13"
+              },
+              {
+               "stringValue": "heightenedmalice_r8c13"
+              },
+              {
+               "stringValue": "heightenedmalice_r8c14"
+              },
+              {
+               "stringValue": "heightenedmalice_r7c14"
+              },
+              {
+               "stringValue": "heightenedmalice_r7c15"
+              },
+              {
+               "stringValue": "heightenedmalice_r6c15"
+              },
+              {
+               "stringValue": "heightenedmalice_r6c16"
+              },
+              {
+               "stringValue": "heightenedmalice_r6c17"
+              },
+              {
+               "stringValue": "heightenedmalice_r5c17"
+              },
+              {
+               "stringValue": "heightenedmalice_r5c18"
+              },
+              {
+               "stringValue": "heightenedmalice_r4c18"
+              },
+              {
+               "stringValue": "heightenedmalice_r14c3"
+              },
+              {
+               "stringValue": "heightenedmalice_r14c4"
+              },
+              {
+               "stringValue": "heightenedmalice_r13c4"
+              },
+              {
+               "stringValue": "heightenedmalice_r12c4"
+              },
+              {
+               "stringValue": "heightenedmalice_r12c3"
+              },
+              {
+               "stringValue": "heightenedmalice_r12c2"
+              },
+              {
+               "stringValue": "heightenedmalice_r11c2"
+              },
+              {
+               "stringValue": "lustforcarnage_r2c11"
+              },
+              {
+               "stringValue": "lustforcarnage_r2c10"
+              },
+              {
+               "stringValue": "lustforcarnage_r3c10"
+              },
+              {
+               "stringValue": "lustforcarnage_r4c10"
+              },
+              {
+               "stringValue": "lustforcarnage_r5c10"
+              },
+              {
+               "stringValue": "lustforcarnage_r6c10"
+              },
+              {
+               "stringValue": "lustforcarnage_r7c11"
+              },
+              {
+               "stringValue": "lustforcarnage_r8c11"
+              },
+              {
+               "stringValue": "lustforcarnage_r9c11"
+              },
+              {
+               "stringValue": "lustforcarnage_r9c10"
+              },
+              {
+               "stringValue": "lustforcarnage_r9c9"
+              },
+              {
+               "stringValue": "lustforcarnage_r9c8"
+              },
+              {
+               "stringValue": "lustforcarnage_r9c12"
+              },
+              {
+               "stringValue": "lustforcarnage_r9c13"
+              },
+              {
+               "stringValue": "lustforcarnage_r9c14"
+              },
+              {
+               "stringValue": "lustforcarnage_r10c11"
+              },
+              {
+               "stringValue": "lustforcarnage_r10c10"
+              },
+              {
+               "stringValue": "lustforcarnage_r11c10"
+              },
+              {
+               "stringValue": "lustforcarnage_r12c10"
+              },
+              {
+               "stringValue": "lustforcarnage_r13c10"
+              },
+              {
+               "stringValue": "lustforcarnage_r14c10"
+              },
+              {
+               "stringValue": "lustforcarnage_r15c11"
+              },
+              {
+               "stringValue": "lustforcarnage_r16c11"
+              },
+              {
+               "stringValue": "lustforcarnage_r14c9"
+              },
+              {
+               "stringValue": "lustforcarnage_r14c7"
+              },
+              {
+               "stringValue": "heightenedmalice_r11c12"
+              },
+              {
+               "stringValue": "heightenedmalice_r11c11"
+              },
+              {
+               "stringValue": "startingboard_r4c13"
+              },
+              {
+               "stringValue": "startingboard_r5c13"
+              },
+              {
+               "stringValue": "startingboard_r6c13"
+              },
+              {
+               "stringValue": "startingboard_r6c10"
+              },
+              {
+               "stringValue": "heightenedmalice_r12c11"
+              },
+              {
+               "stringValue": "lustforcarnage_r14c11"
+              },
+              {
+               "stringValue": "lustforcarnage_r14c12"
+              },
+              {
+               "stringValue": "lustforcarnage_r14c13"
+              },
+              {
+               "stringValue": "lustforcarnage_r14c14"
+              },
+              {
+               "stringValue": "lustforcarnage_r14c15"
+              },
+              {
+               "stringValue": "lustforcarnage_r14c16"
+              },
+              {
+               "stringValue": "lustforcarnage_r14c17"
+              },
+              {
+               "stringValue": "lustforcarnage_r15c17"
+              },
+              {
+               "stringValue": "lustforcarnage_r15c18"
+              },
+              {
+               "stringValue": "heightenedmalice_r13c7"
+              },
+              {
+               "stringValue": "heightenedmalice_r13c8"
+              },
+              {
+               "stringValue": "heightenedmalice_r13c9"
+              },
+              {
+               "stringValue": "heightenedmalice_r12c9"
+              },
+              {
+               "stringValue": "heightenedmalice_r12c10"
+              },
+              {
+               "stringValue": "heightenedmalice_r13c6"
+              },
+              {
+               "stringValue": "lustforcarnage_r14c8"
+              },
+              {
+               "stringValue": "lustforcarnage_r14c6"
+              },
+              {
+               "stringValue": "lustforcarnage_r14c5"
+              },
+              {
+               "stringValue": "lustforcarnage_r15c5"
+              },
+              {
+               "stringValue": "lustforcarnage_r15c4"
+              },
+              {
+               "stringValue": "constrictingtendrils_r12c14"
+              },
+              {
+               "stringValue": "constrictingtendrils_r13c14"
+              },
+              {
+               "stringValue": "constrictingtendrils_r13c15"
+              },
+              {
+               "stringValue": "constrictingtendrils_r12c18"
+              },
+              {
+               "stringValue": "heightenedmalice_r13c5"
+              },
+              {
+               "stringValue": "lustforcarnage_r6c11"
+              }
+             ]
+            }
+           },
+           "boards": {
+            "arrayValue": {
+             "values": [
+              {
+               "mapValue": {
+                "fields": {
+                 "x": {
+                  "integerValue": "0"
+                 },
+                 "boardNumber": {
+                  "integerValue": "1"
+                 },
+                 "glyphLevel": {
+                  "integerValue": "100"
+                 },
+                 "rotation": {
+                  "integerValue": "0"
+                 },
+                 "glyph": {
+                  "stringValue": "Spirit"
+                 },
+                 "y": {
+                  "integerValue": "0"
+                 },
+                 "name": {
+                  "stringValue": "Starting Board"
+                 }
+                }
+               }
+              },
+              {
+               "mapValue": {
+                "fields": {
+                 "boardNumber": {
+                  "integerValue": "2"
+                 },
+                 "x": {
+                  "integerValue": "0"
+                 },
+                 "glyphLevel": {
+                  "integerValue": "100"
+                 },
+                 "glyph": {
+                  "stringValue": "Earth and Sky"
+                 },
+                 "rotation": {
+                  "integerValue": "90"
+                 },
+                 "y": {
+                  "integerValue": "1"
+                 },
+                 "name": {
+                  "stringValue": "Thunderstruck"
+                 }
+                }
+               }
+              },
+              {
+               "mapValue": {
+                "fields": {
+                 "glyphLevel": {
+                  "integerValue": "100"
+                 },
+                 "boardNumber": {
+                  "integerValue": "3"
+                 },
+                 "x": {
+                  "integerValue": "1"
+                 },
+                 "rotation": {
+                  "integerValue": "90"
+                 },
+                 "y": {
+                  "integerValue": "1"
+                 },
+                 "name": {
+                  "stringValue": "Constricting Tendrils"
+                 },
+                 "glyph": {
+                  "stringValue": "Fang and Claw"
+                 }
+                }
+               }
+              },
+              {
+               "mapValue": {
+                "fields": {
+                 "x": {
+                  "integerValue": "1"
+                 },
+                 "boardNumber": {
+                  "integerValue": "4"
+                 },
+                 "glyphLevel": {
+                  "integerValue": "100"
+                 },
+                 "y": {
+                  "integerValue": "0"
+                 },
+                 "name": {
+                  "stringValue": "Heightened Malice"
+                 },
+                 "rotation": {
+                  "integerValue": "180"
+                 },
+                 "glyph": {
+                  "stringValue": "Fulminate"
+                 }
+                }
+               }
+              },
+              {
+               "mapValue": {
+                "fields": {
+                 "rotation": {
+                  "integerValue": "270"
+                 },
+                 "glyph": {
+                  "stringValue": "Keeper"
+                 },
+                 "y": {
+                  "integerValue": "0"
+                 },
+                 "name": {
+                  "stringValue": "Lust for Carnage"
+                 },
+                 "glyphLevel": {
+                  "integerValue": "100"
+                 },
+                 "boardNumber": {
+                  "integerValue": "5"
+                 },
+                 "x": {
+                  "integerValue": "2"
+                 }
+                }
+               }
+              }
+             ]
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     },
+     {
+      "mapValue": {
+       "fields": {
+        "name": {
+         "stringValue": "Shred - PTR"
+        },
+        "class": {
+         "stringValue": "Druid"
+        },
+        "variantName": {
+         "stringValue": "Shred - PTR Version"
+        },
+        "order": {
+         "integerValue": "2"
+        },
+        "dropdownOrder": {
+         "integerValue": "3"
+        },
+        "paragon": {
+         "mapValue": {
+          "fields": {
+           "selectedTiles": {
+            "arrayValue": {
+             "values": [
+              {
+               "stringValue": "startingboard_r15c11"
+              },
+              {
+               "stringValue": "startingboard_r14c11"
+              },
+              {
+               "stringValue": "startingboard_r14c12"
+              },
+              {
+               "stringValue": "startingboard_r14c13"
+              },
+              {
+               "stringValue": "startingboard_r13c13"
+              },
+              {
+               "stringValue": "startingboard_r12c13"
+              },
+              {
+               "stringValue": "startingboard_r12c12"
+              },
+              {
+               "stringValue": "startingboard_r11c13"
+              },
+              {
+               "stringValue": "startingboard_r10c13"
+              },
+              {
+               "stringValue": "startingboard_r9c13"
+              },
+              {
+               "stringValue": "startingboard_r8c13"
+              },
+              {
+               "stringValue": "startingboard_r7c13"
+              },
+              {
+               "stringValue": "startingboard_r7c12"
+              },
+              {
+               "stringValue": "startingboard_r7c11"
+              },
+              {
+               "stringValue": "startingboard_r7c10"
+              },
+              {
+               "stringValue": "startingboard_r7c9"
+              },
+              {
+               "stringValue": "startingboard_r5c10"
+              },
+              {
+               "stringValue": "startingboard_r14c10"
+              },
+              {
+               "stringValue": "startingboard_r14c9"
+              },
+              {
+               "stringValue": "startingboard_r13c9"
+              },
+              {
+               "stringValue": "startingboard_r12c9"
+              },
+              {
+               "stringValue": "startingboard_r12c10"
+              },
+              {
+               "stringValue": "startingboard_r11c9"
+              },
+              {
+               "stringValue": "startingboard_r5c12"
+              },
+              {
+               "stringValue": "startingboard_r4c12"
+              },
+              {
+               "stringValue": "startingboard_r3c12"
+              },
+              {
+               "stringValue": "startingboard_r2c12"
+              },
+              {
+               "stringValue": "startingboard_r2c11"
+              },
+              {
+               "stringValue": "thunderstruck_r11c20"
+              },
+              {
+               "stringValue": "thunderstruck_r10c20"
+              },
+              {
+               "stringValue": "thunderstruck_r9c20"
+              },
+              {
+               "stringValue": "thunderstruck_r8c20"
+              },
+              {
+               "stringValue": "thunderstruck_r7c20"
+              },
+              {
+               "stringValue": "thunderstruck_r6c20"
+              },
+              {
+               "stringValue": "thunderstruck_r6c19"
+              },
+              {
+               "stringValue": "thunderstruck_r6c18"
+              },
+              {
+               "stringValue": "thunderstruck_r6c17"
+              },
+              {
+               "stringValue": "thunderstruck_r6c16"
+              },
+              {
+               "stringValue": "thunderstruck_r6c15"
+              },
+              {
+               "stringValue": "thunderstruck_r6c14"
+              },
+              {
+               "stringValue": "thunderstruck_r7c14"
+              },
+              {
+               "stringValue": "thunderstruck_r7c13"
+              },
+              {
+               "stringValue": "thunderstruck_r8c13"
+              },
+              {
+               "stringValue": "thunderstruck_r9c13"
+              },
+              {
+               "stringValue": "thunderstruck_r9c12"
+              },
+              {
+               "stringValue": "thunderstruck_r10c12"
+              },
+              {
+               "stringValue": "thunderstruck_r10c11"
+              },
+              {
+               "stringValue": "thunderstruck_r10c10"
+              },
+              {
+               "stringValue": "thunderstruck_r10c9"
+              },
+              {
+               "stringValue": "thunderstruck_r10c8"
+              },
+              {
+               "stringValue": "thunderstruck_r9c8"
+              },
+              {
+               "stringValue": "thunderstruck_r9c7"
+              },
+              {
+               "stringValue": "thunderstruck_r8c6"
+              },
+              {
+               "stringValue": "thunderstruck_r11c9"
+              },
+              {
+               "stringValue": "thunderstruck_r12c9"
+              },
+              {
+               "stringValue": "thunderstruck_r12c8"
+              },
+              {
+               "stringValue": "thunderstruck_r13c8"
+              },
+              {
+               "stringValue": "thunderstruck_r13c7"
+              },
+              {
+               "stringValue": "thunderstruck_r14c7"
+              },
+              {
+               "stringValue": "thunderstruck_r15c7"
+              },
+              {
+               "stringValue": "thunderstruck_r15c6"
+              },
+              {
+               "stringValue": "thunderstruck_r16c6"
+              },
+              {
+               "stringValue": "thunderstruck_r17c6"
+              },
+              {
+               "stringValue": "thunderstruck_r17c5"
+              },
+              {
+               "stringValue": "thunderstruck_r18c5"
+              },
+              {
+               "stringValue": "thunderstruck_r18c4"
+              },
+              {
+               "stringValue": "thunderstruck_r18c3"
+              },
+              {
+               "stringValue": "thunderstruck_r19c3"
+              },
+              {
+               "stringValue": "thunderstruck_r19c2"
+              },
+              {
+               "stringValue": "thunderstruck_r20c3"
+              },
+              {
+               "stringValue": "thunderstruck_r19c4"
+              },
+              {
+               "stringValue": "thunderstruck_r7c16"
+              },
+              {
+               "stringValue": "thunderstruck_r8c16"
+              },
+              {
+               "stringValue": "thunderstruck_r9c16"
+              },
+              {
+               "stringValue": "thunderstruck_r9c15"
+              },
+              {
+               "stringValue": "thunderstruck_r10c16"
+              },
+              {
+               "stringValue": "thunderstruck_r5c16"
+              },
+              {
+               "stringValue": "thunderstruck_r4c16"
+              },
+              {
+               "stringValue": "thunderstruck_r3c16"
+              },
+              {
+               "stringValue": "thunderstruck_r3c15"
+              },
+              {
+               "stringValue": "thunderstruck_r2c16"
+              },
+              {
+               "stringValue": "thunderstruck_r2c15"
+              },
+              {
+               "stringValue": "thunderstruck_r2c14"
+              },
+              {
+               "stringValue": "thunderstruck_r2c13"
+              },
+              {
+               "stringValue": "thunderstruck_r2c12"
+              },
+              {
+               "stringValue": "thunderstruck_r2c11"
+              },
+              {
+               "stringValue": "constrictingtendrils_r20c11"
+              },
+              {
+               "stringValue": "constrictingtendrils_r19c11"
+              },
+              {
+               "stringValue": "constrictingtendrils_r19c10"
+              },
+              {
+               "stringValue": "constrictingtendrils_r19c9"
+              },
+              {
+               "stringValue": "constrictingtendrils_r18c9"
+              },
+              {
+               "stringValue": "constrictingtendrils_r18c8"
+              },
+              {
+               "stringValue": "constrictingtendrils_r17c8"
+              },
+              {
+               "stringValue": "constrictingtendrils_r16c8"
+              },
+              {
+               "stringValue": "constrictingtendrils_r16c7"
+              },
+              {
+               "stringValue": "constrictingtendrils_r16c6"
+              },
+              {
+               "stringValue": "constrictingtendrils_r16c5"
+              },
+              {
+               "stringValue": "constrictingtendrils_r16c4"
+              },
+              {
+               "stringValue": "constrictingtendrils_r16c3"
+              },
+              {
+               "stringValue": "constrictingtendrils_r15c3"
+              },
+              {
+               "stringValue": "constrictingtendrils_r16c2"
+              },
+              {
+               "stringValue": "constrictingtendrils_r17c4"
+              },
+              {
+               "stringValue": "constrictingtendrils_r17c6"
+              },
+              {
+               "stringValue": "constrictingtendrils_r18c6"
+              },
+              {
+               "stringValue": "constrictingtendrils_r19c6"
+              },
+              {
+               "stringValue": "constrictingtendrils_r18c11"
+              },
+              {
+               "stringValue": "constrictingtendrils_r18c12"
+              },
+              {
+               "stringValue": "constrictingtendrils_r18c13"
+              },
+              {
+               "stringValue": "constrictingtendrils_r17c13"
+              },
+              {
+               "stringValue": "constrictingtendrils_r17c14"
+              },
+              {
+               "stringValue": "constrictingtendrils_r16c14"
+              },
+              {
+               "stringValue": "constrictingtendrils_r15c14"
+              },
+              {
+               "stringValue": "constrictingtendrils_r16c15"
+              },
+              {
+               "stringValue": "constrictingtendrils_r15c15"
+              },
+              {
+               "stringValue": "constrictingtendrils_r14c15"
+              },
+              {
+               "stringValue": "constrictingtendrils_r13c16"
+              },
+              {
+               "stringValue": "constrictingtendrils_r12c16"
+              },
+              {
+               "stringValue": "constrictingtendrils_r12c17"
+              },
+              {
+               "stringValue": "constrictingtendrils_r11c18"
+              },
+              {
+               "stringValue": "constrictingtendrils_r11c19"
+              },
+              {
+               "stringValue": "constrictingtendrils_r11c20"
+              },
+              {
+               "stringValue": "constrictingtendrils_r9c16"
+              },
+              {
+               "stringValue": "constrictingtendrils_r9c15"
+              },
+              {
+               "stringValue": "constrictingtendrils_r10c15"
+              },
+              {
+               "stringValue": "constrictingtendrils_r10c14"
+              },
+              {
+               "stringValue": "constrictingtendrils_r11c14"
+              },
+              {
+               "stringValue": "constrictingtendrils_r11c13"
+              },
+              {
+               "stringValue": "constrictingtendrils_r11c12"
+              },
+              {
+               "stringValue": "constrictingtendrils_r11c11"
+              },
+              {
+               "stringValue": "constrictingtendrils_r11c10"
+              },
+              {
+               "stringValue": "constrictingtendrils_r12c10"
+              },
+              {
+               "stringValue": "constrictingtendrils_r12c9"
+              },
+              {
+               "stringValue": "constrictingtendrils_r13c9"
+              },
+              {
+               "stringValue": "heightenedmalice_r20c11"
+              },
+              {
+               "stringValue": "heightenedmalice_r19c11"
+              },
+              {
+               "stringValue": "heightenedmalice_r18c11"
+              },
+              {
+               "stringValue": "heightenedmalice_r18c10"
+              },
+              {
+               "stringValue": "heightenedmalice_r18c9"
+              },
+              {
+               "stringValue": "heightenedmalice_r18c8"
+              },
+              {
+               "stringValue": "heightenedmalice_r17c8"
+              },
+              {
+               "stringValue": "heightenedmalice_r17c7"
+              },
+              {
+               "stringValue": "heightenedmalice_r17c6"
+              },
+              {
+               "stringValue": "heightenedmalice_r16c6"
+              },
+              {
+               "stringValue": "heightenedmalice_r19c8"
+              },
+              {
+               "stringValue": "heightenedmalice_r19c7"
+              },
+              {
+               "stringValue": "heightenedmalice_r19c6"
+              },
+              {
+               "stringValue": "heightenedmalice_r17c5"
+              },
+              {
+               "stringValue": "heightenedmalice_r17c4"
+              },
+              {
+               "stringValue": "heightenedmalice_r17c3"
+              },
+              {
+               "stringValue": "heightenedmalice_r16c3"
+              },
+              {
+               "stringValue": "heightenedmalice_r15c3"
+              },
+              {
+               "stringValue": "heightenedmalice_r14c13"
+              },
+              {
+               "stringValue": "heightenedmalice_r14c14"
+              },
+              {
+               "stringValue": "heightenedmalice_r14c15"
+              },
+              {
+               "stringValue": "heightenedmalice_r13c15"
+              },
+              {
+               "stringValue": "heightenedmalice_r12c15"
+              },
+              {
+               "stringValue": "heightenedmalice_r11c15"
+              },
+              {
+               "stringValue": "heightenedmalice_r11c14"
+              },
+              {
+               "stringValue": "heightenedmalice_r11c13"
+              },
+              {
+               "stringValue": "heightenedmalice_r10c13"
+              },
+              {
+               "stringValue": "heightenedmalice_r9c13"
+              },
+              {
+               "stringValue": "heightenedmalice_r8c13"
+              },
+              {
+               "stringValue": "heightenedmalice_r8c14"
+              },
+              {
+               "stringValue": "heightenedmalice_r7c14"
+              },
+              {
+               "stringValue": "heightenedmalice_r7c15"
+              },
+              {
+               "stringValue": "heightenedmalice_r6c15"
+              },
+              {
+               "stringValue": "heightenedmalice_r6c16"
+              },
+              {
+               "stringValue": "heightenedmalice_r6c17"
+              },
+              {
+               "stringValue": "heightenedmalice_r5c17"
+              },
+              {
+               "stringValue": "heightenedmalice_r5c18"
+              },
+              {
+               "stringValue": "heightenedmalice_r4c18"
+              },
+              {
+               "stringValue": "heightenedmalice_r15c2"
+              },
+              {
+               "stringValue": "heightenedmalice_r14c3"
+              },
+              {
+               "stringValue": "heightenedmalice_r14c4"
+              },
+              {
+               "stringValue": "heightenedmalice_r13c4"
+              },
+              {
+               "stringValue": "heightenedmalice_r12c4"
+              },
+              {
+               "stringValue": "heightenedmalice_r12c3"
+              },
+              {
+               "stringValue": "heightenedmalice_r12c2"
+              },
+              {
+               "stringValue": "heightenedmalice_r11c2"
+              },
+              {
+               "stringValue": "lustforcarnage_r2c11"
+              },
+              {
+               "stringValue": "lustforcarnage_r2c10"
+              },
+              {
+               "stringValue": "lustforcarnage_r3c10"
+              },
+              {
+               "stringValue": "lustforcarnage_r4c10"
+              },
+              {
+               "stringValue": "lustforcarnage_r5c10"
+              },
+              {
+               "stringValue": "lustforcarnage_r6c10"
+              },
+              {
+               "stringValue": "lustforcarnage_r7c10"
+              },
+              {
+               "stringValue": "lustforcarnage_r7c11"
+              },
+              {
+               "stringValue": "lustforcarnage_r8c11"
+              },
+              {
+               "stringValue": "lustforcarnage_r9c11"
+              },
+              {
+               "stringValue": "lustforcarnage_r9c10"
+              },
+              {
+               "stringValue": "lustforcarnage_r9c9"
+              },
+              {
+               "stringValue": "lustforcarnage_r9c8"
+              },
+              {
+               "stringValue": "lustforcarnage_r10c8"
+              },
+              {
+               "stringValue": "lustforcarnage_r9c7"
+              },
+              {
+               "stringValue": "lustforcarnage_r9c12"
+              },
+              {
+               "stringValue": "lustforcarnage_r9c13"
+              },
+              {
+               "stringValue": "lustforcarnage_r9c14"
+              },
+              {
+               "stringValue": "lustforcarnage_r10c14"
+              },
+              {
+               "stringValue": "lustforcarnage_r9c15"
+              },
+              {
+               "stringValue": "lustforcarnage_r8c14"
+              },
+              {
+               "stringValue": "lustforcarnage_r10c11"
+              },
+              {
+               "stringValue": "lustforcarnage_r10c10"
+              },
+              {
+               "stringValue": "lustforcarnage_r11c10"
+              },
+              {
+               "stringValue": "lustforcarnage_r12c10"
+              },
+              {
+               "stringValue": "lustforcarnage_r13c10"
+              },
+              {
+               "stringValue": "lustforcarnage_r14c10"
+              },
+              {
+               "stringValue": "lustforcarnage_r15c10"
+              },
+              {
+               "stringValue": "lustforcarnage_r15c11"
+              },
+              {
+               "stringValue": "lustforcarnage_r16c11"
+              },
+              {
+               "stringValue": "lustforcarnage_r14c9"
+              },
+              {
+               "stringValue": "lustforcarnage_r14c7"
+              },
+              {
+               "stringValue": "lustforcarnage_r15c9"
+              },
+              {
+               "stringValue": "lustforcarnage_r16c9"
+              },
+              {
+               "stringValue": "lustforcarnage_r17c9"
+              },
+              {
+               "stringValue": "lustforcarnage_r17c8"
+              },
+              {
+               "stringValue": "lustforcarnage_r17c7"
+              },
+              {
+               "stringValue": "lustforcarnage_r16c7"
+              },
+              {
+               "stringValue": "heightenedmalice_r11c12"
+              },
+              {
+               "stringValue": "heightenedmalice_r11c11"
+              },
+              {
+               "stringValue": "thunderstruck_r9c6"
+              },
+              {
+               "stringValue": "thunderstruck_r8c5"
+              },
+              {
+               "stringValue": "startingboard_r8c9"
+              },
+              {
+               "stringValue": "startingboard_r9c9"
+              },
+              {
+               "stringValue": "startingboard_r9c12"
+              },
+              {
+               "stringValue": "startingboard_r9c11"
+              },
+              {
+               "stringValue": "startingboard_r4c13"
+              },
+              {
+               "stringValue": "startingboard_r5c13"
+              },
+              {
+               "stringValue": "startingboard_r6c13"
+              },
+              {
+               "stringValue": "startingboard_r6c14"
+              },
+              {
+               "stringValue": "startingboard_r6c10"
+              },
+              {
+               "stringValue": "startingboard_r6c12"
+              },
+              {
+               "stringValue": "thunderstruck_r7c19"
+              },
+              {
+               "stringValue": "heightenedmalice_r10c11"
+              },
+              {
+               "stringValue": "heightenedmalice_r12c11"
+              },
+              {
+               "stringValue": "lustforcarnage_r14c11"
+              },
+              {
+               "stringValue": "lustforcarnage_r14c12"
+              },
+              {
+               "stringValue": "lustforcarnage_r14c13"
+              },
+              {
+               "stringValue": "lustforcarnage_r14c14"
+              },
+              {
+               "stringValue": "lustforcarnage_r14c15"
+              },
+              {
+               "stringValue": "lustforcarnage_r14c16"
+              },
+              {
+               "stringValue": "lustforcarnage_r14c17"
+              },
+              {
+               "stringValue": "lustforcarnage_r15c17"
+              },
+              {
+               "stringValue": "lustforcarnage_r15c18"
+              },
+              {
+               "stringValue": "lustforcarnage_r15c19"
+              },
+              {
+               "stringValue": "lustforcarnage_r14c18"
+              },
+              {
+               "stringValue": "lustforcarnage_r13c17"
+              },
+              {
+               "stringValue": "startingboard_r6c9"
+              },
+              {
+               "stringValue": "startingboard_r4c10"
+              },
+              {
+               "stringValue": "heightenedmalice_r13c7"
+              },
+              {
+               "stringValue": "heightenedmalice_r13c8"
+              },
+              {
+               "stringValue": "heightenedmalice_r13c9"
+              },
+              {
+               "stringValue": "heightenedmalice_r12c9"
+              },
+              {
+               "stringValue": "heightenedmalice_r12c10"
+              },
+              {
+               "stringValue": "heightenedmalice_r5c16"
+              },
+              {
+               "stringValue": "heightenedmalice_r17c9"
+              },
+              {
+               "stringValue": "heightenedmalice_r16c5"
+              },
+              {
+               "stringValue": "heightenedmalice_r14c5"
+              },
+              {
+               "stringValue": "heightenedmalice_r14c6"
+              },
+              {
+               "stringValue": "heightenedmalice_r13c6"
+              },
+              {
+               "stringValue": "lustforcarnage_r18c7"
+              },
+              {
+               "stringValue": "lustforcarnage_r17c6"
+              },
+              {
+               "stringValue": "lustforcarnage_r14c8"
+              },
+              {
+               "stringValue": "lustforcarnage_r14c6"
+              },
+              {
+               "stringValue": "lustforcarnage_r14c5"
+              },
+              {
+               "stringValue": "lustforcarnage_r15c5"
+              },
+              {
+               "stringValue": "lustforcarnage_r15c4"
+              },
+              {
+               "stringValue": "lustforcarnage_r13c5"
+              },
+              {
+               "stringValue": "heightenedmalice_r14c8"
+              },
+              {
+               "stringValue": "heightenedmalice_r15c8"
+              },
+              {
+               "stringValue": "heightenedmalice_r16c2"
+              },
+              {
+               "stringValue": "heightenedmalice_r16c1"
+              },
+              {
+               "stringValue": "heightenedmalice_r12c5"
+              },
+              {
+               "stringValue": "constrictingtendrils_r17c3"
+              },
+              {
+               "stringValue": "constrictingtendrils_r15c2"
+              },
+              {
+               "stringValue": "constrictingtendrils_r19c5"
+              },
+              {
+               "stringValue": "constrictingtendrils_r18c5"
+              },
+              {
+               "stringValue": "constrictingtendrils_r20c6"
+              },
+              {
+               "stringValue": "constrictingtendrils_r20c7"
+              },
+              {
+               "stringValue": "constrictingtendrils_r19c7"
+              },
+              {
+               "stringValue": "thunderstruck_r3c17"
+              },
+              {
+               "stringValue": "heightenedmalice_r20c6"
+              },
+              {
+               "stringValue": "heightenedmalice_r20c5"
+              },
+              {
+               "stringValue": "startingboard_r6c8"
+              },
+              {
+               "stringValue": "startingboard_r5c8"
+              },
+              {
+               "stringValue": "startingboard_r11c12"
+              },
+              {
+               "stringValue": "constrictingtendrils_r12c14"
+              },
+              {
+               "stringValue": "constrictingtendrils_r13c14"
+              },
+              {
+               "stringValue": "constrictingtendrils_r13c15"
+              },
+              {
+               "stringValue": "constrictingtendrils_r12c18"
+              }
+             ]
+            }
+           },
+           "boards": {
+            "arrayValue": {
+             "values": [
+              {
+               "mapValue": {
+                "fields": {
+                 "glyphLevel": {
+                  "integerValue": "100"
+                 },
+                 "boardNumber": {
+                  "integerValue": "1"
+                 },
+                 "x": {
+                  "integerValue": "0"
+                 },
+                 "rotation": {
+                  "integerValue": "0"
+                 },
+                 "y": {
+                  "integerValue": "0"
+                 },
+                 "name": {
+                  "stringValue": "Starting Board"
+                 },
+                 "glyph": {
+                  "stringValue": "Spirit"
+                 }
+                }
+               }
+              },
+              {
+               "mapValue": {
+                "fields": {
+                 "boardNumber": {
+                  "integerValue": "2"
+                 },
+                 "x": {
+                  "integerValue": "0"
+                 },
+                 "glyphLevel": {
+                  "integerValue": "100"
+                 },
+                 "glyph": {
+                  "stringValue": "Earth and Sky"
+                 },
+                 "name": {
+                  "stringValue": "Thunderstruck"
+                 },
+                 "rotation": {
+                  "integerValue": "90"
+                 },
+                 "y": {
+                  "integerValue": "1"
+                 }
+                }
+               }
+              },
+              {
+               "mapValue": {
+                "fields": {
+                 "glyphLevel": {
+                  "integerValue": "100"
+                 },
+                 "x": {
+                  "integerValue": "1"
+                 },
+                 "boardNumber": {
+                  "integerValue": "3"
+                 },
+                 "rotation": {
+                  "integerValue": "90"
+                 },
+                 "name": {
+                  "stringValue": "Constricting Tendrils"
+                 },
+                 "y": {
+                  "integerValue": "1"
+                 },
+                 "glyph": {
+                  "stringValue": "Fang and Claw"
+                 }
+                }
+               }
+              },
+              {
+               "mapValue": {
+                "fields": {
+                 "x": {
+                  "integerValue": "1"
+                 },
+                 "boardNumber": {
+                  "integerValue": "4"
+                 },
+                 "glyphLevel": {
+                  "integerValue": "100"
+                 },
+                 "rotation": {
+                  "integerValue": "180"
+                 },
+                 "y": {
+                  "integerValue": "0"
+                 },
+                 "name": {
+                  "stringValue": "Heightened Malice"
+                 },
+                 "glyph": {
+                  "stringValue": "Fulminate"
+                 }
+                }
+               }
+              },
+              {
+               "mapValue": {
+                "fields": {
+                 "rotation": {
+                  "integerValue": "270"
+                 },
+                 "y": {
+                  "integerValue": "0"
+                 },
+                 "name": {
+                  "stringValue": "Lust for Carnage"
+                 },
+                 "glyph": {
+                  "stringValue": "Keeper"
+                 },
+                 "glyphLevel": {
+                  "integerValue": "100"
+                 },
+                 "boardNumber": {
+                  "integerValue": "5"
+                 },
+                 "x": {
+                  "integerValue": "2"
+                 }
+                }
+               }
+              }
+             ]
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     },
+     {
+      "mapValue": {
+       "fields": {
+        "name": {
+         "stringValue": "Shred - 148 Push (PLAY THIS)"
+        },
+        "class": {
+         "stringValue": "Druid"
+        },
+        "variantName": {
+         "stringValue": "Shred - Standard"
+        },
+        "order": {
+         "integerValue": "3"
+        },
+        "dropdownOrder": {
+         "integerValue": "1"
+        },
+        "paragon": {
+         "mapValue": {
+          "fields": {
+           "selectedTiles": {
+            "arrayValue": {
+             "values": [
+              {
+               "stringValue": "startingboard_r15c11"
+              },
+              {
+               "stringValue": "startingboard_r14c11"
+              },
+              {
+               "stringValue": "startingboard_r14c12"
+              },
+              {
+               "stringValue": "startingboard_r14c13"
+              },
+              {
+               "stringValue": "startingboard_r13c13"
+              },
+              {
+               "stringValue": "startingboard_r12c13"
+              },
+              {
+               "stringValue": "startingboard_r12c12"
+              },
+              {
+               "stringValue": "startingboard_r11c13"
+              },
+              {
+               "stringValue": "startingboard_r10c13"
+              },
+              {
+               "stringValue": "startingboard_r9c13"
+              },
+              {
+               "stringValue": "startingboard_r8c13"
+              },
+              {
+               "stringValue": "startingboard_r7c13"
+              },
+              {
+               "stringValue": "startingboard_r7c12"
+              },
+              {
+               "stringValue": "startingboard_r7c11"
+              },
+              {
+               "stringValue": "startingboard_r7c10"
+              },
+              {
+               "stringValue": "startingboard_r7c9"
+              },
+              {
+               "stringValue": "startingboard_r5c10"
+              },
+              {
+               "stringValue": "startingboard_r14c10"
+              },
+              {
+               "stringValue": "startingboard_r14c9"
+              },
+              {
+               "stringValue": "startingboard_r13c9"
+              },
+              {
+               "stringValue": "startingboard_r12c9"
+              },
+              {
+               "stringValue": "startingboard_r12c10"
+              },
+              {
+               "stringValue": "startingboard_r11c9"
+              },
+              {
+               "stringValue": "startingboard_r5c12"
+              },
+              {
+               "stringValue": "startingboard_r4c12"
+              },
+              {
+               "stringValue": "startingboard_r3c12"
+              },
+              {
+               "stringValue": "startingboard_r2c12"
+              },
+              {
+               "stringValue": "startingboard_r2c11"
+              },
+              {
+               "stringValue": "thunderstruck_r11c20"
+              },
+              {
+               "stringValue": "thunderstruck_r10c20"
+              },
+              {
+               "stringValue": "thunderstruck_r9c20"
+              },
+              {
+               "stringValue": "thunderstruck_r8c20"
+              },
+              {
+               "stringValue": "thunderstruck_r7c20"
+              },
+              {
+               "stringValue": "thunderstruck_r6c20"
+              },
+              {
+               "stringValue": "thunderstruck_r6c19"
+              },
+              {
+               "stringValue": "thunderstruck_r6c18"
+              },
+              {
+               "stringValue": "thunderstruck_r6c17"
+              },
+              {
+               "stringValue": "thunderstruck_r6c16"
+              },
+              {
+               "stringValue": "thunderstruck_r9c13"
+              },
+              {
+               "stringValue": "thunderstruck_r9c12"
+              },
+              {
+               "stringValue": "thunderstruck_r10c12"
+              },
+              {
+               "stringValue": "thunderstruck_r10c11"
+              },
+              {
+               "stringValue": "thunderstruck_r10c10"
+              },
+              {
+               "stringValue": "thunderstruck_r10c9"
+              },
+              {
+               "stringValue": "thunderstruck_r10c8"
+              },
+              {
+               "stringValue": "thunderstruck_r9c8"
+              },
+              {
+               "stringValue": "thunderstruck_r9c7"
+              },
+              {
+               "stringValue": "thunderstruck_r8c6"
+              },
+              {
+               "stringValue": "thunderstruck_r11c9"
+              },
+              {
+               "stringValue": "thunderstruck_r12c9"
+              },
+              {
+               "stringValue": "thunderstruck_r12c8"
+              },
+              {
+               "stringValue": "thunderstruck_r13c8"
+              },
+              {
+               "stringValue": "thunderstruck_r13c7"
+              },
+              {
+               "stringValue": "thunderstruck_r14c7"
+              },
+              {
+               "stringValue": "thunderstruck_r15c7"
+              },
+              {
+               "stringValue": "thunderstruck_r15c6"
+              },
+              {
+               "stringValue": "thunderstruck_r16c6"
+              },
+              {
+               "stringValue": "thunderstruck_r17c6"
+              },
+              {
+               "stringValue": "thunderstruck_r17c5"
+              },
+              {
+               "stringValue": "thunderstruck_r18c5"
+              },
+              {
+               "stringValue": "thunderstruck_r18c4"
+              },
+              {
+               "stringValue": "thunderstruck_r18c3"
+              },
+              {
+               "stringValue": "thunderstruck_r19c3"
+              },
+              {
+               "stringValue": "thunderstruck_r19c2"
+              },
+              {
+               "stringValue": "thunderstruck_r20c3"
+              },
+              {
+               "stringValue": "thunderstruck_r19c4"
+              },
+              {
+               "stringValue": "thunderstruck_r7c16"
+              },
+              {
+               "stringValue": "thunderstruck_r8c16"
+              },
+              {
+               "stringValue": "thunderstruck_r9c16"
+              },
+              {
+               "stringValue": "thunderstruck_r9c15"
+              },
+              {
+               "stringValue": "thunderstruck_r5c16"
+              },
+              {
+               "stringValue": "thunderstruck_r4c16"
+              },
+              {
+               "stringValue": "thunderstruck_r3c16"
+              },
+              {
+               "stringValue": "thunderstruck_r3c15"
+              },
+              {
+               "stringValue": "thunderstruck_r2c16"
+              },
+              {
+               "stringValue": "thunderstruck_r2c14"
+              },
+              {
+               "stringValue": "thunderstruck_r2c13"
+              },
+              {
+               "stringValue": "thunderstruck_r2c12"
+              },
+              {
+               "stringValue": "thunderstruck_r2c11"
+              },
+              {
+               "stringValue": "constrictingtendrils_r20c11"
+              },
+              {
+               "stringValue": "constrictingtendrils_r19c11"
+              },
+              {
+               "stringValue": "constrictingtendrils_r19c10"
+              },
+              {
+               "stringValue": "constrictingtendrils_r19c9"
+              },
+              {
+               "stringValue": "constrictingtendrils_r18c9"
+              },
+              {
+               "stringValue": "constrictingtendrils_r18c8"
+              },
+              {
+               "stringValue": "constrictingtendrils_r17c8"
+              },
+              {
+               "stringValue": "constrictingtendrils_r16c8"
+              },
+              {
+               "stringValue": "constrictingtendrils_r16c7"
+              },
+              {
+               "stringValue": "constrictingtendrils_r16c6"
+              },
+              {
+               "stringValue": "constrictingtendrils_r16c5"
+              },
+              {
+               "stringValue": "constrictingtendrils_r16c4"
+              },
+              {
+               "stringValue": "constrictingtendrils_r16c3"
+              },
+              {
+               "stringValue": "constrictingtendrils_r15c3"
+              },
+              {
+               "stringValue": "constrictingtendrils_r16c2"
+              },
+              {
+               "stringValue": "constrictingtendrils_r17c4"
+              },
+              {
+               "stringValue": "constrictingtendrils_r17c6"
+              },
+              {
+               "stringValue": "constrictingtendrils_r18c6"
+              },
+              {
+               "stringValue": "constrictingtendrils_r19c6"
+              },
+              {
+               "stringValue": "constrictingtendrils_r18c11"
+              },
+              {
+               "stringValue": "constrictingtendrils_r18c12"
+              },
+              {
+               "stringValue": "constrictingtendrils_r18c13"
+              },
+              {
+               "stringValue": "constrictingtendrils_r17c13"
+              },
+              {
+               "stringValue": "constrictingtendrils_r17c14"
+              },
+              {
+               "stringValue": "constrictingtendrils_r16c14"
+              },
+              {
+               "stringValue": "constrictingtendrils_r15c14"
+              },
+              {
+               "stringValue": "constrictingtendrils_r16c15"
+              },
+              {
+               "stringValue": "constrictingtendrils_r15c15"
+              },
+              {
+               "stringValue": "constrictingtendrils_r14c15"
+              },
+              {
+               "stringValue": "constrictingtendrils_r13c16"
+              },
+              {
+               "stringValue": "constrictingtendrils_r12c16"
+              },
+              {
+               "stringValue": "constrictingtendrils_r12c17"
+              },
+              {
+               "stringValue": "constrictingtendrils_r11c18"
+              },
+              {
+               "stringValue": "constrictingtendrils_r11c19"
+              },
+              {
+               "stringValue": "constrictingtendrils_r11c20"
+              },
+              {
+               "stringValue": "constrictingtendrils_r9c16"
+              },
+              {
+               "stringValue": "constrictingtendrils_r9c15"
+              },
+              {
+               "stringValue": "constrictingtendrils_r10c15"
+              },
+              {
+               "stringValue": "constrictingtendrils_r10c14"
+              },
+              {
+               "stringValue": "constrictingtendrils_r11c14"
+              },
+              {
+               "stringValue": "constrictingtendrils_r11c13"
+              },
+              {
+               "stringValue": "constrictingtendrils_r11c12"
+              },
+              {
+               "stringValue": "constrictingtendrils_r11c11"
+              },
+              {
+               "stringValue": "constrictingtendrils_r11c10"
+              },
+              {
+               "stringValue": "constrictingtendrils_r12c10"
+              },
+              {
+               "stringValue": "constrictingtendrils_r12c9"
+              },
+              {
+               "stringValue": "constrictingtendrils_r13c9"
+              },
+              {
+               "stringValue": "lustforcarnage_r2c11"
+              },
+              {
+               "stringValue": "lustforcarnage_r2c10"
+              },
+              {
+               "stringValue": "lustforcarnage_r3c10"
+              },
+              {
+               "stringValue": "lustforcarnage_r4c10"
+              },
+              {
+               "stringValue": "lustforcarnage_r5c10"
+              },
+              {
+               "stringValue": "lustforcarnage_r6c10"
+              },
+              {
+               "stringValue": "lustforcarnage_r7c10"
+              },
+              {
+               "stringValue": "lustforcarnage_r7c11"
+              },
+              {
+               "stringValue": "lustforcarnage_r8c11"
+              },
+              {
+               "stringValue": "lustforcarnage_r9c11"
+              },
+              {
+               "stringValue": "lustforcarnage_r9c10"
+              },
+              {
+               "stringValue": "lustforcarnage_r9c9"
+              },
+              {
+               "stringValue": "lustforcarnage_r9c8"
+              },
+              {
+               "stringValue": "lustforcarnage_r10c8"
+              },
+              {
+               "stringValue": "lustforcarnage_r9c7"
+              },
+              {
+               "stringValue": "lustforcarnage_r9c12"
+              },
+              {
+               "stringValue": "lustforcarnage_r9c13"
+              },
+              {
+               "stringValue": "lustforcarnage_r9c14"
+              },
+              {
+               "stringValue": "lustforcarnage_r10c14"
+              },
+              {
+               "stringValue": "lustforcarnage_r9c15"
+              },
+              {
+               "stringValue": "lustforcarnage_r8c14"
+              },
+              {
+               "stringValue": "lustforcarnage_r10c11"
+              },
+              {
+               "stringValue": "lustforcarnage_r10c10"
+              },
+              {
+               "stringValue": "lustforcarnage_r11c10"
+              },
+              {
+               "stringValue": "lustforcarnage_r12c10"
+              },
+              {
+               "stringValue": "lustforcarnage_r13c10"
+              },
+              {
+               "stringValue": "lustforcarnage_r14c10"
+              },
+              {
+               "stringValue": "lustforcarnage_r15c11"
+              },
+              {
+               "stringValue": "lustforcarnage_r16c11"
+              },
+              {
+               "stringValue": "lustforcarnage_r14c9"
+              },
+              {
+               "stringValue": "lustforcarnage_r14c7"
+              },
+              {
+               "stringValue": "lustforcarnage_r15c9"
+              },
+              {
+               "stringValue": "lustforcarnage_r16c9"
+              },
+              {
+               "stringValue": "lustforcarnage_r17c9"
+              },
+              {
+               "stringValue": "lustforcarnage_r17c8"
+              },
+              {
+               "stringValue": "lustforcarnage_r17c7"
+              },
+              {
+               "stringValue": "lustforcarnage_r16c7"
+              },
+              {
+               "stringValue": "thunderstruck_r9c6"
+              },
+              {
+               "stringValue": "thunderstruck_r8c5"
+              },
+              {
+               "stringValue": "startingboard_r8c9"
+              },
+              {
+               "stringValue": "startingboard_r9c9"
+              },
+              {
+               "stringValue": "startingboard_r9c12"
+              },
+              {
+               "stringValue": "startingboard_r9c11"
+              },
+              {
+               "stringValue": "startingboard_r4c13"
+              },
+              {
+               "stringValue": "startingboard_r5c13"
+              },
+              {
+               "stringValue": "startingboard_r6c13"
+              },
+              {
+               "stringValue": "startingboard_r6c14"
+              },
+              {
+               "stringValue": "startingboard_r6c10"
+              },
+              {
+               "stringValue": "startingboard_r6c12"
+              },
+              {
+               "stringValue": "lustforcarnage_r14c14"
+              },
+              {
+               "stringValue": "lustforcarnage_r14c15"
+              },
+              {
+               "stringValue": "lustforcarnage_r14c16"
+              },
+              {
+               "stringValue": "lustforcarnage_r14c17"
+              },
+              {
+               "stringValue": "lustforcarnage_r15c17"
+              },
+              {
+               "stringValue": "lustforcarnage_r15c18"
+              },
+              {
+               "stringValue": "lustforcarnage_r15c19"
+              },
+              {
+               "stringValue": "lustforcarnage_r14c18"
+              },
+              {
+               "stringValue": "lustforcarnage_r13c17"
+              },
+              {
+               "stringValue": "startingboard_r6c9"
+              },
+              {
+               "stringValue": "startingboard_r4c10"
+              },
+              {
+               "stringValue": "lustforcarnage_r18c7"
+              },
+              {
+               "stringValue": "lustforcarnage_r17c6"
+              },
+              {
+               "stringValue": "lustforcarnage_r14c8"
+              },
+              {
+               "stringValue": "lustforcarnage_r14c6"
+              },
+              {
+               "stringValue": "lustforcarnage_r14c5"
+              },
+              {
+               "stringValue": "lustforcarnage_r15c5"
+              },
+              {
+               "stringValue": "lustforcarnage_r15c4"
+              },
+              {
+               "stringValue": "lustforcarnage_r13c5"
+              },
+              {
+               "stringValue": "constrictingtendrils_r17c3"
+              },
+              {
+               "stringValue": "constrictingtendrils_r15c2"
+              },
+              {
+               "stringValue": "constrictingtendrils_r19c5"
+              },
+              {
+               "stringValue": "constrictingtendrils_r18c5"
+              },
+              {
+               "stringValue": "constrictingtendrils_r20c6"
+              },
+              {
+               "stringValue": "constrictingtendrils_r20c7"
+              },
+              {
+               "stringValue": "constrictingtendrils_r19c7"
+              },
+              {
+               "stringValue": "thunderstruck_r3c17"
+              },
+              {
+               "stringValue": "startingboard_r6c8"
+              },
+              {
+               "stringValue": "startingboard_r5c8"
+              },
+              {
+               "stringValue": "startingboard_r11c12"
+              },
+              {
+               "stringValue": "constrictingtendrils_r12c14"
+              },
+              {
+               "stringValue": "constrictingtendrils_r13c14"
+              },
+              {
+               "stringValue": "constrictingtendrils_r13c15"
+              },
+              {
+               "stringValue": "constrictingtendrils_r12c18"
+              },
+              {
+               "stringValue": "ancestralguidance_r6c6"
+              },
+              {
+               "stringValue": "ancestralguidance_r2c11"
+              },
+              {
+               "stringValue": "ancestralguidance_r2c10"
+              },
+              {
+               "stringValue": "ancestralguidance_r2c9"
+              },
+              {
+               "stringValue": "ancestralguidance_r2c8"
+              },
+              {
+               "stringValue": "ancestralguidance_r2c7"
+              },
+              {
+               "stringValue": "ancestralguidance_r3c7"
+              },
+              {
+               "stringValue": "ancestralguidance_r4c7"
+              },
+              {
+               "stringValue": "ancestralguidance_r5c7"
+              },
+              {
+               "stringValue": "ancestralguidance_r4c8"
+              },
+              {
+               "stringValue": "ancestralguidance_r4c9"
+              },
+              {
+               "stringValue": "ancestralguidance_r4c6"
+              },
+              {
+               "stringValue": "ancestralguidance_r4c5"
+              },
+              {
+               "stringValue": "ancestralguidance_r6c5"
+              },
+              {
+               "stringValue": "ancestralguidance_r6c4"
+              },
+              {
+               "stringValue": "ancestralguidance_r7c6"
+              },
+              {
+               "stringValue": "ancestralguidance_r8c6"
+              },
+              {
+               "stringValue": "ancestralguidance_r8c5"
+              },
+              {
+               "stringValue": "ancestralguidance_r8c4"
+              },
+              {
+               "stringValue": "ancestralguidance_r9c6"
+              },
+              {
+               "stringValue": "ancestralguidance_r10c6"
+              },
+              {
+               "stringValue": "ancestralguidance_r3c11"
+              },
+              {
+               "stringValue": "ancestralguidance_r4c11"
+              },
+              {
+               "stringValue": "ancestralguidance_r4c12"
+              },
+              {
+               "stringValue": "ancestralguidance_r5c12"
+              },
+              {
+               "stringValue": "ancestralguidance_r6c12"
+              },
+              {
+               "stringValue": "ancestralguidance_r6c13"
+              },
+              {
+               "stringValue": "ancestralguidance_r7c13"
+              },
+              {
+               "stringValue": "ancestralguidance_r8c13"
+              },
+              {
+               "stringValue": "ancestralguidance_r8c12"
+              },
+              {
+               "stringValue": "ancestralguidance_r9c12"
+              },
+              {
+               "stringValue": "ancestralguidance_r9c13"
+              },
+              {
+               "stringValue": "ancestralguidance_r9c14"
+              },
+              {
+               "stringValue": "ancestralguidance_r10c12"
+              },
+              {
+               "stringValue": "ancestralguidance_r10c11"
+              },
+              {
+               "stringValue": "ancestralguidance_r10c10"
+              },
+              {
+               "stringValue": "ancestralguidance_r11c10"
+              },
+              {
+               "stringValue": "ancestralguidance_r12c10"
+              },
+              {
+               "stringValue": "ancestralguidance_r12c9"
+              },
+              {
+               "stringValue": "ancestralguidance_r12c8"
+              },
+              {
+               "stringValue": "ancestralguidance_r9c15"
+              },
+              {
+               "stringValue": "ancestralguidance_r9c16"
+              },
+              {
+               "stringValue": "ancestralguidance_r11c17"
+              },
+              {
+               "stringValue": "ancestralguidance_r12c17"
+              },
+              {
+               "stringValue": "ancestralguidance_r9c17"
+              },
+              {
+               "stringValue": "ancestralguidance_r10c17"
+              },
+              {
+               "stringValue": "ancestralguidance_r12c16"
+              },
+              {
+               "stringValue": "ancestralguidance_r13c17"
+              },
+              {
+               "stringValue": "ancestralguidance_r13c16"
+              },
+              {
+               "stringValue": "ancestralguidance_r9c18"
+              },
+              {
+               "stringValue": "ancestralguidance_r9c19"
+              },
+              {
+               "stringValue": "ancestralguidance_r9c20"
+              },
+              {
+               "stringValue": "ancestralguidance_r10c20"
+              },
+              {
+               "stringValue": "ancestralguidance_r11c20"
+              },
+              {
+               "stringValue": "ancestralguidance_r13c15"
+              },
+              {
+               "stringValue": "ancestralguidance_r13c14"
+              },
+              {
+               "stringValue": "ancestralguidance_r13c13"
+              },
+              {
+               "stringValue": "ancestralguidance_r14c13"
+              },
+              {
+               "stringValue": "ancestralguidance_r15c13"
+              },
+              {
+               "stringValue": "ancestralguidance_r16c13"
+              },
+              {
+               "stringValue": "ancestralguidance_r16c12"
+              },
+              {
+               "stringValue": "ancestralguidance_r14c16"
+              },
+              {
+               "stringValue": "ancestralguidance_r15c16"
+              },
+              {
+               "stringValue": "ancestralguidance_r15c17"
+              },
+              {
+               "stringValue": "ancestralguidance_r16c17"
+              },
+              {
+               "stringValue": "ancestralguidance_r17c17"
+              },
+              {
+               "stringValue": "ancestralguidance_r17c18"
+              },
+              {
+               "stringValue": "ancestralguidance_r18c18"
+              },
+              {
+               "stringValue": "ancestralguidance_r17c12"
+              },
+              {
+               "stringValue": "ancestralguidance_r6c7"
+              },
+              {
+               "stringValue": "thunderstruck_r5c19"
+              },
+              {
+               "stringValue": "thunderstruck_r9c14"
+              },
+              {
+               "stringValue": "thunderstruck_r4c19"
+              },
+              {
+               "stringValue": "thunderstruck_r4c15"
+              },
+              {
+               "stringValue": "thunderstruck_r4c14"
+              },
+              {
+               "stringValue": "thunderstruck_r3c14"
+              },
+              {
+               "stringValue": "constrictingtendrils_r10c11"
+              },
+              {
+               "stringValue": "constrictingtendrils_r9c11"
+              },
+              {
+               "stringValue": "constrictingtendrils_r8c11"
+              },
+              {
+               "stringValue": "constrictingtendrils_r8c10"
+              },
+              {
+               "stringValue": "constrictingtendrils_r7c10"
+              },
+              {
+               "stringValue": "constrictingtendrils_r7c9"
+              },
+              {
+               "stringValue": "constrictingtendrils_r7c8"
+              },
+              {
+               "stringValue": "constrictingtendrils_r7c7"
+              },
+              {
+               "stringValue": "constrictingtendrils_r8c7"
+              },
+              {
+               "stringValue": "constrictingtendrils_r8c12"
+              },
+              {
+               "stringValue": "constrictingtendrils_r7c12"
+              },
+              {
+               "stringValue": "constrictingtendrils_r7c13"
+              },
+              {
+               "stringValue": "constrictingtendrils_r6c12"
+              },
+              {
+               "stringValue": "constrictingtendrils_r6c13"
+              },
+              {
+               "stringValue": "constrictingtendrils_r5c13"
+              },
+              {
+               "stringValue": "lustforcarnage_r10c15"
+              },
+              {
+               "stringValue": "lustforcarnage_r11c15"
+              },
+              {
+               "stringValue": "lustforcarnage_r11c16"
+              },
+              {
+               "stringValue": "lustforcarnage_r8c8"
+              },
+              {
+               "stringValue": "lustforcarnage_r8c9"
+              },
+              {
+               "stringValue": "lustforcarnage_r10c7"
+              },
+              {
+               "stringValue": "lustforcarnage_r10c6"
+              },
+              {
+               "stringValue": "lustforcarnage_r15c13"
+              },
+              {
+               "stringValue": "lustforcarnage_r15c12"
+              },
+              {
+               "stringValue": "lustforcarnage_r14c13"
+              },
+              {
+               "stringValue": "lustforcarnage_r15c10"
+              },
+              {
+               "stringValue": "lustforcarnage_r10c5"
+              }
+             ]
+            }
+           },
+           "boards": {
+            "arrayValue": {
+             "values": [
+              {
+               "mapValue": {
+                "fields": {
+                 "boardNumber": {
+                  "integerValue": "1"
+                 },
+                 "x": {
+                  "integerValue": "0"
+                 },
+                 "glyphLevel": {
+                  "integerValue": "100"
+                 },
+                 "name": {
+                  "stringValue": "Starting Board"
+                 },
+                 "rotation": {
+                  "integerValue": "0"
+                 },
+                 "y": {
+                  "integerValue": "0"
+                 },
+                 "glyph": {
+                  "stringValue": "Spirit"
+                 }
+                }
+               }
+              },
+              {
+               "mapValue": {
+                "fields": {
+                 "glyphLevel": {
+                  "integerValue": "100"
+                 },
+                 "boardNumber": {
+                  "integerValue": "2"
+                 },
+                 "x": {
+                  "integerValue": "0"
+                 },
+                 "y": {
+                  "integerValue": "1"
+                 },
+                 "rotation": {
+                  "integerValue": "90"
+                 },
+                 "name": {
+                  "stringValue": "Thunderstruck"
+                 },
+                 "glyph": {
+                  "stringValue": "Keeper"
+                 }
+                }
+               }
+              },
+              {
+               "mapValue": {
+                "fields": {
+                 "x": {
+                  "integerValue": "1"
+                 },
+                 "boardNumber": {
+                  "integerValue": "3"
+                 },
+                 "glyphLevel": {
+                  "integerValue": "100"
+                 },
+                 "glyph": {
+                  "stringValue": "Fang and Claw"
+                 },
+                 "name": {
+                  "stringValue": "Constricting Tendrils"
+                 },
+                 "rotation": {
+                  "integerValue": "90"
+                 },
+                 "y": {
+                  "integerValue": "1"
+                 }
+                }
+               }
+              },
+              {
+               "mapValue": {
+                "fields": {
+                 "boardNumber": {
+                  "integerValue": "4"
+                 },
+                 "x": {
+                  "integerValue": "1"
+                 },
+                 "glyphLevel": {
+                  "integerValue": "100"
+                 },
+                 "y": {
+                  "integerValue": "0"
+                 },
+                 "rotation": {
+                  "integerValue": "0"
+                 },
+                 "name": {
+                  "stringValue": "Ancestral Guidance"
+                 },
+                 "glyph": {
+                  "stringValue": "Fulminate"
+                 }
+                }
+               }
+              },
+              {
+               "mapValue": {
+                "fields": {
+                 "glyph": {
+                  "stringValue": "Earth and Sky"
+                 },
+                 "y": {
+                  "integerValue": "0"
+                 },
+                 "name": {
+                  "stringValue": "Lust for Carnage"
+                 },
+                 "rotation": {
+                  "integerValue": "270"
+                 },
+                 "glyphLevel": {
+                  "integerValue": "100"
+                 },
+                 "x": {
+                  "integerValue": "2"
+                 },
+                 "boardNumber": {
+                  "integerValue": "5"
+                 }
+                }
+               }
+              }
+             ]
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     }
+    ]
+   }
+  }
+ }
+}

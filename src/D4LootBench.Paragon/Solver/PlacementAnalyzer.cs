@@ -66,6 +66,10 @@ public sealed record PipelineResult(int GlyphsActive, int ThresholdsMet, int Poi
     /// never be suggested when it breaks limits harder than the baseline does.</summary>
     public int LimitBreaks { get; init; }
 
+    /// <summary>Effective stat totals of the finished build (<see cref="BuildStats"/>, threshold
+    /// bonuses and glyph node buffs included); null when no ThresholdContext was supplied.</summary>
+    public IReadOnlyDictionary<string, double>? StatTotals { get; init; }
+
     /// <summary>Worth suggesting over the baseline: never at the cost of a Limit rule; then more
     /// glyphs, more thresholds, clearly more focused stat value (>2%, to keep greedy-spend noise
     /// from spamming suggestions), or the same build for fewer points.</summary>
@@ -670,10 +674,13 @@ public static class PlacementAnalyzer
         // The spend may have bought more sockets — refresh the buffed area before measuring.
         var finalMultipliers = MultipliersFor();
         int thresholdsMet = 0;
+        IReadOnlyDictionary<string, double>? statTotals = null;
         if (pipeline.Thresholds is ThresholdContext context)
         {
-            thresholdsMet = BuildStats.Compute(graph, purchased, context.Data,
-                context.NonParagonStats, context.ClassName, finalMultipliers).ThresholdsMet;
+            var report = BuildStats.Compute(graph, purchased, context.Data,
+                context.NonParagonStats, context.ClassName, finalMultipliers);
+            thresholdsMet = report.ThresholdsMet;
+            statTotals = report.Totals;
         }
 
         // Limit rules are load-bearing: a candidate whose finished build exceeds a cap (the
@@ -693,6 +700,7 @@ public static class PlacementAnalyzer
         {
             GlyphMoves = glyphMoves,
             LimitBreaks = limitBreaks,
+            StatTotals = statTotals,
         };
     }
 
@@ -855,8 +863,9 @@ public static class PlacementAnalyzer
         return parts.Count > 0 ? "at full spend " + string.Join(", ", parts) : "equivalent at full spend";
     }
 
-    /// <summary>The candidate board's total of the attribute within radius of its own socket.</summary>
-    private static double AttainableByAttribute(ParagonBoardDef board, string attribute, int radius)
+    /// <summary>The candidate board's total of the attribute within radius of its own socket.
+    /// Shared with <see cref="PlacementSearch"/> for its swap and glyph-substitution ranking.</summary>
+    internal static double AttainableByAttribute(ParagonBoardDef board, string attribute, int radius)
     {
         var nodes = ParagonDatabase.NodesBySnoId;
         (int X, int Y)? socket = null;

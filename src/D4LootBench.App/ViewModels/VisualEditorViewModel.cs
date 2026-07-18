@@ -122,6 +122,54 @@ public partial class VisualEditorViewModel : ObservableObject
             SelectedRule = Rules.FirstOrDefault();
     }
 
+    /// <summary>
+    /// Combines groups of rules that differ only in one item type / unique / any-of affix
+    /// list (the merge suggestions Validate reports), after user confirmation. Each group
+    /// collapses into its first rule with the lists combined.
+    /// </summary>
+    [RelayCommand]
+    private void CombineRules()
+    {
+        var candidates = RedundancyAnalyzer.Analyze(BuildRuleset()).MergeCandidates;
+        if (candidates.Count == 0)
+        {
+            System.Windows.MessageBox.Show(
+                "No combinable rules found.\n\nRules can be combined when they are identical except for one item type, unique item, or any-of affix list.",
+                "Combine Rules",
+                System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+            return;
+        }
+
+        var lines = candidates.Select(c =>
+            $"• {string.Join(" + ", c.Indices.Select(i => $"\"{Rules[i].Name}\""))} → one rule with the lists combined");
+        var freed = candidates.Sum(c => c.Indices.Count - 1);
+        var confirm = System.Windows.MessageBox.Show(
+            $"Combine {candidates.Count} group(s) of rules, freeing {freed} rule slot(s)?\n\n{string.Join("\n", lines)}",
+            "Combine Rules",
+            System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Question);
+        if (confirm != System.Windows.MessageBoxResult.Yes) return;
+
+        // Replace each group's first rule in place (index-stable), then remove the rest.
+        var mergedVms = candidates.Select(c =>
+        {
+            var vm = MakeRuleVm(c.MergedRule);
+            Rules[c.Indices[0]] = vm;
+            return vm;
+        }).ToList();
+        foreach (var index in candidates.SelectMany(c => c.Indices.Skip(1)).OrderByDescending(i => i))
+            Rules.RemoveAt(index);
+
+        SelectedRule = mergedVms.FirstOrDefault();
+    }
+
+    /// <summary>Selects the rule at the given index — used by the issues panel to jump to a finding.
+    /// Indices from stale validation results (rules edited since) are ignored when out of range.</summary>
+    public void SelectRuleAt(int index)
+    {
+        if (index >= 0 && index < Rules.Count)
+            SelectedRule = Rules[index];
+    }
+
     /// <summary>Moves a rule to a new position — used by drag-and-drop reordering in the rule list.</summary>
     public void MoveRule(int from, int to)
     {

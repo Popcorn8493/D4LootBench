@@ -8,7 +8,14 @@ public sealed record ParagonProjectBoard(
     string BoardInternalName, int? ParentSlot, BoardEdge? AttachEdge, int RotationSteps);
 
 public sealed record ParagonProjectGlyph(
-    int BoardSlot, string GlyphInternalName, int Level, double RequiredStat, bool EnsureActive);
+    int BoardSlot, string GlyphInternalName, int Level, double RequiredStat, bool EnsureActive)
+{
+    /// <summary>Deep placement search may not substitute this glyph away (older files: false).</summary>
+    public bool LockGlyph { get; init; }
+
+    /// <summary>Deep placement search may not swap this slot's board out (older files: false).</summary>
+    public bool LockBoard { get; init; }
+}
 
 public sealed record ParagonProjectRule(string GroupKey, NodeRuleMode Mode, int Limit);
 

@@ -1,0 +1,1059 @@
+{
+  "Name": "Sleepy Smack v2.6",
+  "Rules": [
+    {
+      "Name": "Good Mythics",
+      "Visibility": "Recolor",
+      "Color": "0xff002aa3",
+      "Conditions": [
+        {
+          "$type": "specificUnique",
+          "UniqueIds": [
+            {
+              "id": "0x0013e788",
+              "name": "Ramaladni's Magnum Opus"
+            },
+            {
+              "id": "0x0016ba9e",
+              "name": "Tuskhelm of Joritz the Mighty"
+            },
+            {
+              "id": "0x00286109",
+              "name": "Melted Heart of Selig"
+            },
+            {
+              "id": "0x0017cb7b",
+              "name": "Tibault's Will"
+            },
+            {
+              "id": "0x001dab42",
+              "name": "Endurant Faith"
+            },
+            {
+              "id": "0x0028033b",
+              "name": "Unknown unique (0x0028033b)"
+            },
+            {
+              "id": "0x000496bf",
+              "name": "Gohr's Devastating Grips"
+            },
+            {
+              "id": "0x00281fcd",
+              "name": "Ring of Starless Skies"
+            },
+            {
+              "id": "0x0028033d",
+              "name": "Unknown unique (0x0028033d)"
+            },
+            {
+              "id": "0x0013e73a",
+              "name": "Rage of Harrogath"
+            }
+          ]
+        },
+        {
+          "$type": "itemProperties",
+          "PropertyMask": 32
+        }
+      ],
+      "IsEnabled": true
+    },
+    {
+      "Name": "All Mythics",
+      "Visibility": "Show",
+      "Color": "0xffff0000",
+      "Conditions": [
+        {
+          "$type": "itemProperties",
+          "PropertyMask": 32
+        }
+      ],
+      "IsEnabled": true
+    },
+    {
+      "Name": "Chesty Upgrade",
+      "Visibility": "Recolor",
+      "Color": "0xffee62f2",
+      "Conditions": [
+        {
+          "$type": "itemType",
+          "TypeIds": [
+            {
+              "id": "0x0006d16d",
+              "name": "Chest Armor"
+            }
+          ]
+        },
+        {
+          "$type": "greaterAffix",
+          "MinimumCount": 3
+        },
+        {
+          "$type": "optionalAffix",
+          "AffixIds": [
+            {
+              "id": "0x001beac2",
+              "name": "Strength"
+            },
+            {
+              "id": "0x001d5e38",
+              "name": "Fury Regeneration"
+            },
+            {
+              "id": "0x001bfd38",
+              "name": "+Resistance to All Elements"
+            },
+            {
+              "id": "0x001beab2",
+              "name": "+Armor"
+            }
+          ],
+          "MinimumCount": 2,
+          "GreaterEntries": [],
+          "Field5": 0
+        },
+        {
+          "$type": "affix",
+          "AffixIds": [
+            {
+              "id": "0x001bfc79",
+              "name": "+Maximum Resource"
+            }
+          ],
+          "MinimumCount": 1,
+          "GreaterEntries": [],
+          "Field5": 0
+        }
+      ],
+      "IsEnabled": true
+    },
+    {
+      "Name": "Charm Martial",
+      "Visibility": "Recolor",
+      "Color": "0xff22e8ad",
+      "Conditions": [
+        {
+          "$type": "itemProperties",
+          "PropertyMask": 36
+        },
+        {
+          "$type": "talismanSet",
+          "SetIds": [
+            {
+              "id": "0x0022fb41",
+              "name": "Berserker's Crucible"
+            }
+          ],
+          "SetEntries": []
+        },
+        {
+          "$type": "affix",
+          "AffixIds": [
+            {
+              "id": "0x00280b85",
+              "name": "DualWield Skills (Barbarian)"
+            }
+          ],
+          "MinimumCount": 1,
+          "GreaterEntries": [],
+          "Field5": 0
+        },
+        {
+          "$type": "itemType",
+          "TypeIds": [
+            {
+              "id": "0x0022ed05",
+              "name": "Charm"
+            }
+          ]
+        }
+      ],
+      "IsEnabled": true
+    },
+    {
+      "Name": "Charm Max resource",
+      "Visibility": "Recolor",
+      "Color": "0xffc20000",
+      "Conditions": [
+        {
+          "$type": "itemProperties",
+          "PropertyMask": 36
+        },
+        {
+          "$type": "talismanSet",
+          "SetIds": [
+            {
+              "id": "0x0022fb41",
+              "name": "Berserker's Crucible"
+            }
+          ],
+          "SetEntries": []
+        },
+        {
+          "$type": "affix",
+          "AffixIds": [
+            {
+              "id": "0x001bfc79",
+              "name": "+Maximum Resource"
+            }
+          ],
+          "MinimumCount": 1,
+          "GreaterEntries": [],
+          "Field5": 0
+        },
+        {
+          "$type": "itemType",
+          "TypeIds": [
+            {
+              "id": "0x0022ed05",
+              "name": "Charm"
+            }
+          ]
+        }
+      ],
+      "IsEnabled": true
+    },
+    {
+      "Name": "Joritz Upgrade",
+      "Visibility": "Recolor",
+      "Color": "0xffff38a0",
+      "Conditions": [
+        {
+          "$type": "itemProperties",
+          "PropertyMask": 36
+        },
+        {
+          "$type": "affix",
+          "AffixIds": [
+            {
+              "id": "0x001beac2",
+              "name": "Strength"
+            },
+            {
+              "id": "0x001bfd38",
+              "name": "+Resistance to All Elements"
+            },
+            {
+              "id": "0x001beab8",
+              "name": "%Cooldown Reduction"
+            },
+            {
+              "id": "0x001bfc79",
+              "name": "+Maximum Resource"
+            }
+          ],
+          "MinimumCount": 3,
+          "GreaterEntries": [],
+          "Field5": 0
+        },
+        {
+          "$type": "specificUnique",
+          "UniqueIds": [
+            {
+              "id": "0x0016ba9e",
+              "name": "Tuskhelm of Joritz the Mighty"
+            }
+          ]
+        }
+      ],
+      "IsEnabled": true
+    },
+    {
+      "Name": "2H Slashy Upgrade",
+      "Visibility": "Recolor",
+      "Color": "0xffff38a0",
+      "Conditions": [
+        {
+          "$type": "greaterAffix",
+          "MinimumCount": 2
+        },
+        {
+          "$type": "itemType",
+          "TypeIds": [
+            {
+              "id": "0x0006d14f",
+              "name": "Two-Handed Sword"
+            },
+            {
+              "id": "0x0006d15d",
+              "name": "Polearm"
+            },
+            {
+              "id": "0x0006d152",
+              "name": "Two-Handed Axe"
+            }
+          ]
+        },
+        {
+          "$type": "itemProperties",
+          "PropertyMask": 36
+        },
+        {
+          "$type": "optionalAffix",
+          "AffixIds": [
+            {
+              "id": "0x0027fc93",
+              "name": "Weapon Damage"
+            },
+            {
+              "id": "0x001beac2",
+              "name": "Strength"
+            },
+            {
+              "id": "0x001bfc80",
+              "name": "Vulnerable Damage Multiplier"
+            },
+            {
+              "id": "0x00270ad0",
+              "name": "Physical Damage Multiplier"
+            }
+          ],
+          "MinimumCount": 1,
+          "GreaterEntries": [],
+          "Field5": 0
+        },
+        {
+          "$type": "affix",
+          "AffixIds": [
+            {
+              "id": "0x001beace",
+              "name": "+Critical Strike Chance"
+            },
+            {
+              "id": "0x001bead2",
+              "name": "Critical Strike Damage"
+            }
+          ],
+          "MinimumCount": 1,
+          "GreaterEntries": [],
+          "Field5": 0
+        }
+      ],
+      "IsEnabled": true
+    },
+    {
+      "Name": "Tibault Upgrade",
+      "Visibility": "Recolor",
+      "Color": "0xffff38a0",
+      "Conditions": [
+        {
+          "$type": "affix",
+          "AffixIds": [
+            {
+              "id": "0x001beac2",
+              "name": "Strength"
+            },
+            {
+              "id": "0x001d5e38",
+              "name": "Fury Regeneration"
+            },
+            {
+              "id": "0x001bfd38",
+              "name": "+Resistance to All Elements"
+            },
+            {
+              "id": "0x001beab2",
+              "name": "+Armor"
+            }
+          ],
+          "MinimumCount": 2,
+          "GreaterEntries": [],
+          "Field5": 0
+        },
+        {
+          "$type": "specificUnique",
+          "UniqueIds": [
+            {
+              "id": "0x0017cb7b",
+              "name": "Tibault's Will"
+            }
+          ]
+        },
+        {
+          "$type": "itemProperties",
+          "PropertyMask": 4
+        }
+      ],
+      "IsEnabled": true
+    },
+    {
+      "Name": "Gohrs Upgrade",
+      "Visibility": "Recolor",
+      "Color": "0xffff38a0",
+      "Conditions": [
+        {
+          "$type": "itemProperties",
+          "PropertyMask": 36
+        },
+        {
+          "$type": "optionalAffix",
+          "AffixIds": [
+            {
+              "id": "0x001bfc80",
+              "name": "Vulnerable Damage Multiplier"
+            },
+            {
+              "id": "0x001c6920",
+              "name": "+Whirlwind"
+            },
+            {
+              "id": "0x001beace",
+              "name": "+Critical Strike Chance"
+            },
+            {
+              "id": "0x00270ad0",
+              "name": "Physical Damage Multiplier"
+            },
+            {
+              "id": "0x001beab8",
+              "name": "%Cooldown Reduction"
+            }
+          ],
+          "MinimumCount": 2,
+          "GreaterEntries": [],
+          "Field5": 0
+        },
+        {
+          "$type": "specificUnique",
+          "UniqueIds": [
+            {
+              "id": "0x000496bf",
+              "name": "Gohr's Devastating Grips"
+            }
+          ]
+        },
+        {
+          "$type": "affix",
+          "AffixIds": [
+            {
+              "id": "0x001bead2",
+              "name": "Critical Strike Damage"
+            }
+          ],
+          "MinimumCount": 1,
+          "GreaterEntries": [
+            {
+              "affixId": "0x001bead2",
+              "affixName": "Critical Strike Damage",
+              "affixIdEcho": "0x001bead2"
+            }
+          ],
+          "Field5": 0
+        }
+      ],
+      "IsEnabled": true
+    },
+    {
+      "Name": "Ramaldi Upgrade",
+      "Visibility": "Recolor",
+      "Color": "0xffff38a0",
+      "Conditions": [
+        {
+          "$type": "greaterAffix",
+          "MinimumCount": 2
+        },
+        {
+          "$type": "affix",
+          "AffixIds": [
+            {
+              "id": "0x001bfc79",
+              "name": "+Maximum Resource"
+            }
+          ],
+          "MinimumCount": 1,
+          "GreaterEntries": [
+            {
+              "affixId": "0x001bfc79",
+              "affixName": "+Maximum Resource",
+              "affixIdEcho": "0x001bfc79"
+            }
+          ],
+          "Field5": 0
+        },
+        {
+          "$type": "optionalAffix",
+          "AffixIds": [
+            {
+              "id": "0x001beac2",
+              "name": "Strength"
+            },
+            {
+              "id": "0x00270ad0",
+              "name": "Physical Damage Multiplier"
+            },
+            {
+              "id": "0x001bead2",
+              "name": "Critical Strike Damage"
+            }
+          ],
+          "MinimumCount": 2,
+          "GreaterEntries": [],
+          "Field5": 0
+        },
+        {
+          "$type": "itemProperties",
+          "PropertyMask": 36
+        },
+        {
+          "$type": "specificUnique",
+          "UniqueIds": [
+            {
+              "id": "0x0013e788",
+              "name": "Ramaladni's Magnum Opus"
+            }
+          ]
+        }
+      ],
+      "IsEnabled": true
+    },
+    {
+      "Name": "Ammy Upgrade",
+      "Visibility": "Recolor",
+      "Color": "0xffff38a0",
+      "Conditions": [
+        {
+          "$type": "greaterAffix",
+          "MinimumCount": 1
+        },
+        {
+          "$type": "itemType",
+          "TypeIds": [
+            {
+              "id": "0x0006d175",
+              "name": "Amulet"
+            }
+          ]
+        },
+        {
+          "$type": "affix",
+          "AffixIds": [
+            {
+              "id": "0x001bfc80",
+              "name": "Vulnerable Damage Multiplier"
+            },
+            {
+              "id": "0x001beac2",
+              "name": "Strength"
+            },
+            {
+              "id": "0x001beace",
+              "name": "+Critical Strike Chance"
+            },
+            {
+              "id": "0x00270ad0",
+              "name": "Physical Damage Multiplier"
+            },
+            {
+              "id": "0x001bead2",
+              "name": "Critical Strike Damage"
+            },
+            {
+              "id": "0x001beab8",
+              "name": "%Cooldown Reduction"
+            },
+            {
+              "id": "0x001bfc79",
+              "name": "+Maximum Resource"
+            }
+          ],
+          "MinimumCount": 3,
+          "GreaterEntries": [],
+          "Field5": 0
+        },
+        {
+          "$type": "itemProperties",
+          "PropertyMask": 36
+        }
+      ],
+      "IsEnabled": true
+    },
+    {
+      "Name": "1H Sword Upgrade",
+      "Visibility": "Recolor",
+      "Color": "0xffff38a0",
+      "Conditions": [
+        {
+          "$type": "greaterAffix",
+          "MinimumCount": 3
+        },
+        {
+          "$type": "affix",
+          "AffixIds": [
+            {
+              "id": "0x001bead2",
+              "name": "Critical Strike Damage"
+            }
+          ],
+          "MinimumCount": 1,
+          "GreaterEntries": [
+            {
+              "affixId": "0x001bead2",
+              "affixName": "Critical Strike Damage",
+              "affixIdEcho": "0x001bead2"
+            }
+          ],
+          "Field5": 0
+        },
+        {
+          "$type": "itemType",
+          "TypeIds": [
+            {
+              "id": "0x0006d14c",
+              "name": "Sword"
+            }
+          ]
+        },
+        {
+          "$type": "optionalAffix",
+          "AffixIds": [
+            {
+              "id": "0x001beac2",
+              "name": "Strength"
+            },
+            {
+              "id": "0x0024527f",
+              "name": "Lucky Hit Restore Primary Resource"
+            },
+            {
+              "id": "0x00270ad0",
+              "name": "Physical Damage Multiplier"
+            }
+          ],
+          "MinimumCount": 2,
+          "GreaterEntries": [],
+          "Field5": 0
+        }
+      ],
+      "IsEnabled": true
+    },
+    {
+      "Name": "Ring Upgrades",
+      "Visibility": "Recolor",
+      "Color": "0xffff38a0",
+      "Conditions": [
+        {
+          "$type": "greaterAffix",
+          "MinimumCount": 2
+        },
+        {
+          "$type": "itemType",
+          "TypeIds": [
+            {
+              "id": "0x0006d174",
+              "name": "Ring"
+            }
+          ]
+        },
+        {
+          "$type": "affix",
+          "AffixIds": [
+            {
+              "id": "0x001beab8",
+              "name": "%Cooldown Reduction"
+            }
+          ],
+          "MinimumCount": 1,
+          "GreaterEntries": [
+            {
+              "affixId": "0x001beab8",
+              "affixName": "%Cooldown Reduction",
+              "affixIdEcho": "0x001beab8"
+            }
+          ],
+          "Field5": 0
+        },
+        {
+          "$type": "optionalAffix",
+          "AffixIds": [
+            {
+              "id": "0x001beac2",
+              "name": "Strength"
+            },
+            {
+              "id": "0x001bfc80",
+              "name": "Vulnerable Damage Multiplier"
+            },
+            {
+              "id": "0x001beace",
+              "name": "+Critical Strike Chance"
+            },
+            {
+              "id": "0x001bead2",
+              "name": "Critical Strike Damage"
+            }
+          ],
+          "MinimumCount": 2,
+          "GreaterEntries": [],
+          "Field5": 0
+        }
+      ],
+      "IsEnabled": true
+    },
+    {
+      "Name": "All uniques",
+      "Visibility": "Show",
+      "Color": "0xffa6a6a6",
+      "Conditions": [
+        {
+          "$type": "specificUnique",
+          "UniqueIds": [
+            {
+              "id": "0x0016ba9e",
+              "name": "Tuskhelm of Joritz the Mighty"
+            },
+            {
+              "id": "0x00276de6",
+              "name": "Unknown unique (0x00276de6)"
+            },
+            {
+              "id": "0x00057bb8",
+              "name": "Azurewrath"
+            },
+            {
+              "id": "0x0017cb7b",
+              "name": "Tibault's Will"
+            },
+            {
+              "id": "0x001dab42",
+              "name": "Endurant Faith"
+            },
+            {
+              "id": "0x00032d88",
+              "name": "Penitent Greaves"
+            },
+            {
+              "id": "0x000496bf",
+              "name": "Gohr's Devastating Grips"
+            },
+            {
+              "id": "0x0013e73a",
+              "name": "Rage of Harrogath"
+            }
+          ]
+        },
+        {
+          "$type": "itemProperties",
+          "PropertyMask": 36
+        },
+        {
+          "$type": "rarity",
+          "Mask": "Unique, Mythic"
+        }
+      ],
+      "IsEnabled": true
+    },
+    {
+      "Name": "Booty Upgrade",
+      "Visibility": "Recolor",
+      "Color": "0xffff38a0",
+      "Conditions": [
+        {
+          "$type": "greaterAffix",
+          "MinimumCount": 2
+        },
+        {
+          "$type": "optionalAffix",
+          "AffixIds": [
+            {
+              "id": "0x001beac2",
+              "name": "Strength"
+            },
+            {
+              "id": "0x001bfd38",
+              "name": "+Resistance to All Elements"
+            }
+          ],
+          "MinimumCount": 1,
+          "GreaterEntries": [],
+          "Field5": 0
+        },
+        {
+          "$type": "itemType",
+          "TypeIds": [
+            {
+              "id": "0x0006d170",
+              "name": "Boots"
+            }
+          ]
+        },
+        {
+          "$type": "affix",
+          "AffixIds": [
+            {
+              "id": "0x001beade",
+              "name": "+Movement Speed"
+            },
+            {
+              "id": "0x001c6949",
+              "name": "+War Cry"
+            }
+          ],
+          "MinimumCount": 2,
+          "GreaterEntries": [],
+          "Field5": 0
+        }
+      ],
+      "IsEnabled": true
+    },
+    {
+      "Name": "Big Hammer Upgrade",
+      "Visibility": "Recolor",
+      "Color": "0xffff38a0",
+      "Conditions": [
+        {
+          "$type": "rarity",
+          "Mask": "Rare, Legendary"
+        },
+        {
+          "$type": "affix",
+          "AffixIds": [
+            {
+              "id": "0x001bead2",
+              "name": "Critical Strike Damage"
+            }
+          ],
+          "MinimumCount": 1,
+          "GreaterEntries": [
+            {
+              "affixId": "0x001bead2",
+              "affixName": "Critical Strike Damage",
+              "affixIdEcho": "0x001bead2"
+            }
+          ],
+          "Field5": 0
+        },
+        {
+          "$type": "optionalAffix",
+          "AffixIds": [
+            {
+              "id": "0x0027fc93",
+              "name": "Weapon Damage"
+            },
+            {
+              "id": "0x001beac2",
+              "name": "Strength"
+            },
+            {
+              "id": "0x00270ad0",
+              "name": "Physical Damage Multiplier"
+            }
+          ],
+          "MinimumCount": 2,
+          "GreaterEntries": [],
+          "Field5": 0
+        },
+        {
+          "$type": "itemProperties",
+          "PropertyMask": 36
+        },
+        {
+          "$type": "itemType",
+          "TypeIds": [
+            {
+              "id": "0x0006d144",
+              "name": "Two-Handed Mace"
+            }
+          ]
+        }
+      ],
+      "IsEnabled": true
+    },
+    {
+      "Name": "2 GAS",
+      "Visibility": "Recolor",
+      "Color": "0xffa4a4a4",
+      "Conditions": [
+        {
+          "$type": "greaterAffix",
+          "MinimumCount": 2
+        }
+      ],
+      "IsEnabled": true
+    },
+    {
+      "Name": "Aspect upgrade",
+      "Visibility": "Show",
+      "Color": "0xffff0000",
+      "Conditions": [
+        {
+          "$type": "codex"
+        }
+      ],
+      "IsEnabled": true
+    },
+    {
+      "Name": "Cube Unique Upgrade",
+      "Visibility": "Recolor",
+      "Color": "0xffb8d391",
+      "Conditions": [
+        {
+          "$type": "itemProperties",
+          "PropertyMask": 4
+        },
+        {
+          "$type": "itemType",
+          "TypeIds": [
+            {
+              "id": "0x0006d16d",
+              "name": "Chest Armor"
+            }
+          ]
+        },
+        {
+          "$type": "rarity",
+          "Mask": "Common"
+        }
+      ],
+      "IsEnabled": true
+    },
+    {
+      "Name": "Seals",
+      "Visibility": "Show",
+      "Color": "0xffff0000",
+      "Conditions": [
+        {
+          "$type": "rarity",
+          "Mask": "Legendary, Unique, Mythic"
+        },
+        {
+          "$type": "itemType",
+          "TypeIds": [
+            {
+              "id": "0x00237e80",
+              "name": "Horadric Seal"
+            }
+          ]
+        }
+      ],
+      "IsEnabled": true
+    },
+    {
+      "Name": "Charms",
+      "Visibility": "Show",
+      "Color": "0xffff0000",
+      "Conditions": [
+        {
+          "$type": "itemType",
+          "TypeIds": [
+            {
+              "id": "0x0022ed05",
+              "name": "Charm"
+            }
+          ]
+        },
+        {
+          "$type": "rarity",
+          "Mask": "LegendaryPlus"
+        },
+        {
+          "$type": "itemProperties",
+          "PropertyMask": 36
+        }
+      ],
+      "IsEnabled": false
+    },
+    {
+      "Name": "Unique Charms",
+      "Visibility": "Show",
+      "Color": "0xffff0000",
+      "Conditions": [
+        {
+          "$type": "itemType",
+          "TypeIds": [
+            {
+              "id": "0x0022ed05",
+              "name": "Charm"
+            }
+          ]
+        },
+        {
+          "$type": "rarity",
+          "Mask": "Legendary, Unique, Mythic"
+        }
+      ],
+      "IsEnabled": true
+    },
+    {
+      "Name": "HIDEALL",
+      "Visibility": "HideAll",
+      "Color": "0xffff0000",
+      "Conditions": [
+        {
+          "$type": "itemType",
+          "TypeIds": [
+            {
+              "id": "0x00237e80",
+              "name": "Horadric Seal"
+            },
+            {
+              "id": "0x0006d15d",
+              "name": "Polearm"
+            },
+            {
+              "id": "0x0006d152",
+              "name": "Two-Handed Axe"
+            },
+            {
+              "id": "0x0006d170",
+              "name": "Boots"
+            },
+            {
+              "id": "0x0006d174",
+              "name": "Ring"
+            },
+            {
+              "id": "0x0006d14f",
+              "name": "Two-Handed Sword"
+            },
+            {
+              "id": "0x0006d13a",
+              "name": "Mace"
+            },
+            {
+              "id": "0x0006d16f",
+              "name": "Pants"
+            },
+            {
+              "id": "0x0006d175",
+              "name": "Amulet"
+            },
+            {
+              "id": "0x0006d151",
+              "name": "Axe"
+            },
+            {
+              "id": "0x0022ed05",
+              "name": "Charm"
+            },
+            {
+              "id": "0x0006d16e",
+              "name": "Helm"
+            },
+            {
+              "id": "0x0006d144",
+              "name": "Two-Handed Mace"
+            },
+            {
+              "id": "0x0006d14c",
+              "name": "Sword"
+            },
+            {
+              "id": "0x0006d171",
+              "name": "Gloves"
+            },
+            {
+              "id": "0x00234a98",
+              "name": "Unknown item type (0x00234a98)"
+            },
+            {
+              "id": "0x0006d16d",
+              "name": "Chest Armor"
+            }
+          ]
+        }
+      ],
+      "IsEnabled": true
+    }
+  ],
+  "OriginalCode": null
+}

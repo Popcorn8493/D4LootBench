@@ -1,4 +1,5 @@
 using D4LootBench.Core.Models;
+using D4LootBench.Core.Serialization;
 
 namespace D4LootBench.Core.Validation;
 
@@ -27,22 +28,103 @@ public sealed class FilterValidator : IFilterValidator
 
     private static void AddRedundancyWarnings(FilterRuleset ruleset, List<ValidationIssue> issues)
     {
-        foreach (var dup in RedundancyAnalyzer.FindDuplicateRules(ruleset))
+        var report = RedundancyAnalyzer.Analyze(ruleset);
+        string Label(int index) => $"rule {index + 1} (\"{ruleset.Rules[index].Name}\")";
+        string Verb(int index) => ruleset.Rules[index].Visibility switch
         {
-            var rule     = ruleset.Rules[dup.Index];
-            var original = ruleset.Rules[dup.DuplicateOfIndex];
-            issues.Add(new(ValidationSeverity.Warning,
-                $"Rule {dup.Index + 1} (\"{rule.Name}\") duplicates rule {dup.DuplicateOfIndex + 1} (\"{original.Name}\") — it never takes effect and can be removed.",
-                dup.Index));
-        }
+            Visibility.Show    => "shows",
+            Visibility.Recolor => "recolors",
+            _                  => "hides",
+        };
+        string PastVerb(int index) => ruleset.Rules[index].Visibility switch
+        {
+            Visibility.Show    => "shown",
+            Visibility.Recolor => "recolored",
+            _                  => "hidden",
+        };
 
-        if (RedundancyAnalyzer.FindShadowingCatchAll(ruleset) is int catchAll)
+        foreach (var dup in report.Duplicates)
+            issues.Add(new(ValidationSeverity.Warning,
+                $"Rule {dup.Index + 1} (\"{ruleset.Rules[dup.Index].Name}\") duplicates {Label(dup.DuplicateOfIndex)} — it never takes effect and can be removed.",
+                dup.Index));
+
+        if (report.ShadowingCatchAll is int catchAll)
         {
-            var rule  = ruleset.Rules[catchAll];
             var below = RedundancyAnalyzer.CountEnabledRulesBelow(ruleset, catchAll);
             issues.Add(new(ValidationSeverity.Warning,
-                $"Rule {catchAll + 1} (\"{rule.Name}\") has no conditions, so it matches every item — the {below} enabled rule(s) below it will never apply.",
+                $"Rule {catchAll + 1} (\"{ruleset.Rules[catchAll].Name}\") has no conditions, so it matches every item — the {below} enabled rule(s) below it will never apply.",
                 catchAll));
+        }
+
+        foreach (var s in report.ShadowedRules)
+            issues.Add(new(ValidationSeverity.Warning, s.SameEffect
+                ? $"Rule {s.Index + 1} (\"{ruleset.Rules[s.Index].Name}\") never takes effect: broader {Label(s.ByIndex)} above it already {Verb(s.ByIndex)} everything it matches — it can be removed."
+                : $"Rule {s.Index + 1} (\"{ruleset.Rules[s.Index].Name}\") conflicts with {Label(s.ByIndex)}: rule {s.ByIndex + 1} matches everything rule {s.Index + 1} matches and {Verb(s.ByIndex)} it first, so rule {s.Index + 1} never {Verb(s.Index)} anything. Move it above rule {s.ByIndex + 1} if it should win.",
+                s.Index));
+
+        foreach (var o in report.ObsoleteRules)
+            issues.Add(new(ValidationSeverity.Info,
+                $"Rule {o.Index + 1} (\"{ruleset.Rules[o.Index].Name}\") is redundant: {Label(o.ByIndex)} below it already {Verb(o.ByIndex)} everything it matches — removing it frees one of the {FilterRuleset.MaxRuleCount} rule slots.",
+                o.Index));
+
+        foreach (var c in report.CoveredEntries)
+        {
+            var names = string.Join(", ", c.Ids.Select(id => EntryName(c.Kind, id)));
+            issues.Add(new(c.SameEffect ? ValidationSeverity.Info : ValidationSeverity.Warning, c.SameEffect
+                ? $"Rule {c.Index + 1} (\"{ruleset.Rules[c.Index].Name}\"): items matching {names} are already {PastVerb(c.ByIndex)} by {Label(c.ByIndex)} — these entries can be removed here."
+                : $"Rule {c.Index + 1} (\"{ruleset.Rules[c.Index].Name}\") never sees items matching {names} — {Label(c.ByIndex)} {Verb(c.ByIndex)} them first. Move rule {c.Index + 1} higher if it should win for them.",
+                c.Index));
+        }
+
+        foreach (var m in report.MergeCandidates)
+        {
+            var members = m.Indices.Select(i => $"{i + 1} (\"{ruleset.Rules[i].Name}\")").ToList();
+            var list    = string.Join(", ", members.Take(members.Count - 1)) + $" and {members[^1]}";
+            var noun = m.Kind switch
+            {
+                RedundancyAnalyzer.EntryKind.ItemType => "item types",
+                RedundancyAnalyzer.EntryKind.Unique   => "unique items",
+                _                                     => "affixes",
+            };
+            var mergedNames = string.Join(", ", m.MergedIds.Select(id => EntryName(m.Kind, id)));
+            issues.Add(new(ValidationSeverity.Info,
+                $"Rules {list} differ only in their {noun} (everything else is the same) — one combined rule matching {mergedNames} does the same job and frees {m.Indices.Count - 1} of the {FilterRuleset.MaxRuleCount} rule slots. The Combine button above the rule list applies this.",
+                m.Indices[0]));
+        }
+
+        foreach (var c in report.Contradictions)
+            issues.Add(new(ValidationSeverity.Warning,
+                $"Rule {c.Index + 1} (\"{ruleset.Rules[c.Index].Name}\"): its {DescribePair(c.First, c.Second)} can never both match one item — this rule never matches anything.",
+                c.Index));
+    }
+
+    private static string DescribePair(Condition a, Condition b) => (a, b) switch
+    {
+        (ItemPowerCondition, ItemPowerCondition)           => "item power ranges don't overlap, so they",
+        (RarityCondition, RarityCondition)                 => "rarity selections don't overlap, so they",
+        (ItemPropertiesCondition, ItemPropertiesCondition) => "item property selections don't overlap, so they",
+        (ItemTypeCondition, ItemTypeCondition)             => "item type lists share no type, so they",
+        (SpecificUniqueCondition, SpecificUniqueCondition) => "unique item lists share no item, so they",
+        _                                                  => "conditions contradict each other and",
+    };
+
+    /// <summary>Display name for a covered list entry; hex when no data context is available
+    /// (the validator must stay usable without one).</summary>
+    private static string EntryName(RedundancyAnalyzer.EntryKind kind, uint id)
+    {
+        try
+        {
+            var data = FilterDataContext.Current;
+            return kind switch
+            {
+                RedundancyAnalyzer.EntryKind.ItemType => data.ItemTypes.GetDisplayName(id),
+                RedundancyAnalyzer.EntryKind.Unique   => data.Uniques.GetDisplayName(id),
+                _                                     => data.Affixes.GetDisplayName(id),
+            };
+        }
+        catch (InvalidOperationException)
+        {
+            return $"0x{id:X8}";
         }
     }
 

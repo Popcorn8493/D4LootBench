@@ -549,6 +549,14 @@
                                                 <CheckBox IsChecked="{Binding HighlightRadius}" FontSize="11" Margin="0,3,0,0"
                                                           Content="Highlight radius on the board"
                                                           ToolTip="Tint the cells this glyph's radius covers on the board canvas" />
+                                                <WrapPanel Margin="0,3,0,0">
+                                                    <CheckBox IsChecked="{Binding IsGlyphLocked}" FontSize="11" Margin="0,0,10,0"
+                                                              Content="Lock glyph"
+                                                              ToolTip="Required glyph: the deep placement search (Find Best Setup) never recommends replacing it with a different glyph. Moving it to another board's socket is still allowed — it stays in the build." />
+                                                    <CheckBox IsChecked="{Binding IsBoardLocked}" FontSize="11"
+                                                              Content="Lock board"
+                                                              ToolTip="Required board: the deep placement search (Find Best Setup) never recommends swapping this board out for an unused one. Rotations and re-attachments are still allowed — the board stays in the build." />
+                                                </WrapPanel>
                                             </StackPanel>
                                         </Border>
                                     </DataTemplate>
@@ -677,8 +685,10 @@
 
                                 <Separator Margin="0,10,0,8" />
                                 <TextBlock Text="Placement Analysis" FontWeight="SemiBold" Margin="0,0,0,4" />
-                                <Button Command="{Binding AnalyzePlacementCommand}" Content="Analyze Placement" Padding="10,3" Margin="0,0,0,8"
+                                <Button Command="{Binding AnalyzePlacementCommand}" Content="Analyze Placement" Padding="10,3" Margin="0,0,0,4"
                                         ToolTip="Re-solves under every alternate rotation of each attached board and checks whether glyphs would see more of their stat in another socket" />
+                                <Button Command="{Binding DeepAnalyzePlacementCommand}" Content="Find Best Setup (deep)" Padding="10,3" Margin="0,0,0,8"
+                                        ToolTip="Searches SEQUENCES of changes — rotations, board swaps, re-attachments, glyph moves, and glyph substitutions — and presents the top 3 final setups with stat comparisons. Apply jumps straight to a setup (all steps at once); Revert restores the current one. Slower than Analyze Placement." />
 
                                 <ItemsControl ItemsSource="{Binding Suggestions}">
                                     <ItemsControl.ItemTemplate>

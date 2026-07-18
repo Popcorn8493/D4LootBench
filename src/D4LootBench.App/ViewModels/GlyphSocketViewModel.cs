@@ -48,6 +48,16 @@ public partial class GlyphSocketViewModel : ObservableObject
     [ObservableProperty]
     private bool _highlightRadius;
 
+    /// <summary>Required glyph: the deep placement search never substitutes it away
+    /// (moving it to another socket is still allowed — it stays in the build).</summary>
+    [ObservableProperty]
+    private bool _isGlyphLocked;
+
+    /// <summary>Required board: the deep placement search never swaps this slot's board out
+    /// (rotations and re-attachments are still allowed — the board stays in the build).</summary>
+    [ObservableProperty]
+    private bool _isBoardLocked;
+
     public int Radius => GlyphRadius.RadiusForLevel(Level);
 
     public string? SourceAttribute => SelectedGlyph is null ? null : GlyphInfo.PrimarySourceAttribute(SelectedGlyph);

@@ -55,6 +55,30 @@ public partial class ItemPickerControl
             vm.RemoveItems([item]);
     }
 
+    // ── Selected-entry context menu (e.g. "Move to Required Affixes") ────
+
+    private void SelectedList_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        // Right-click targets the entry under the cursor unless it's already part of a multi-selection.
+        if (e.OriginalSource is not FrameworkElement { DataContext: PickerEntry entry }) return;
+        if (!SelectedList.SelectedItems.Contains(entry))
+            SelectedList.SelectedItem = entry;
+    }
+
+    private void SelectedList_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+    {
+        // The menu only offers the per-entry move action — suppress it for pickers without one.
+        if (DataContext is not PickerViewModel { EntryAction: not null } || SelectedList.SelectedItems.Count == 0)
+            e.Handled = true;
+    }
+
+    private void MoveEntryMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is not PickerViewModel { EntryAction: { } action }) return;
+        var items = SelectedList.SelectedItems.OfType<PickerEntry>().ToList();
+        if (items.Count > 0) action(items);
+    }
+
     // ── Drag & drop ───────────────────────────────────────────────────────
     // Entries can be dragged from either list into any picker's Selected list:
     // Available → Selected adds; Selected → another picker's Selected moves the

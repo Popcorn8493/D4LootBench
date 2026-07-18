@@ -176,4 +176,10 @@ public partial class MainWindow
     {
         new AboutDialog { Owner = this }.ShowDialog();
     }
+
+    private void OnIssueActivated(Core.Validation.ValidationIssue issue)
+    {
+        if (issue.RuleIndex is int index)
+            _vm.Editor?.SelectRuleAt(index);
+    }
 }

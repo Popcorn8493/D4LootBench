@@ -1,6 +1,6 @@
 namespace D4LootBench.Core.Validation;
 
-public enum ValidationSeverity { Warning, Error }
+public enum ValidationSeverity { Info, Warning, Error }
 
 /// <summary>
 /// A single validation finding. <see cref="RuleIndex"/> is null for filter-level issues
