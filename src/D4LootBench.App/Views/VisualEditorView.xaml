@@ -24,12 +24,12 @@
                 <ComboBox ItemsSource="{x:Static vm:VisualEditorViewModel.PlayerClasses}"
                           SelectedItem="{Binding SelectedClass}"
                           DockPanel.Dock="Right"
-                          Width="94"
+                          Width="118"
                           ToolTip="Filter skills and affixes by class (UI only — not saved in the filter)" />
                 <TextBlock Text="{Binding RuleCountDisplay}"
                            VerticalAlignment="Center"
                            FontSize="11"
-                           Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
+                           Foreground="{DynamicResource App.TextMutedBrush}"
                            DockPanel.Dock="Right"
                            Margin="0,0,6,0" />
                 <TextBox Text="{Binding FilterName, UpdateSourceTrigger=PropertyChanged}"
@@ -37,11 +37,30 @@
                          Margin="0,0,4,0" />
             </DockPanel>
 
-            <ToolBarTray DockPanel.Dock="Top" IsLocked="True">
-                <ToolBar>
-                    <Button Content="+"  Command="{Binding AddRuleCommand}"    Width="26" Height="22" FontSize="14" FontWeight="Bold">
+            <!-- Plain panel, not ToolBarTray/ToolBar: the Fluent theme's ToolBar template
+                 collapses this row to a few clipped pixels inside a DockPanel. -->
+            <Border DockPanel.Dock="Top" Padding="4,2,4,4">
+                <StackPanel Orientation="Horizontal">
+                    <StackPanel.Resources>
+                        <Style x:Key="RuleToolButton" TargetType="Button">
+                            <Setter Property="Width" Value="28" />
+                            <Setter Property="Height" Value="26" />
+                            <Setter Property="Padding" Value="0" />
+                            <Setter Property="Margin" Value="0,0,2,0" />
+                            <Setter Property="FontSize" Value="14" />
+                            <Setter Property="FontWeight" Value="Bold" />
+                        </Style>
+                        <Style x:Key="RuleToolDivider" TargetType="Border">
+                            <Setter Property="Width" Value="1" />
+                            <Setter Property="Height" Value="18" />
+                            <Setter Property="VerticalAlignment" Value="Center" />
+                            <Setter Property="Background" Value="{DynamicResource App.DividerBrush}" />
+                            <Setter Property="Margin" Value="4,0,6,0" />
+                        </Style>
+                    </StackPanel.Resources>
+                    <Button Content="+" Command="{Binding AddRuleCommand}">
                         <Button.Style>
-                            <Style TargetType="Button">
+                            <Style TargetType="Button" BasedOn="{StaticResource RuleToolButton}">
                                 <Setter Property="ToolTip" Value="Add rule" />
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding IsAtRuleLimit}" Value="True">
@@ -51,22 +70,22 @@
                             </Style>
                         </Button.Style>
                     </Button>
-                    <Button Content="−"  Command="{Binding DeleteRuleCommand}" ToolTip="Delete rule (Del)" Width="26" Height="22" FontSize="14" FontWeight="Bold" />
+                    <Button Content="−" Command="{Binding DeleteRuleCommand}" ToolTip="Delete rule (Del)" Style="{StaticResource RuleToolButton}" />
                     <Button Content="&#xE8C8;" Command="{Binding DuplicateRuleCommand}"
                             ToolTip="Duplicate rule (Ctrl+D)"
-                            Width="26" Height="22" FontSize="13" FontFamily="Segoe MDL2 Assets" />
-                    <Separator />
-                    <Button Content="↑"  Command="{Binding MoveUpCommand}"     ToolTip="Move up (or drag rules to reorder)"    Width="26" Height="22" FontSize="14" FontWeight="Bold" />
-                    <Button Content="↓"  Command="{Binding MoveDownCommand}"   ToolTip="Move down (or drag rules to reorder)"  Width="26" Height="22" FontSize="14" FontWeight="Bold" />
-                    <Separator />
+                            Style="{StaticResource RuleToolButton}" FontSize="13" FontWeight="Normal" FontFamily="Segoe MDL2 Assets" />
+                    <Border Style="{StaticResource RuleToolDivider}" />
+                    <Button Content="↑" Command="{Binding MoveUpCommand}"   ToolTip="Move up (or drag rules to reorder)"   Style="{StaticResource RuleToolButton}" />
+                    <Button Content="↓" Command="{Binding MoveDownCommand}" ToolTip="Move down (or drag rules to reorder)" Style="{StaticResource RuleToolButton}" />
+                    <Border Style="{StaticResource RuleToolDivider}" />
                     <Button Content="&#xEA99;" Command="{Binding RemoveDuplicateRulesCommand}"
                             ToolTip="Clean up — find and remove rules that duplicate an earlier rule"
-                            Width="26" Height="22" FontSize="13" FontFamily="Segoe MDL2 Assets" />
+                            Style="{StaticResource RuleToolButton}" FontSize="13" FontWeight="Normal" FontFamily="Segoe MDL2 Assets" />
                     <Button Content="Combine" Command="{Binding CombineRulesCommand}"
                             ToolTip="Combine rules that differ only in one item type, unique, or affix list (the merge suggestions Validate reports)"
-                            Height="22" Padding="6,0" />
-                </ToolBar>
-            </ToolBarTray>
+                            Height="26" Padding="8,0" />
+                </StackPanel>
+            </Border>
 
             <ListBox x:Name="RuleList"
                      ItemsSource="{Binding Rules}"
@@ -78,6 +97,14 @@
                      PreviewMouseMove="RuleList_PreviewMouseMove"
                      DragOver="RuleList_DragOver"
                      Drop="RuleList_Drop">
+                <!-- The Fluent theme's roomy ListBoxItem padding halves how many rules fit — keep rows compact -->
+                <ListBox.ItemContainerStyle>
+                    <Style TargetType="ListBoxItem">
+                        <Setter Property="Padding" Value="6,4" />
+                        <Setter Property="MinHeight" Value="0" />
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                    </Style>
+                </ListBox.ItemContainerStyle>
                 <ListBox.InputBindings>
                     <KeyBinding Key="Delete" Command="{Binding DeleteRuleCommand}" />
                     <KeyBinding Key="D" Modifiers="Control" Command="{Binding DuplicateRuleCommand}" />
@@ -87,7 +114,7 @@
                         <DockPanel Margin="4,2" LastChildFill="True">
                             <Rectangle Width="10" Height="10" Margin="0,0,5,0"
                                        Fill="{Binding DisplayBrush}"
-                                       Stroke="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}"
+                                       Stroke="{DynamicResource App.BorderBrush}"
                                        StrokeThickness="0.5"
                                        DockPanel.Dock="Left" VerticalAlignment="Center" />
                             <CheckBox IsChecked="{Binding IsEnabled}"
@@ -108,11 +135,11 @@
                       Width="6"
                       ShowsPreview="True"
                       ResizeBehavior="PreviousAndNext"
-                      Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}">
+                      Background="{DynamicResource App.SplitterBrush}">
             <GridSplitter.Template>
                 <ControlTemplate TargetType="GridSplitter">
                     <Grid Background="{TemplateBinding Background}">
-                        <Rectangle Width="2" Fill="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}"
+                        <Rectangle Width="2" Fill="{DynamicResource App.DividerBrush}"
                                    HorizontalAlignment="Center" VerticalAlignment="Stretch"
                                    Margin="0,40" RadiusX="1" RadiusY="1" />
                     </Grid>
@@ -135,7 +162,7 @@
                                             <TextBlock Text="Select a rule to edit."
                                                        HorizontalAlignment="Center"
                                                        VerticalAlignment="Center"
-                                                       Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}" />
+                                                       Foreground="{DynamicResource App.TextMutedBrush}" />
                                         </DataTemplate>
                                     </Setter.Value>
                                 </Setter>
@@ -214,7 +241,7 @@
                                 <DockPanel Margin="0,0,0,14">
                                     <Rectangle Width="28" Height="28"
                                                Fill="{Binding WpfBrush}"
-                                               Stroke="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}"
+                                               Stroke="{DynamicResource App.BorderBrush}"
                                                StrokeThickness="0.5"
                                                DockPanel.Dock="Left" Margin="0,0,8,0" />
                                     <Label Content="RGB hex:"

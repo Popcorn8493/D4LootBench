@@ -20,7 +20,7 @@
         <DockPanel Grid.Row="0">
             <Ellipse Width="44" Height="44"
                      Fill="{Binding PreviewBrush}"
-                     Stroke="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}"
+                     Stroke="{DynamicResource App.BorderBrush}"
                      StrokeThickness="1"
                      DockPanel.Dock="Right" Margin="10,0,0,0" />
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
@@ -112,7 +112,7 @@
                     <Rectangle x:Name="HueCursor"
                                Width="28" Height="4"
                                Fill="White" StrokeThickness="0.5"
-                               Stroke="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}"
+                               Stroke="{DynamicResource App.BorderBrush}"
                                Canvas.Left="-3"
                                IsHitTestVisible="False">
                         <Rectangle.Effect>

@@ -24,7 +24,7 @@
                 </DataTrigger>
                 <DataTrigger Binding="{Binding HasError}" Value="False">
                     <Setter Property="Foreground"
-                            Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" />
+                            Value="{DynamicResource App.TextBrush}" />
                 </DataTrigger>
             </Style.Triggers>
         </Style>
@@ -50,7 +50,7 @@
                       DisplayMemberPath="Label"
                       MinWidth="140" />
             <TextBlock VerticalAlignment="Center"
-                       Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
+                       Foreground="{DynamicResource App.TextMutedBrush}"
                        Margin="12,0,0,0" TextWrapping="Wrap"
                        Text="Paste a Mobalytics or Maxroll guide URL (the whole build is read from the page — the format picker only applies to pasted text), or paste the gear section text." />
         </DockPanel>

@@ -20,6 +20,8 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <!-- WPF0001: Application.ThemeMode (Fluent light/dark) is marked experimental. -->
+    <NoWarn>$(NoWarn);WPF0001</NoWarn>
     <RootNamespace>D4LootBench.App</RootNamespace>
     <AssemblyName>D4LootBench</AssemblyName>
     <ApplicationIcon>Assets\d4lootbench.ico</ApplicationIcon>

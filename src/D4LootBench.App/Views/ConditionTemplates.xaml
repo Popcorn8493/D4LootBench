@@ -8,7 +8,7 @@
 
     <!-- Shared style for the outer condition card border -->
     <Style x:Key="ConditionCardStyle" TargetType="Border">
-        <Setter Property="BorderBrush" Value="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource App.BorderBrush}" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="CornerRadius" Value="3" />
         <Setter Property="Margin" Value="0,0,0,8" />
@@ -31,7 +31,7 @@
         <Setter Property="VerticalAlignment" Value="Center" />
         <Setter Property="Content" Value="▸" />
         <Setter Property="ToolTip" Value="Expand" />
-        <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}" />
+        <Setter Property="Foreground" Value="{DynamicResource App.TextMutedBrush}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ToggleButton">
@@ -47,7 +47,7 @@
                 <Setter Property="ToolTip" Value="Collapse" />
             </Trigger>
             <Trigger Property="IsMouseOver" Value="True">
-                <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" />
+                <Setter Property="Foreground" Value="{DynamicResource App.TextBrush}" />
             </Trigger>
         </Style.Triggers>
     </Style>
@@ -70,7 +70,7 @@
                 <TextBlock Text="Codex of Power" Style="{StaticResource ConditionHeaderStyle}"
                            DockPanel.Dock="Left" />
                 <TextBlock Text="Matches all Codex upgrade drops" VerticalAlignment="Center"
-                           Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
+                           Foreground="{DynamicResource App.TextMutedBrush}"
                            FontStyle="Italic" />
             </DockPanel>
         </Border>
@@ -90,7 +90,7 @@
                     <TextBlock Text="{Binding TypeName}" Style="{StaticResource ConditionHeaderStyle}"
                                DockPanel.Dock="Left" />
                     <TextBlock Text="{Binding Summary}" VerticalAlignment="Center"
-                               Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}" />
+                               Foreground="{DynamicResource App.TextMutedBrush}" />
                 </DockPanel>
                 <StackPanel Margin="0,6,0,0"
                             Visibility="{Binding IsExpanded, Converter={StaticResource BoolToVis}}">
@@ -103,7 +103,7 @@
                                  Text="{Binding Maximum, UpdateSourceTrigger=PropertyChanged}"
                                  ToolTip="Set to 0 for no upper bound (game cap 900)" />
                         <TextBlock Text="(0 = no upper bound)" Margin="8,0,0,0" VerticalAlignment="Center"
-                                   Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
+                                   Foreground="{DynamicResource App.TextMutedBrush}"
                                    FontSize="11" />
                     </DockPanel>
                     <TextBlock Text="Clamped to game cap 900"
@@ -140,7 +140,7 @@
                     <TextBlock Text="{Binding TypeName}" Style="{StaticResource ConditionHeaderStyle}"
                                DockPanel.Dock="Left" />
                     <TextBlock Text="{Binding Summary}" VerticalAlignment="Center"
-                               Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}" />
+                               Foreground="{DynamicResource App.TextMutedBrush}" />
                 </DockPanel>
                 <DockPanel Margin="0,6,0,0"
                            Visibility="{Binding IsExpanded, Converter={StaticResource BoolToVis}}">
@@ -166,7 +166,7 @@
                     <TextBlock Text="{Binding TypeName}" Style="{StaticResource ConditionHeaderStyle}"
                                DockPanel.Dock="Left" />
                     <TextBlock Text="{Binding Summary}" VerticalAlignment="Center"
-                               Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}" />
+                               Foreground="{DynamicResource App.TextMutedBrush}" />
                 </DockPanel>
                 <StackPanel Margin="0,6,0,0"
                             Visibility="{Binding IsExpanded, Converter={StaticResource BoolToVis}}">
@@ -178,7 +178,7 @@
                     </WrapPanel>
                     <!-- Show raw mask when bits outside the known flags are set -->
                     <TextBlock FontSize="11" Margin="0,4,0,0"
-                               Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}">
+                               Foreground="{DynamicResource App.TextMutedBrush}">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock">
                                 <Setter Property="Visibility" Value="Collapsed" />
@@ -212,7 +212,7 @@
                     <TextBlock Text="{Binding TypeName}" Style="{StaticResource ConditionHeaderStyle}"
                                DockPanel.Dock="Left" />
                     <TextBlock Text="{Binding Summary}" VerticalAlignment="Center"
-                               Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}" />
+                               Foreground="{DynamicResource App.TextMutedBrush}" />
                 </DockPanel>
                 <WrapPanel Margin="0,6,0,0"
                            Visibility="{Binding IsExpanded, Converter={StaticResource BoolToVis}}">
@@ -242,7 +242,7 @@
                     <TextBlock Text="{Binding TypeName}" Style="{StaticResource ConditionHeaderStyle}"
                                DockPanel.Dock="Left" />
                     <TextBlock Text="{Binding Summary}" VerticalAlignment="Center"
-                               Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}" />
+                               Foreground="{DynamicResource App.TextMutedBrush}" />
                 </DockPanel>
                 <StackPanel Margin="0,6,0,0"
                             Visibility="{Binding IsExpanded, Converter={StaticResource BoolToVis}}">
@@ -272,7 +272,7 @@
                     <TextBlock Text="{Binding TypeName}" Style="{StaticResource ConditionHeaderStyle}"
                                DockPanel.Dock="Left" />
                     <TextBlock Text="{Binding Summary}" VerticalAlignment="Center"
-                               Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}" />
+                               Foreground="{DynamicResource App.TextMutedBrush}" />
                 </DockPanel>
                 <StackPanel Margin="0,6,0,0"
                             Visibility="{Binding IsExpanded, Converter={StaticResource BoolToVis}}">
@@ -288,7 +288,7 @@
                                       IsChecked="{Binding IsGreaterExpanded}" DockPanel.Dock="Left"
                                       ToolTip="Flag selected affixes as required Greater Affixes" />
                         <TextBlock FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"
-                                   Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
+                                   Foreground="{DynamicResource App.TextMutedBrush}"
                                    DockPanel.Dock="Left">
                             <Run Text="Greater Affixes" />
                             <Run Text="{Binding GreaterPicker.SelectionCountDisplay, Mode=OneWay}" />
@@ -322,7 +322,7 @@
                     <TextBlock Text="{Binding TypeName}" Style="{StaticResource ConditionHeaderStyle}"
                                DockPanel.Dock="Left" />
                     <TextBlock Text="{Binding Summary}" VerticalAlignment="Center"
-                               Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}" />
+                               Foreground="{DynamicResource App.TextMutedBrush}" />
                 </DockPanel>
                 <StackPanel Margin="0,6,0,0"
                             Visibility="{Binding IsExpanded, Converter={StaticResource BoolToVis}}">
@@ -333,7 +333,7 @@
                                  Text="{Binding MinimumCount, UpdateSourceTrigger=PropertyChanged}"
                                  ToolTip="0 = match any" />
                         <TextBlock Text="(0 = any)" Margin="8,0,0,0" VerticalAlignment="Center"
-                                   Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
+                                   Foreground="{DynamicResource App.TextMutedBrush}"
                                    FontSize="11" />
                     </DockPanel>
                     <views:ItemPickerControl DataContext="{Binding Picker}" />
@@ -356,7 +356,7 @@
                     <TextBlock Text="{Binding TypeName}" Style="{StaticResource ConditionHeaderStyle}"
                                DockPanel.Dock="Left" />
                     <TextBlock Text="{Binding Summary}" VerticalAlignment="Center"
-                               Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}" />
+                               Foreground="{DynamicResource App.TextMutedBrush}" />
                 </DockPanel>
                 <StackPanel Margin="0,6,0,0"
                             Visibility="{Binding IsExpanded, Converter={StaticResource BoolToVis}}">
@@ -380,15 +380,15 @@
                     <TextBlock Text="{Binding TypeName}" Style="{StaticResource ConditionHeaderStyle}"
                                DockPanel.Dock="Left" />
                     <TextBlock Text="{Binding Summary}" VerticalAlignment="Center"
-                               Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}" />
+                               Foreground="{DynamicResource App.TextMutedBrush}" />
                 </DockPanel>
                 <StackPanel Margin="0,6,0,0"
                             Visibility="{Binding IsExpanded, Converter={StaticResource BoolToVis}}">
                     <TextBlock Text="Sets" FontSize="11" FontWeight="SemiBold" Margin="0,0,0,2"
-                               Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}" />
+                               Foreground="{DynamicResource App.TextMutedBrush}" />
                     <views:ItemPickerControl DataContext="{Binding SetPicker}" />
                     <TextBlock Text="Specific Items" FontSize="11" FontWeight="SemiBold" Margin="0,8,0,2"
-                               Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}" />
+                               Foreground="{DynamicResource App.TextMutedBrush}" />
                     <views:ItemPickerControl DataContext="{Binding ItemPicker}" />
                 </StackPanel>
             </StackPanel>
@@ -407,7 +407,7 @@
                 <TextBlock Text="{Binding TypeName}" FontWeight="SemiBold" VerticalAlignment="Center"
                            MinWidth="120" Margin="0,0,10,0" DockPanel.Dock="Left" />
                 <TextBlock VerticalAlignment="Center"
-                           Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
+                           Foreground="{DynamicResource App.TextMutedBrush}"
                            FontStyle="Italic">
                     <Run Text="{Binding Summary, Mode=OneWay}" />
                     <Run Text="— preserved as-is" />

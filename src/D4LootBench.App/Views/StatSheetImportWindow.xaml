@@ -2,6 +2,7 @@
     x:Class="D4LootBench.App.Views.StatSheetImportWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="clr-namespace:D4LootBench.App.Controls"
     Title="Gear Damage from the Stat Sheet"
     Height="580" Width="760" MinHeight="420" MinWidth="640"
     WindowStartupLocation="CenterOwner"
@@ -35,6 +36,26 @@
                     <Setter Property="ToolTip" Value="{Binding Note}" />
                     <Setter Property="ToolTipService.InitialShowDelay" Value="200" />
                     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                    <!-- The Fluent GridView row keeps its light accent selection in dark mode
+                         (white text on light blue) — use the app's themed brushes instead. -->
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="ListViewItem">
+                                <Border x:Name="RowBackground" Background="Transparent" Padding="2,3" CornerRadius="2">
+                                    <GridViewRowPresenter Content="{TemplateBinding Content}"
+                                                          Columns="{TemplateBinding GridView.ColumnCollection}" />
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="RowBackground" Property="Background" Value="{DynamicResource App.HoverBrush}" />
+                                    </Trigger>
+                                    <Trigger Property="IsSelected" Value="True">
+                                        <Setter TargetName="RowBackground" Property="Background" Value="{DynamicResource App.SelectionBrush}" />
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
                 </Style>
             </ListView.ItemContainerStyle>
             <ListView.View>
@@ -54,8 +75,13 @@
                     <GridViewColumn Header="Stat" Width="270">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBox Text="{Binding Label, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                         FontSize="11" BorderThickness="0" Background="Transparent" />
+                                <!-- Only known stat-sheet labels commit: typing filters the list, and text
+                                     matching nothing reverts — an OCR'd label stays valid via LabelOptions. -->
+                                <controls:FilteringComboBox ItemsSource="{Binding LabelOptions}"
+                                                            SelectedItem="{Binding Label, Mode=TwoWay}"
+                                                            Width="250" FontSize="11"
+                                                            MaxDropDownHeight="280"
+                                                            ToolTip="Pick the stat-sheet row this entry represents — type to filter; only listed stats are accepted" />
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>

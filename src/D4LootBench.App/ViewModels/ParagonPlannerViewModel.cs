@@ -148,6 +148,9 @@ public partial class ParagonPlannerViewModel : ObservableObject
     /// <summary>Stats the point maximizer can chase; none selected means the four core stats.</summary>
     public ObservableCollection<FocusStatViewModel> FocusStats { get; } = [];
 
+    /// <summary>Sidebar Boards tab rows — rebuilt with the layout, linked to the glyph sockets.</summary>
+    public ObservableCollection<BoardRowViewModel> BoardRows { get; } = [];
+
     [ObservableProperty]
     private bool _preferRareNodes;
 
@@ -660,6 +663,15 @@ public partial class ParagonPlannerViewModel : ObservableObject
             GlyphSockets.Add(socket);
         }
 
+        // Boards tab rows: one per attached board, linked to the slot's socket for the live
+        // glyph name and the shared board lock.
+        BoardRows.Clear();
+        for (int slot = 0; slot < _placedBoards.Count; slot++)
+        {
+            BoardRows.Add(new BoardRowViewModel(slot, _placedBoards[slot],
+                GlyphSockets.FirstOrDefault(s => s.Socket.BoardSlot == slot)));
+        }
+
         // Keep rule settings for groups that survive the layout change (e.g. adding a board).
         // "Any:" stat groups follow the kind groups: one row per stat that several groups grant.
         var previousRules = NodeRules.ToDictionary(r => r.Group.Key, r => (r.Mode, r.Limit));
@@ -675,26 +687,51 @@ public partial class ParagonPlannerViewModel : ObservableObject
             NodeRules.Add(rule);
         }
 
-        // Focusable stats for the point maximizer (selection and priority survive layout changes).
+        // Focusable stats for the point maximizer. The list spans EVERY stat the class can
+        // reach — all of its boards' nodes plus its glyphs' output attributes — not just the
+        // attached boards, so selections and weights survive board swaps and remain editable
+        // even while the stat is temporarily off the layout. On-layout stats are flagged.
         var previousFocus = FocusStats.ToDictionary(
             f => f.Attribute, f => (f.IsSelected, f.Priority), StringComparer.OrdinalIgnoreCase);
-        var focusable = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var onLayout = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var vertex in _graph.Vertices)
         {
             foreach (var attribute in vertex.Node.Attributes)
             {
                 if (!attribute.IsThresholdBonus && attribute.Value is not null)
-                    focusable.TryAdd(attribute.Attribute, ParagonDisplay.FormatAttributeName(attribute.Attribute));
+                    onLayout.Add(attribute.Attribute);
             }
+        }
+        var focusable = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var nodesBySnoId = ParagonDatabase.NodesBySnoId;
+        foreach (var board in ParagonDatabase.BoardsForClass(SelectedClass))
+        {
+            foreach (var placement in board.Nodes)
+            {
+                if (!nodesBySnoId.TryGetValue(placement.Node, out var node))
+                    continue;
+                foreach (var attribute in node.Attributes)
+                {
+                    if (!attribute.IsThresholdBonus && attribute.Value is not null)
+                        focusable.TryAdd(attribute.Attribute, ParagonDisplay.FormatAttributeName(attribute.Attribute));
+                }
+            }
+        }
+        foreach (var glyph in ParagonDatabase.GlyphsForClass(SelectedClass))
+        {
+            if (GlyphInfo.DestinationAttribute(glyph) is { } destination)
+                focusable.TryAdd(destination, ParagonDisplay.FormatAttributeName(destination));
         }
         FocusStats.Clear();
         foreach (var (attribute, display) in focusable
                      .OrderBy(kv => MaximizeFocus.CoreStats.Contains(kv.Key) ? 0 : 1)
+                     .ThenBy(kv => onLayout.Contains(kv.Key) ? 0 : 1)
                      .ThenBy(kv => kv.Value, StringComparer.OrdinalIgnoreCase))
         {
             var previous = previousFocus.GetValueOrDefault(attribute, (IsSelected: false, Priority: "Normal"));
             FocusStats.Add(new FocusStatViewModel(attribute, display)
             {
+                IsOnBoards = onLayout.Contains(attribute),
                 IsSelected = previous.IsSelected,
                 Priority = previous.Priority,
             });
@@ -2236,6 +2273,53 @@ public partial class ParagonPlannerViewModel : ObservableObject
               "Level-pinned options assume that level for every glyph (applying does not change " +
               "glyph levels); locked boards/glyphs from the Glyphs tab were respected.";
         SetStatus($"Deep placement search complete — {total} option(s) across four passes.");
+    }
+
+    /// <summary>
+    /// Boards-tab quick rotate: turns the board to its next VALID quarter-turn (one that still
+    /// leaves gates facing the parent and any children), remapping targets/constraints/goals
+    /// through the same machinery placement suggestions use, then re-solves.
+    /// </summary>
+    [RelayCommand]
+    private async Task RotateBoard(BoardRowViewModel row)
+    {
+        if (row.Slot == 0 || _layout is null)
+            return;
+        var placed = _placedBoards[row.Slot];
+        int? nextValid = null;
+        for (int delta = 1; delta < 4 && nextValid is null; delta++)
+        {
+            int rotation = (placed.RotationSteps + delta) & 3;
+            var boards = _placedBoards.ToList();
+            boards[row.Slot] = new PlacedBoard
+            {
+                Board = placed.Board,
+                ParentSlot = placed.ParentSlot,
+                AttachEdge = placed.AttachEdge,
+                RotationSteps = rotation,
+            };
+            try
+            {
+                ComposedGraph.Build(new ParagonLayout(boards));
+                nextValid = rotation;
+            }
+            catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
+            {
+            }
+        }
+        if (nextValid is not int target)
+        {
+            SetStatus("No other rotation of this board keeps its gates aligned here.", error: true);
+            return;
+        }
+
+        RecordUndo();
+        var purchasesBefore = CurrentPurchases();
+        ApplyChange(new RotationChange(row.Slot, target));
+        if (_targets.Count > 0 || GlyphSockets.Any(s => s.EnsureActive))
+            await SolveAsync();
+        MarkPurchaseDiff(purchasesBefore);
+        SetStatus($"Rotated slot {row.Slot} ({row.Name}) to {target * 90}°.");
     }
 
     // ── Applying and reverting placement suggestions ─────────────────────

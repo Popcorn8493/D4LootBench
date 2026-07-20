@@ -20,7 +20,7 @@
 
             <!-- WPF Grid in BlockUIContainer — FlowDocument Table has broken star-column layout -->
             <BlockUIContainer Margin="0,8,0,16">
-                <Border BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}"
+                <Border BorderBrush="{DynamicResource App.BorderBrush}"
                         BorderThickness="1">
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -39,25 +39,25 @@
 
                         <!-- Header -->
                         <Border Grid.Column="0" Grid.Row="0"
-                                Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
+                                Background="{DynamicResource App.PanelBrush}"
                                 Padding="6,5">
                             <TextBlock Text="Source" FontWeight="SemiBold" />
                         </Border>
                         <Border Grid.Column="1" Grid.Row="0"
-                                Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
-                                BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}"
+                                Background="{DynamicResource App.PanelBrush}"
+                                BorderBrush="{DynamicResource App.BorderBrush}"
                                 BorderThickness="1,0,1,0" Padding="6,5">
                             <TextBlock Text="License" FontWeight="SemiBold" />
                         </Border>
                         <Border Grid.Column="2" Grid.Row="0"
-                                Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
+                                Background="{DynamicResource App.PanelBrush}"
                                 Padding="6,5">
                             <TextBlock Text="Contribution" FontWeight="SemiBold" />
                         </Border>
 
                         <!-- Row 1 — Upsilon72 -->
                         <Border Grid.Column="0" Grid.Row="1"
-                                BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}"
+                                BorderBrush="{DynamicResource App.BorderBrush}"
                                 BorderThickness="0,1,0,0" Padding="6,5">
                             <TextBlock>
                                 <Hyperlink NavigateUri="https://github.com/Upsilon72/d4-filter-generator"
@@ -67,12 +67,12 @@
                             </TextBlock>
                         </Border>
                         <Border Grid.Column="1" Grid.Row="1"
-                                BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}"
+                                BorderBrush="{DynamicResource App.BorderBrush}"
                                 BorderThickness="1,1,1,0" Padding="6,5">
                             <TextBlock Text="MIT" />
                         </Border>
                         <Border Grid.Column="2" Grid.Row="1"
-                                BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}"
+                                BorderBrush="{DynamicResource App.BorderBrush}"
                                 BorderThickness="0,1,0,0" Padding="6,5">
                             <TextBlock Text="Protobuf wire format reverse engineering; affix hash IDs; condition encoding"
                                        TextWrapping="Wrap" />
@@ -80,7 +80,7 @@
 
                         <!-- Row 2 — fnuecke -->
                         <Border Grid.Column="0" Grid.Row="2"
-                                BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}"
+                                BorderBrush="{DynamicResource App.BorderBrush}"
                                 BorderThickness="0,1,0,0" Padding="6,5">
                             <TextBlock>
                                 <Hyperlink NavigateUri="https://github.com/fnuecke/diablo4-loot-filter-viewer"
@@ -90,12 +90,12 @@
                             </TextBlock>
                         </Border>
                         <Border Grid.Column="1" Grid.Row="2"
-                                BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}"
+                                BorderBrush="{DynamicResource App.BorderBrush}"
                                 BorderThickness="1,1,1,0" Padding="6,5">
                             <TextBlock Text="Unlicense" />
                         </Border>
                         <Border Grid.Column="2" Grid.Row="2"
-                                BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}"
+                                BorderBrush="{DynamicResource App.BorderBrush}"
                                 BorderThickness="0,1,0,0" Padding="6,5">
                             <TextBlock Text="Complete .proto field layout; condition type semantics; ID lookup table"
                                        TextWrapping="Wrap" />
@@ -103,7 +103,7 @@
 
                         <!-- Row 3 — DiabloTools -->
                         <Border Grid.Column="0" Grid.Row="3"
-                                BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}"
+                                BorderBrush="{DynamicResource App.BorderBrush}"
                                 BorderThickness="0,1,0,0" Padding="6,5">
                             <TextBlock>
                                 <Hyperlink NavigateUri="https://github.com/DiabloTools/d4data"
@@ -113,12 +113,12 @@
                             </TextBlock>
                         </Border>
                         <Border Grid.Column="1" Grid.Row="3"
-                                BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}"
+                                BorderBrush="{DynamicResource App.BorderBrush}"
                                 BorderThickness="1,1,1,0" Padding="6,5">
                             <TextBlock Text="MIT" />
                         </Border>
                         <Border Grid.Column="2" Grid.Row="3"
-                                BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}"
+                                BorderBrush="{DynamicResource App.BorderBrush}"
                                 BorderThickness="0,1,0,0" Padding="6,5">
                             <TextBlock Text="Datamined ID tables for skills, item types, and affixes; unique item display names"
                                        TextWrapping="Wrap" />
@@ -126,7 +126,7 @@
 
                         <!-- Row 4 — d4lfteam -->
                         <Border Grid.Column="0" Grid.Row="4"
-                                BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}"
+                                BorderBrush="{DynamicResource App.BorderBrush}"
                                 BorderThickness="0,1,0,0" Padding="6,5">
                             <TextBlock>
                                 <Hyperlink NavigateUri="https://github.com/d4lfteam/d4lf"
@@ -136,12 +136,12 @@
                             </TextBlock>
                         </Border>
                         <Border Grid.Column="1" Grid.Row="4"
-                                BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}"
+                                BorderBrush="{DynamicResource App.BorderBrush}"
                                 BorderThickness="1,1,1,0" Padding="6,5">
                             <TextBlock Text="MIT" />
                         </Border>
                         <Border Grid.Column="2" Grid.Row="4"
-                                BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}"
+                                BorderBrush="{DynamicResource App.BorderBrush}"
                                 BorderThickness="0,1,0,0" Padding="6,5">
                             <TextBlock Text="Affix name reference database"
                                        TextWrapping="Wrap" />
@@ -149,7 +149,7 @@
 
                         <!-- Row 5 — Raxx -->
                         <Border Grid.Column="0" Grid.Row="5"
-                                BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}"
+                                BorderBrush="{DynamicResource App.BorderBrush}"
                                 BorderThickness="0,1,0,0" Padding="6,5">
                             <TextBlock>
                                 <Hyperlink NavigateUri="https://github.com/raxxanterax/GAMING/blob/main/Raxxs%20Diablo%204%20T6%2B%20Endgame%20Filter.txt"
@@ -159,12 +159,12 @@
                             </TextBlock>
                         </Border>
                         <Border Grid.Column="1" Grid.Row="5"
-                                BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}"
+                                BorderBrush="{DynamicResource App.BorderBrush}"
                                 BorderThickness="1,1,1,0" Padding="6,5">
                             <TextBlock Text="N/A" />
                         </Border>
                         <Border Grid.Column="2" Grid.Row="5"
-                                BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}"
+                                BorderBrush="{DynamicResource App.BorderBrush}"
                                 BorderThickness="0,1,0,0" Padding="6,5">
                             <TextBlock Text="Real-world filter export used to validate the format spec"
                                        TextWrapping="Wrap" />

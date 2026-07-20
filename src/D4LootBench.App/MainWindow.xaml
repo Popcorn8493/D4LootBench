@@ -111,7 +111,7 @@
                         Padding="8,2">
                     <Button.Style>
                         <Style TargetType="Button">
-                            <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.WindowTextBrushKey}}" />
+                            <Setter Property="Foreground" Value="{DynamicResource App.TextBrush}" />
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding HasBlockingErrors}" Value="True">
                                     <Setter Property="Foreground" Value="Red" />
@@ -134,6 +134,15 @@
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="&#xE70B;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,5,0" />
                         <TextBlock Text="AI Assistant" VerticalAlignment="Center" />
+                    </StackPanel>
+                </ToggleButton>
+
+                <ToggleButton x:Name="DarkModeToggle" Checked="OnDarkModeToggled" Unchecked="OnDarkModeToggled"
+                              ToolTip="Dark mode — restyles the whole app (both windows); remembered across sessions"
+                              Padding="8,2">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#xE708;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,5,0" />
+                        <TextBlock Text="Dark" VerticalAlignment="Center" />
                     </StackPanel>
                 </ToggleButton>
 
@@ -199,7 +208,7 @@
                 <TextBlock Text="{Binding StatusMessage}">
                     <TextBlock.Style>
                         <Style TargetType="TextBlock">
-                            <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.WindowTextBrushKey}}" />
+                            <Setter Property="Foreground" Value="{DynamicResource App.TextBrush}" />
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding HasError}" Value="True">
                                     <Setter Property="Foreground" Value="Red" />
@@ -240,7 +249,7 @@
                                                            HorizontalAlignment="Center"
                                                            Margin="0,0,0,12" />
                                                 <TextBlock Text="Paste a D4 filter share code, open a JSON file, or create a new filter."
-                                                           Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
+                                                           Foreground="{DynamicResource App.TextMutedBrush}"
                                                            HorizontalAlignment="Center" />
                                             </StackPanel>
                                         </DataTemplate>

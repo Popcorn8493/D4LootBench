@@ -153,6 +153,20 @@ public partial class StatSheetImportWindow : Window
             _sheetText = line.Value > 0 ? line.Value.ToString("#,0.#", CultureInfo.CurrentCulture) : "";
             _baseText = line.BaseValue > 0 ? $"−{line.BaseValue:0}% base" : "";
             _note = line.Note;
+            LabelOptions = BuildLabelOptions(line.Label);
+        }
+
+        /// <summary>The Stat picker's vocabulary: the known sheet labels, plus this row's own
+        /// OCR'd label when the sheet used wording the canonical list doesn't carry — so the
+        /// scan's text stays selectable instead of being wiped by the first commit.</summary>
+        public IReadOnlyList<string> LabelOptions { get; }
+
+        private static IReadOnlyList<string> BuildLabelOptions(string ocrLabel)
+        {
+            string trimmed = ocrLabel.Trim();
+            if (trimmed.Length == 0 || StatSheetParser.KnownStatLabels.Contains(trimmed, StringComparer.OrdinalIgnoreCase))
+                return StatSheetParser.KnownStatLabels;
+            return [trimmed, .. StatSheetParser.KnownStatLabels];
         }
 
         public SheetBucket Bucket => (SheetBucket)_bucketIndex;
@@ -183,10 +197,19 @@ public partial class StatSheetImportWindow : Window
             get => _label;
             set
             {
-                if (value == _label)
+                string label = value?.Trim() ?? "";
+                if (label == _label)
                     return;
-                _label = value;
-                OnPropertyChanged();
+                _label = label;
+                // A re-labeled row means a different stat — its bucket guess and note follow.
+                if (label.Length > 0)
+                {
+                    var line = StatSheetParser.ClassifyManual(label, Contribution);
+                    _bucketIndex = (int)line.Bucket;
+                    _note = line.Note;
+                }
+                OnPropertyChanged(null);
+                _changed();
             }
         }
 

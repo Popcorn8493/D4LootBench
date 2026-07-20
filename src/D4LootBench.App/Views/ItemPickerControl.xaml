@@ -9,6 +9,14 @@
     d:DataContext="{d:DesignInstance Type=cond:PickerViewModel, IsDesignTimeCreatable=False}">
 
     <StackPanel>
+        <StackPanel.Resources>
+            <!-- The Fluent theme's roomy ListBoxItem padding leaves ~5 visible items per list — keep rows compact -->
+            <Style x:Key="CompactPickerItem" TargetType="ListBoxItem">
+                <Setter Property="Padding" Value="8,3" />
+                <Setter Property="MinHeight" Value="0" />
+            </Style>
+        </StackPanel.Resources>
+
         <!-- Search box -->
         <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
                  Margin="0,0,0,4"
@@ -25,7 +33,7 @@
             <!-- Available items -->
             <StackPanel Grid.Column="0">
                 <TextBlock Text="Available" FontSize="11"
-                           Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
+                           Foreground="{DynamicResource App.TextMutedBrush}"
                            Margin="0,0,0,2" />
                 <ListBox x:Name="AvailableList"
                          ItemsSource="{Binding Available}"
@@ -33,6 +41,7 @@
                          DisplayMemberPath="DisplayName"
                          MinHeight="110"
                          MaxHeight="210"
+                         ItemContainerStyle="{StaticResource CompactPickerItem}"
                          ToolTip="Double-click, drag to Selected, or use → to add; Ctrl/Shift for multi-select"
                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                          SelectionChanged="AvailableList_SelectionChanged"
@@ -62,7 +71,7 @@
             <StackPanel Grid.Column="2">
                 <DockPanel Margin="0,0,0,2" LastChildFill="False">
                     <TextBlock FontSize="11"
-                               Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
+                               Foreground="{DynamicResource App.TextMutedBrush}"
                                VerticalAlignment="Center"
                                DockPanel.Dock="Left">
                         <Run Text="Selected" />
@@ -81,6 +90,7 @@
                          DisplayMemberPath="DisplayName"
                          MinHeight="110"
                          MaxHeight="210"
+                         ItemContainerStyle="{StaticResource CompactPickerItem}"
                          ToolTip="Double-click or use ← to remove; drag into another list to move; Ctrl/Shift for multi-select"
                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                          SelectionChanged="SelectedList_SelectionChanged"

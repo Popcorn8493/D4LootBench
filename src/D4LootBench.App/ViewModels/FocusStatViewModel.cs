@@ -16,6 +16,14 @@ public partial class FocusStatViewModel : ObservableObject
     public string Attribute { get; }
     public string DisplayName { get; }
 
+    /// <summary>
+    /// False when no attached board currently grants the stat. The list spans every stat the
+    /// CLASS can reach (all boards + glyph outputs), so selections and weights survive board
+    /// swaps — an off-board stat simply contributes nothing until a board granting it returns.
+    /// </summary>
+    [ObservableProperty]
+    private bool _isOnBoards = true;
+
     [ObservableProperty]
     private bool _isSelected;
 

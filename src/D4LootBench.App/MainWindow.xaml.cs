@@ -34,6 +34,22 @@ public partial class MainWindow
         _vm.PropertyChanged       += OnVmPropertyChanged;
 
         RestoreWindowSettings();
+
+        // Theme before first render; the toggle reflects the stored preference.
+        DarkModeToggle.IsChecked = _windowSettings.DarkMode;
+        ThemeService.Apply(_windowSettings.DarkMode);
+    }
+
+    private void OnDarkModeToggled(object sender, RoutedEventArgs e)
+    {
+        // The constructor sets IsChecked from settings (and applies the theme itself); saving
+        // here before the window is measured would persist RestoreBounds' infinite values.
+        if (!IsLoaded)
+            return;
+        bool dark = DarkModeToggle.IsChecked == true;
+        _windowSettings.DarkMode = dark;
+        ThemeService.Apply(dark);
+        _windowSettings.Save(this);
     }
 
     private void RestoreWindowSettings()

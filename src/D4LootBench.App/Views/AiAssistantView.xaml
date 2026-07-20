@@ -12,9 +12,9 @@
         <BooleanToVisibilityConverter x:Key="BoolToVis" />
     </UserControl.Resources>
 
-    <Border BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}"
+    <Border BorderBrush="{DynamicResource App.BorderBrush}"
             BorderThickness="0,1,0,0"
-            Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}">
+            Background="{DynamicResource App.PanelBrush}">
         <DockPanel Margin="8,6,8,6">
 
             <!-- ── Settings expander (docked top) ─────────────────────── -->
@@ -45,7 +45,7 @@
                                 Content="⟳" FontSize="14"
                                 ToolTip="Fetch available models from Ollama"
                                 Padding="6,1" Margin="4,0,0,0" />
-                        <ComboBox IsEditable="True"
+                        <ComboBox IsEditable="True" Style="{StaticResource App.EditableComboBox}"
                                   Text="{Binding ModelName, UpdateSourceTrigger=PropertyChanged}"
                                   ItemsSource="{Binding AvailableModels}" />
                     </DockPanel>
@@ -96,7 +96,7 @@
                 <TextBlock Text="{Binding StatusText}" TextWrapping="Wrap" Margin="0,0,0,4">
                     <TextBlock.Style>
                         <Style TargetType="TextBlock">
-                            <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.WindowTextBrushKey}}" />
+                            <Setter Property="Foreground" Value="{DynamicResource App.TextBrush}" />
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding HasError}" Value="True">
                                     <Setter Property="Foreground" Value="Red" />
@@ -107,7 +107,7 @@
                 </TextBlock>
 
                 <Border Visibility="{Binding HasPendingRule, Converter={StaticResource BoolToVis}}"
-                        BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}"
+                        BorderBrush="{DynamicResource App.BorderBrush}"
                         BorderThickness="1" CornerRadius="3" Padding="6,4" Margin="0,0,0,2">
                     <DockPanel>
                         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">

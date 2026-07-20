@@ -40,7 +40,7 @@
 
             <!-- WPF Grid in BlockUIContainer — FlowDocument Table has broken star-column layout -->
             <BlockUIContainer Margin="0,4,0,12">
-                <Border BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}"
+                <Border BorderBrush="{DynamicResource App.BorderBrush}"
                         BorderThickness="1">
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -56,52 +56,52 @@
 
                         <!-- Header -->
                         <Border Grid.Column="0" Grid.Row="0"
-                                Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
+                                Background="{DynamicResource App.PanelBrush}"
                                 Padding="6,5">
                             <TextBlock Text="GPU VRAM" FontWeight="SemiBold" />
                         </Border>
                         <Border Grid.Column="1" Grid.Row="0"
-                                Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
-                                BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}"
+                                Background="{DynamicResource App.PanelBrush}"
+                                BorderBrush="{DynamicResource App.BorderBrush}"
                                 BorderThickness="1,0,1,0" Padding="6,5">
                             <TextBlock Text="Command" FontWeight="SemiBold" />
                         </Border>
                         <Border Grid.Column="2" Grid.Row="0"
-                                Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
+                                Background="{DynamicResource App.PanelBrush}"
                                 Padding="6,5">
                             <TextBlock Text="Notes" FontWeight="SemiBold" />
                         </Border>
 
                         <!-- Row 1 -->
                         <Border Grid.Column="0" Grid.Row="1"
-                                BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}"
+                                BorderBrush="{DynamicResource App.BorderBrush}"
                                 BorderThickness="0,1,0,0" Padding="6,5">
                             <TextBlock Text="10 GB+" />
                         </Border>
                         <Border Grid.Column="1" Grid.Row="1"
-                                BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}"
+                                BorderBrush="{DynamicResource App.BorderBrush}"
                                 BorderThickness="1,1,1,0" Padding="6,5">
                             <TextBlock Text="ollama pull qwen2.5-coder:14b" FontFamily="Consolas" />
                         </Border>
                         <Border Grid.Column="2" Grid.Row="1"
-                                BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}"
+                                BorderBrush="{DynamicResource App.BorderBrush}"
                                 BorderThickness="0,1,0,0" Padding="6,5">
                             <TextBlock Text="Best quality" TextWrapping="Wrap" />
                         </Border>
 
                         <!-- Row 2 -->
                         <Border Grid.Column="0" Grid.Row="2"
-                                BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}"
+                                BorderBrush="{DynamicResource App.BorderBrush}"
                                 BorderThickness="0,1,0,0" Padding="6,5">
                             <TextBlock Text="6–9 GB" />
                         </Border>
                         <Border Grid.Column="1" Grid.Row="2"
-                                BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}"
+                                BorderBrush="{DynamicResource App.BorderBrush}"
                                 BorderThickness="1,1,1,0" Padding="6,5">
                             <TextBlock Text="ollama pull qwen2.5-coder:7b" FontFamily="Consolas" />
                         </Border>
                         <Border Grid.Column="2" Grid.Row="2"
-                                BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}"
+                                BorderBrush="{DynamicResource App.BorderBrush}"
                                 BorderThickness="0,1,0,0" Padding="6,5">
                             <TextBlock Text="Good quality; fits mid-range GPUs" TextWrapping="Wrap" />
                         </Border>

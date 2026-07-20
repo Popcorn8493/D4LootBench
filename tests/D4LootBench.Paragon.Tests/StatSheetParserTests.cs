@@ -228,6 +228,41 @@ public class StatSheetParserTests
         row.Contribution.ShouldBe(327.6, 0.01);
     }
 
+    [Fact]
+    public void Every_known_manual_label_classifies_to_a_recognized_bucket()
+    {
+        foreach (string label in StatSheetParser.KnownStatLabels)
+        {
+            var line = StatSheetParser.ClassifyManual(label, 100);
+            (line.Note is null || !line.Note.Contains("Not recognized"))
+                .ShouldBeTrue($"'{label}' fell through to the unrecognized fallback");
+            // Manual-entry options exist to feed the two fields; only crit/vuln/overpower-style
+            // rows may land Ignored, and none of the curated list should.
+            line.Bucket.ShouldNotBe(SheetBucket.Ignored, label);
+        }
+    }
+
+    [Fact]
+    public void Manual_damage_with_type_is_situational_with_a_flip_note()
+    {
+        var line = StatSheetParser.ClassifyManual("Damage with Fire", 80);
+
+        line.Bucket.ShouldBe(SheetBucket.Situational);
+        line.Note.ShouldNotBeNull();
+        line.Note.ShouldContain("Fire");
+        line.Note.ShouldContain("flip to Additive");
+    }
+
+    [Fact]
+    public void Manual_crit_damage_keeps_its_base_subtraction()
+    {
+        var line = StatSheetParser.ClassifyManual("Critical Strike Damage", 150);
+
+        line.Bucket.ShouldBe(SheetBucket.Situational);
+        line.BaseValue.ShouldBe(50);
+        line.Contribution.ShouldBe(100);
+    }
+
     private static SheetStatLine Row(IReadOnlyList<SheetStatLine> rows, string label) =>
         rows.Where(l => l.Label == label).ToList().ShouldHaveSingleItem(label);
 

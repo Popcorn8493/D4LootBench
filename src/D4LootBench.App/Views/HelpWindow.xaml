@@ -20,8 +20,8 @@
 
         <!-- Sidebar -->
         <Border Grid.Column="0"
-                Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
-                BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}"
+                Background="{DynamicResource App.PanelBrush}"
+                BorderBrush="{DynamicResource App.BorderBrush}"
                 BorderThickness="0,0,1,0">
             <ListBox x:Name="TopicList"
                      BorderThickness="0"
@@ -41,7 +41,7 @@
         <GridSplitter Grid.Column="1"
                       HorizontalAlignment="Stretch"
                       ResizeBehavior="PreviousAndNext"
-                      Background="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}" />
+                      Background="{DynamicResource App.BorderBrush}" />
 
         <!-- Topic content -->
         <ContentControl x:Name="TopicContent"

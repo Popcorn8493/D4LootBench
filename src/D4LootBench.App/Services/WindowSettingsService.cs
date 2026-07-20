@@ -21,6 +21,7 @@ public sealed class WindowSettingsService
     public double?     Left          { get; private set; }
     public double      AiPanelHeight { get; set; } = 220;
     public double      RuleListWidth { get; set; } = 320;
+    public bool        DarkMode      { get; set; }
 
     public WindowSettingsService() => Load();
 
@@ -31,6 +32,14 @@ public sealed class WindowSettingsService
             ? new Rect(window.Left, window.Top, window.Width, window.Height)
             : window.RestoreBounds;
 
+        // A window saved before it is measured (or with RestoreBounds still Rect.Empty) yields
+        // NaN/infinite values, which JSON cannot store — fall back to the last known-good ones.
+        if (!double.IsFinite(bounds.Width) || !double.IsFinite(bounds.Height)
+            || !double.IsFinite(bounds.Top) || !double.IsFinite(bounds.Left))
+        {
+            bounds = new Rect(Left ?? 0, Top ?? 0, Width, Height);
+        }
+
         var stored = new StoredSettings(
             state == WindowState.Minimized ? WindowState.Normal : state,
             bounds.Width,
@@ -38,7 +47,8 @@ public sealed class WindowSettingsService
             bounds.Top,
             bounds.Left,
             AiPanelHeight,
-            RuleListWidth);
+            RuleListWidth,
+            DarkMode);
 
         Directory.CreateDirectory(Path.GetDirectoryName(SettingsPath)!);
         File.WriteAllText(SettingsPath, JsonSerializer.Serialize(stored, JsonOptions));
@@ -62,6 +72,7 @@ public sealed class WindowSettingsService
             Left          = stored.Left;
             AiPanelHeight = stored.AiPanelHeight > 0 ? stored.AiPanelHeight : AiPanelHeight;
             RuleListWidth = stored.RuleListWidth > 0  ? stored.RuleListWidth : RuleListWidth;
+            DarkMode      = stored.DarkMode;
         }
         catch { /* corrupt file — use defaults */ }
     }
@@ -73,5 +84,6 @@ public sealed class WindowSettingsService
         [property: JsonPropertyName("top")]           double?     Top,
         [property: JsonPropertyName("left")]          double?     Left,
         [property: JsonPropertyName("aiPanelHeight")] double      AiPanelHeight,
-        [property: JsonPropertyName("ruleListWidth")] double      RuleListWidth);
+        [property: JsonPropertyName("ruleListWidth")] double      RuleListWidth,
+        [property: JsonPropertyName("darkMode")]      bool        DarkMode = false);
 }

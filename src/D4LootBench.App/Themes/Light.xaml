@@ -1,0 +1,18 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Semantic chrome brushes — the dark theme swaps this dictionary (see ThemeService).
+         Board-canvas colors (node fills, plates) are game-styled and theme-independent. -->
+    <SolidColorBrush x:Key="App.BorderBrush"    Color="#E3E3E3" />
+    <SolidColorBrush x:Key="App.DividerBrush"   Color="#D4D4D4" />
+    <SolidColorBrush x:Key="App.SplitterBrush"  Color="#EEEEEE" />
+    <SolidColorBrush x:Key="App.PanelBrush"     Color="#F2F2F2" />
+    <SolidColorBrush x:Key="App.TextBrush"      Color="#555555" />
+    <SolidColorBrush x:Key="App.TextMutedBrush" Color="#666666" />
+    <SolidColorBrush x:Key="App.TextFaintBrush" Color="#8A8A8A" />
+    <SolidColorBrush x:Key="App.ErrorBrush"     Color="#C0392B" />
+    <SolidColorBrush x:Key="App.HoverBrush"     Color="#F2ECE1" />
+    <SolidColorBrush x:Key="App.SelectionBrush" Color="#FFE9C8" />
+
+</ResourceDictionary>

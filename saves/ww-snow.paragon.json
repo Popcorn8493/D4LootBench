@@ -904,35 +904,45 @@
       "glyphInternalName": "Rare_016_Dexterity_Side",
       "level": 129,
       "requiredStat": 25,
-      "ensureActive": true
+      "ensureActive": true,
+      "lockGlyph": true,
+      "lockBoard": true
     },
     {
       "boardSlot": 1,
       "glyphInternalName": "Rare_028_Strength_Main",
       "level": 129,
       "requiredStat": 40,
-      "ensureActive": true
+      "ensureActive": true,
+      "lockGlyph": true,
+      "lockBoard": false
     },
     {
       "boardSlot": 2,
       "glyphInternalName": "Rare_011_Willpower_Side",
       "level": 127,
       "requiredStat": 25,
-      "ensureActive": true
+      "ensureActive": true,
+      "lockGlyph": false,
+      "lockBoard": false
     },
     {
       "boardSlot": 3,
       "glyphInternalName": "Rare_080_Strength_Main",
       "level": 127,
       "requiredStat": 40,
-      "ensureActive": true
+      "ensureActive": true,
+      "lockGlyph": true,
+      "lockBoard": true
     },
     {
       "boardSlot": 4,
       "glyphInternalName": "Rare_030_Dexterity_Side",
       "level": 127,
       "requiredStat": 25,
-      "ensureActive": true
+      "ensureActive": true,
+      "lockGlyph": true,
+      "lockBoard": false
     }
   ],
   "nodeRules": [
@@ -948,17 +958,22 @@
     "Crit_Percent_Bonus",
     "Crit_Damage_Percent",
     "Damage_Percent_All_From_Skills",
+    "Damage_Percent_Bonus_Against_Dot_Type",
     "Damage_Percent_Bonus_Vs_Elites",
     "Resistance_All_Bonus_Percent",
     "Resource_Max_Bonus",
-    "Resource_On_Kill"
+    "Resource_On_Kill",
+    "DOT_DPS_Bonus_Percent",
+    "DOT_DPS_Bonus_Percent_Per_Damage_Type",
+    "Power_Damage_Percent_Bonus",
+    "Vulnerable_Health_Damage_Bonus"
   ],
   "references": [],
   "focusWeights": {},
   "preferRareNodes": false,
   "realisticRares": false,
   "balanceDamageBuckets": true,
-  "defenseShare": 0.5,
+  "defenseShare": 0.3,
   "activateThresholds": true,
   "includeLegendaryNodes": true,
   "totalPoints": 309,

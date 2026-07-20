@@ -180,7 +180,7 @@
 
     <DockPanel Margin="12">
         <TextBlock DockPanel.Dock="Top" Text="{Binding ReferenceSummary}" TextWrapping="Wrap"
-                   Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
+                   Foreground="{DynamicResource App.TextMutedBrush}"
                    FontSize="11" Margin="0,0,0,4" />
         <TextBlock DockPanel.Dock="Top" Text="{Binding StatusText}" TextWrapping="Wrap"
                    FontSize="11" Margin="0,0,0,4" />

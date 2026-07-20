@@ -57,6 +57,67 @@ public static class StatSheetParser
     private static readonly Regex LabelJunk = new(@"^[^A-Za-z]+|[^A-Za-z]+$", RegexOptions.Compiled);
     private static readonly Regex Whitespace = new(@"\s+", RegexOptions.Compiled);
 
+    /// <summary>
+    /// The stat-sheet row labels manual entry may use — every one classifies to a known bucket
+    /// (nothing here lands "Not recognized"). OCR'd rows keep whatever the sheet said; this
+    /// vocabulary only constrains rows the user types or re-labels by hand.
+    /// </summary>
+    public static IReadOnlyList<string> KnownStatLabels { get; } =
+    [
+        "All Damage",
+        "Critical Strike Damage",
+        "Vulnerable Damage",
+        "Overpower Damage",
+        "Damage Over Time",
+        "Damage with Physical",
+        "Damage with Fire",
+        "Damage with Cold",
+        "Damage with Lightning",
+        "Damage with Poison",
+        "Damage with Shadow",
+        "Damage to Elites",
+        "Damage to Close Enemies",
+        "Damage to Distant Enemies",
+        "Damage to Crowd Controlled Enemies",
+        "Damage to Injured Enemies",
+        "Damage to Slowed Enemies",
+        "Damage to Stunned Enemies",
+        "Damage to Frozen Enemies",
+        "Damage to Chilled Enemies",
+        "Damage to Dazed Enemies",
+        "Damage to Poisoned Enemies",
+        "Damage to Burning Enemies",
+        "Damage while Fortified",
+        "Damage while Healthy",
+        "Damage while Injured",
+        "Damage while Berserking",
+        "Basic Skill Damage",
+        "Core Skill Damage",
+        "Mastery Skill Damage",
+        "Ultimate Skill Damage",
+    ];
+
+    /// <summary>
+    /// Classify a single hand-entered label. Same rules as a panel scan, except a
+    /// "Damage with &lt;type&gt;" row has no sibling rows to compare against, so instead of the
+    /// largest-of-its-kind assumption it lands Situational with a flip-if-main-type note.
+    /// </summary>
+    public static SheetStatLine ClassifyManual(string label, double value)
+    {
+        var line = Classify(label, value);
+        if (label.StartsWith("Damage with ", StringComparison.OrdinalIgnoreCase))
+        {
+            string type = label["Damage with ".Length..];
+            return line with
+            {
+                Bucket = SheetBucket.Situational,
+                Note = $"Only applies to {type} skills — flip to Additive if that's your main " +
+                       "skill's damage type, Ignore if you never deal it.",
+            };
+        }
+        return line;
+    }
+
     public static IReadOnlyList<SheetStatLine> Parse(IReadOnlyList<SheetOcrLine> ocrLines)
     {
         if (TryParseStatTooltip(ocrLines, out var tooltipRow))
