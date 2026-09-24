@@ -1,6 +1,6 @@
 {
-  "formatVersion": 5,
-  "source": "LootBenchDataExtract build 3.1.0.72698",
+  "formatVersion": 6,
+  "source": "LootBenchDataExtract build 3.2.1.73552",
   "affixes": [
     {
       "displayName": "\u002BArmor",
@@ -98,7 +98,13 @@
       "displayName": "Damage Over Time Multiplier",
       "hash": "0x001BEAD6",
       "classes": [
-        "All"
+        "Sorcerer",
+        "Druid",
+        "Barbarian",
+        "Rogue",
+        "Necromancer",
+        "Spiritborn",
+        "Warlock"
       ],
       "snoName": "S04_Damage_DoT"
     },
@@ -1556,6 +1562,14 @@
         "All"
       ],
       "snoName": "S10_Lucky_Hit_Resource_Flat"
+    },
+    {
+      "displayName": "\u002BJudicator",
+      "hash": "0x0024F033",
+      "classes": [
+        "Paladin"
+      ],
+      "snoName": "X2_SkillRankBonus_Paladin_Category_Judicator"
     },
     {
       "displayName": "\u002BBlessed Shield",
@@ -3675,6 +3689,13 @@
       ]
     },
     {
+      "displayName": "Judicator",
+      "hash": "0x0024F033",
+      "classes": [
+        "Paladin"
+      ]
+    },
+    {
       "displayName": "Blessed Shield",
       "hash": "0x0024F051",
       "classes": [
@@ -4284,6 +4305,12 @@
       "displayName": "The Butcher\u0027s Cleaver",
       "snoId": "0x00036837",
       "internalName": "1HAxe_Unique_Generic_001",
+      "isMythic": false
+    },
+    {
+      "displayName": "The Furnace",
+      "snoId": "0x000368e9",
+      "internalName": "2HMace_Unique_Generic_001",
       "isMythic": false
     },
     {
@@ -8874,6 +8901,66 @@
       "displayName": "Heir of Perdition",
       "snoId": "0x00286115",
       "internalName": "S14_Helm_Unique_Generic_004",
+      "isMythic": false
+    },
+    {
+      "displayName": "Leoric\u0027s Crown",
+      "snoId": "0x0028646b",
+      "internalName": "Helm_Unique_Generic_005",
+      "isMythic": false
+    },
+    {
+      "displayName": "Squirt\u0027s Blouse",
+      "snoId": "0x0028646e",
+      "internalName": "Chest_Unique_Generic_104",
+      "isMythic": false
+    },
+    {
+      "displayName": "Nemesis Bracers",
+      "snoId": "0x00286472",
+      "internalName": "Gloves_Unique_Generic_006",
+      "isMythic": false
+    },
+    {
+      "displayName": "Messerschmidt\u0027s Reaver",
+      "snoId": "0x00286474",
+      "internalName": "2HAxe_Unique_Generic_001",
+      "isMythic": false
+    },
+    {
+      "displayName": "In-Geom",
+      "snoId": "0x00286476",
+      "internalName": "1HSword_Unique_Generic_103",
+      "isMythic": false
+    },
+    {
+      "displayName": "Arioc\u0027s Needle",
+      "snoId": "0x00286478",
+      "internalName": "2HPolearm_Unique_Generic_002",
+      "isMythic": false
+    },
+    {
+      "displayName": "Henri\u0027s Perquisition",
+      "snoId": "0x0028647a",
+      "internalName": "1HFocus_Unique_Generic_001",
+      "isMythic": false
+    },
+    {
+      "displayName": "Stone of Jordan",
+      "snoId": "0x0028647e",
+      "internalName": "Ring_Unique_Generic_108",
+      "isMythic": false
+    },
+    {
+      "displayName": "Bell of the Bovine",
+      "snoId": "0x0028d97b",
+      "internalName": "OPAL_Amulet_Unique_Generic_100",
+      "isMythic": false
+    },
+    {
+      "displayName": "Annihilus",
+      "snoId": "0x0028f5c2",
+      "internalName": "S15_Charm_Unique_Annihilus",
       "isMythic": false
     }
   ],

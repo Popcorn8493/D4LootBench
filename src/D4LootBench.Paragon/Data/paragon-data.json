@@ -1,6 +1,6 @@
 {
   "formatVersion": 1,
-  "source": "DiabloTools/d4data (ref: refs/he)",
+  "source": "DiabloTools/d4data (33e0bfbb5f71)",
   "notes": "Multiplier constants are empirical calibrations of engine built-in functions; values are fractions (0.05 = 5%) for percent attributes, flat for stat attributes. Class order for flag arrays derived from single-class glyph names.",
   "multipliers": {
     "ParagonPowerBudgetMultiplierNodeMagicOffensive": 0.025,
@@ -56171,6 +56171,832 @@
       ]
     },
     {
+      "snoId": "0x001e4d8f",
+      "internalName": "Paragon_Spirit_10",
+      "name": "Swarm of Storms",
+      "className": "Spiritborn",
+      "boardIndex": 10,
+      "width": 21,
+      "contentLicense": 0,
+      "nodes": [
+        {
+          "x": 10,
+          "y": 0,
+          "node": "0x000f2c21"
+        },
+        {
+          "x": 7,
+          "y": 1,
+          "node": "0x000a5b77"
+        },
+        {
+          "x": 8,
+          "y": 1,
+          "node": "0x000a5b77"
+        },
+        {
+          "x": 9,
+          "y": 1,
+          "node": "0x000a5b78"
+        },
+        {
+          "x": 10,
+          "y": 1,
+          "node": "0x000a5b78"
+        },
+        {
+          "x": 11,
+          "y": 1,
+          "node": "0x000a5b77"
+        },
+        {
+          "x": 12,
+          "y": 1,
+          "node": "0x000a5b71"
+        },
+        {
+          "x": 13,
+          "y": 1,
+          "node": "0x000a5b71"
+        },
+        {
+          "x": 7,
+          "y": 2,
+          "node": "0x000a5b77"
+        },
+        {
+          "x": 10,
+          "y": 2,
+          "node": "0x000a5b77"
+        },
+        {
+          "x": 13,
+          "y": 2,
+          "node": "0x000a5b77"
+        },
+        {
+          "x": 7,
+          "y": 3,
+          "node": "0x000a5b77"
+        },
+        {
+          "x": 9,
+          "y": 3,
+          "node": "0x000a5b77"
+        },
+        {
+          "x": 11,
+          "y": 3,
+          "node": "0x000a5b75"
+        },
+        {
+          "x": 13,
+          "y": 3,
+          "node": "0x000a5b78"
+        },
+        {
+          "x": 7,
+          "y": 4,
+          "node": "0x000a5ae4"
+        },
+        {
+          "x": 8,
+          "y": 4,
+          "node": "0x001f8b16"
+        },
+        {
+          "x": 9,
+          "y": 4,
+          "node": "0x000a5b77"
+        },
+        {
+          "x": 10,
+          "y": 4,
+          "node": "0x000a5b71"
+        },
+        {
+          "x": 11,
+          "y": 4,
+          "node": "0x000a5b78"
+        },
+        {
+          "x": 12,
+          "y": 4,
+          "node": "0x000a5ae4"
+        },
+        {
+          "x": 13,
+          "y": 4,
+          "node": "0x001f89b4"
+        },
+        {
+          "x": 7,
+          "y": 5,
+          "node": "0x0028c5d3"
+        },
+        {
+          "x": 8,
+          "y": 5,
+          "node": "0x000a5ae4"
+        },
+        {
+          "x": 9,
+          "y": 5,
+          "node": "0x000a5b78"
+        },
+        {
+          "x": 10,
+          "y": 5,
+          "node": "0x000a5b78"
+        },
+        {
+          "x": 11,
+          "y": 5,
+          "node": "0x000a5b77"
+        },
+        {
+          "x": 12,
+          "y": 5,
+          "node": "0x000a5ae4"
+        },
+        {
+          "x": 13,
+          "y": 5,
+          "node": "0x0028c5d1"
+        },
+        {
+          "x": 6,
+          "y": 6,
+          "node": "0x001f8b16"
+        },
+        {
+          "x": 7,
+          "y": 6,
+          "node": "0x000a5ae4"
+        },
+        {
+          "x": 8,
+          "y": 6,
+          "node": "0x000a5b78"
+        },
+        {
+          "x": 9,
+          "y": 6,
+          "node": "0x000a5b75"
+        },
+        {
+          "x": 10,
+          "y": 6,
+          "node": "0x000a671c"
+        },
+        {
+          "x": 11,
+          "y": 6,
+          "node": "0x000a5b71"
+        },
+        {
+          "x": 12,
+          "y": 6,
+          "node": "0x000a5b71"
+        },
+        {
+          "x": 13,
+          "y": 6,
+          "node": "0x000a5ae4"
+        },
+        {
+          "x": 14,
+          "y": 6,
+          "node": "0x001f89b4"
+        },
+        {
+          "x": 7,
+          "y": 7,
+          "node": "0x000a5b77"
+        },
+        {
+          "x": 8,
+          "y": 7,
+          "node": "0x000a5b71"
+        },
+        {
+          "x": 9,
+          "y": 7,
+          "node": "0x000a5b77"
+        },
+        {
+          "x": 10,
+          "y": 7,
+          "node": "0x000a5b77"
+        },
+        {
+          "x": 11,
+          "y": 7,
+          "node": "0x000a5b75"
+        },
+        {
+          "x": 12,
+          "y": 7,
+          "node": "0x000a5b77"
+        },
+        {
+          "x": 13,
+          "y": 7,
+          "node": "0x000a5b78"
+        },
+        {
+          "x": 1,
+          "y": 8,
+          "node": "0x000a5b77"
+        },
+        {
+          "x": 2,
+          "y": 8,
+          "node": "0x000a5b77"
+        },
+        {
+          "x": 3,
+          "y": 8,
+          "node": "0x000a5b78"
+        },
+        {
+          "x": 4,
+          "y": 8,
+          "node": "0x000a5b78"
+        },
+        {
+          "x": 5,
+          "y": 8,
+          "node": "0x000a5b77"
+        },
+        {
+          "x": 6,
+          "y": 8,
+          "node": "0x000a5b71"
+        },
+        {
+          "x": 7,
+          "y": 8,
+          "node": "0x000a5b77"
+        },
+        {
+          "x": 8,
+          "y": 8,
+          "node": "0x000a5b71"
+        },
+        {
+          "x": 12,
+          "y": 8,
+          "node": "0x000a5b78"
+        },
+        {
+          "x": 13,
+          "y": 8,
+          "node": "0x000a5b75"
+        },
+        {
+          "x": 14,
+          "y": 8,
+          "node": "0x000a5b77"
+        },
+        {
+          "x": 15,
+          "y": 8,
+          "node": "0x000a5b77"
+        },
+        {
+          "x": 16,
+          "y": 8,
+          "node": "0x000a5b78"
+        },
+        {
+          "x": 17,
+          "y": 8,
+          "node": "0x000a5b77"
+        },
+        {
+          "x": 18,
+          "y": 8,
+          "node": "0x000a5b71"
+        },
+        {
+          "x": 19,
+          "y": 8,
+          "node": "0x000a5b71"
+        },
+        {
+          "x": 1,
+          "y": 9,
+          "node": "0x000a5b71"
+        },
+        {
+          "x": 2,
+          "y": 9,
+          "node": "0x000a5b78"
+        },
+        {
+          "x": 4,
+          "y": 9,
+          "node": "0x000a5b62"
+        },
+        {
+          "x": 5,
+          "y": 9,
+          "node": "0x000a5c94"
+        },
+        {
+          "x": 7,
+          "y": 9,
+          "node": "0x000a5b77"
+        },
+        {
+          "x": 8,
+          "y": 9,
+          "node": "0x000a5b71"
+        },
+        {
+          "x": 10,
+          "y": 9,
+          "node": "0x000a5b78"
+        },
+        {
+          "x": 12,
+          "y": 9,
+          "node": "0x000a5b77"
+        },
+        {
+          "x": 13,
+          "y": 9,
+          "node": "0x000a5b71"
+        },
+        {
+          "x": 15,
+          "y": 9,
+          "node": "0x000a5d10"
+        },
+        {
+          "x": 16,
+          "y": 9,
+          "node": "0x000a3e0f"
+        },
+        {
+          "x": 18,
+          "y": 9,
+          "node": "0x000a5b78"
+        },
+        {
+          "x": 19,
+          "y": 9,
+          "node": "0x000a5b77"
+        },
+        {
+          "x": 0,
+          "y": 10,
+          "node": "0x000f2c21"
+        },
+        {
+          "x": 1,
+          "y": 10,
+          "node": "0x000a5b75"
+        },
+        {
+          "x": 2,
+          "y": 10,
+          "node": "0x000a5b78"
+        },
+        {
+          "x": 4,
+          "y": 10,
+          "node": "0x001f4ccf"
+        },
+        {
+          "x": 5,
+          "y": 10,
+          "node": "0x000a5c94"
+        },
+        {
+          "x": 8,
+          "y": 10,
+          "node": "0x000a5b78"
+        },
+        {
+          "x": 9,
+          "y": 10,
+          "node": "0x000a5b77"
+        },
+        {
+          "x": 10,
+          "y": 10,
+          "node": "0x000a5b77"
+        },
+        {
+          "x": 11,
+          "y": 10,
+          "node": "0x000a5b71"
+        },
+        {
+          "x": 12,
+          "y": 10,
+          "node": "0x000a5b71"
+        },
+        {
+          "x": 15,
+          "y": 10,
+          "node": "0x000a5d10"
+        },
+        {
+          "x": 16,
+          "y": 10,
+          "node": "0x00203f88"
+        },
+        {
+          "x": 18,
+          "y": 10,
+          "node": "0x000a5b77"
+        },
+        {
+          "x": 19,
+          "y": 10,
+          "node": "0x000a5b77"
+        },
+        {
+          "x": 20,
+          "y": 10,
+          "node": "0x000f2c21"
+        },
+        {
+          "x": 1,
+          "y": 11,
+          "node": "0x000a5b78"
+        },
+        {
+          "x": 2,
+          "y": 11,
+          "node": "0x000a5b77"
+        },
+        {
+          "x": 4,
+          "y": 11,
+          "node": "0x000a5b62"
+        },
+        {
+          "x": 5,
+          "y": 11,
+          "node": "0x000a5c94"
+        },
+        {
+          "x": 6,
+          "y": 11,
+          "node": "0x000a5b78"
+        },
+        {
+          "x": 7,
+          "y": 11,
+          "node": "0x000a5b77"
+        },
+        {
+          "x": 8,
+          "y": 11,
+          "node": "0x000a5b77"
+        },
+        {
+          "x": 9,
+          "y": 11,
+          "node": "0x000a5b77"
+        },
+        {
+          "x": 10,
+          "y": 11,
+          "node": "0x000a5b78"
+        },
+        {
+          "x": 11,
+          "y": 11,
+          "node": "0x000a5b75"
+        },
+        {
+          "x": 12,
+          "y": 11,
+          "node": "0x000a5b77"
+        },
+        {
+          "x": 13,
+          "y": 11,
+          "node": "0x000a5b78"
+        },
+        {
+          "x": 14,
+          "y": 11,
+          "node": "0x000a5b78"
+        },
+        {
+          "x": 15,
+          "y": 11,
+          "node": "0x000a5d10"
+        },
+        {
+          "x": 16,
+          "y": 11,
+          "node": "0x000a3e0f"
+        },
+        {
+          "x": 18,
+          "y": 11,
+          "node": "0x000a5b78"
+        },
+        {
+          "x": 19,
+          "y": 11,
+          "node": "0x000a5b77"
+        },
+        {
+          "x": 1,
+          "y": 12,
+          "node": "0x000a5b77"
+        },
+        {
+          "x": 2,
+          "y": 12,
+          "node": "0x000a5b77"
+        },
+        {
+          "x": 3,
+          "y": 12,
+          "node": "0x000a5b78"
+        },
+        {
+          "x": 4,
+          "y": 12,
+          "node": "0x000a5b78"
+        },
+        {
+          "x": 5,
+          "y": 12,
+          "node": "0x000a5b77"
+        },
+        {
+          "x": 6,
+          "y": 12,
+          "node": "0x000a5b71"
+        },
+        {
+          "x": 7,
+          "y": 12,
+          "node": "0x000a5b77"
+        },
+        {
+          "x": 8,
+          "y": 12,
+          "node": "0x000a5b71"
+        },
+        {
+          "x": 10,
+          "y": 12,
+          "node": "0x000a5b71"
+        },
+        {
+          "x": 12,
+          "y": 12,
+          "node": "0x000a5b77"
+        },
+        {
+          "x": 13,
+          "y": 12,
+          "node": "0x000a5b75"
+        },
+        {
+          "x": 14,
+          "y": 12,
+          "node": "0x000a5b77"
+        },
+        {
+          "x": 15,
+          "y": 12,
+          "node": "0x000a5b77"
+        },
+        {
+          "x": 16,
+          "y": 12,
+          "node": "0x000a5b78"
+        },
+        {
+          "x": 17,
+          "y": 12,
+          "node": "0x000a5b77"
+        },
+        {
+          "x": 18,
+          "y": 12,
+          "node": "0x000a5b71"
+        },
+        {
+          "x": 19,
+          "y": 12,
+          "node": "0x000a5b71"
+        },
+        {
+          "x": 8,
+          "y": 13,
+          "node": "0x000a5b71"
+        },
+        {
+          "x": 10,
+          "y": 13,
+          "node": "0x0028c5e8"
+        },
+        {
+          "x": 12,
+          "y": 13,
+          "node": "0x000a5b77"
+        },
+        {
+          "x": 6,
+          "y": 14,
+          "node": "0x000a5d10"
+        },
+        {
+          "x": 7,
+          "y": 14,
+          "node": "0x000a5b5e"
+        },
+        {
+          "x": 8,
+          "y": 14,
+          "node": "0x000a5b78"
+        },
+        {
+          "x": 10,
+          "y": 14,
+          "node": "0x000a5b77"
+        },
+        {
+          "x": 12,
+          "y": 14,
+          "node": "0x000a5b71"
+        },
+        {
+          "x": 13,
+          "y": 14,
+          "node": "0x000a5b5e"
+        },
+        {
+          "x": 14,
+          "y": 14,
+          "node": "0x00147598"
+        },
+        {
+          "x": 6,
+          "y": 15,
+          "node": "0x000a5d10"
+        },
+        {
+          "x": 7,
+          "y": 15,
+          "node": "0x00124695"
+        },
+        {
+          "x": 8,
+          "y": 15,
+          "node": "0x000a5b77"
+        },
+        {
+          "x": 9,
+          "y": 15,
+          "node": "0x000a5b77"
+        },
+        {
+          "x": 10,
+          "y": 15,
+          "node": "0x000a5b78"
+        },
+        {
+          "x": 11,
+          "y": 15,
+          "node": "0x000a5b75"
+        },
+        {
+          "x": 12,
+          "y": 15,
+          "node": "0x000a5b71"
+        },
+        {
+          "x": 13,
+          "y": 15,
+          "node": "0x001f385d"
+        },
+        {
+          "x": 14,
+          "y": 15,
+          "node": "0x000a5b5e"
+        },
+        {
+          "x": 6,
+          "y": 16,
+          "node": "0x000a5d10"
+        },
+        {
+          "x": 7,
+          "y": 16,
+          "node": "0x000a5b5e"
+        },
+        {
+          "x": 8,
+          "y": 16,
+          "node": "0x000a5b71"
+        },
+        {
+          "x": 9,
+          "y": 16,
+          "node": "0x000a5b75"
+        },
+        {
+          "x": 10,
+          "y": 16,
+          "node": "0x000a5b71"
+        },
+        {
+          "x": 11,
+          "y": 16,
+          "node": "0x000a5b71"
+        },
+        {
+          "x": 12,
+          "y": 16,
+          "node": "0x000a5b77"
+        },
+        {
+          "x": 13,
+          "y": 16,
+          "node": "0x00147598"
+        },
+        {
+          "x": 14,
+          "y": 16,
+          "node": "0x000a5b5e"
+        },
+        {
+          "x": 8,
+          "y": 17,
+          "node": "0x000a5b71"
+        },
+        {
+          "x": 12,
+          "y": 17,
+          "node": "0x000a5b77"
+        },
+        {
+          "x": 8,
+          "y": 18,
+          "node": "0x000a5b78"
+        },
+        {
+          "x": 9,
+          "y": 18,
+          "node": "0x000a5b77"
+        },
+        {
+          "x": 11,
+          "y": 18,
+          "node": "0x000a5b78"
+        },
+        {
+          "x": 12,
+          "y": 18,
+          "node": "0x000a5b71"
+        },
+        {
+          "x": 8,
+          "y": 19,
+          "node": "0x000a5b77"
+        },
+        {
+          "x": 9,
+          "y": 19,
+          "node": "0x000a5b77"
+        },
+        {
+          "x": 10,
+          "y": 19,
+          "node": "0x000a5b78"
+        },
+        {
+          "x": 11,
+          "y": 19,
+          "node": "0x000a5b75"
+        },
+        {
+          "x": 12,
+          "y": 19,
+          "node": "0x000a5b71"
+        },
+        {
+          "x": 10,
+          "y": 20,
+          "node": "0x000f2c21"
+        }
+      ]
+    },
+    {
       "snoId": "0x00258432",
       "internalName": "Paragon_Warlock_00",
       "name": "Start",
@@ -67768,6 +68594,46 @@
       ]
     },
     {
+      "snoId": "0x001f8b16",
+      "internalName": "Generic_Magic_DamageWithCentipede",
+      "kind": "Magic",
+      "attributes": [
+        {
+          "attribute": "Damage_Percent_Bonus_Per_Skill_Tag",
+          "param": 28625647,
+          "formulaName": "ParagonNodeDamageBonus_Magic",
+          "formula": "2 * ParagonPowerBudgetMultiplierNodeMagicOffensive()",
+          "value": 0.05,
+          "isThresholdBonus": false
+        }
+      ],
+      "thresholds": [],
+      "tags": [
+        "Damage",
+        "Skill_Spirit_Soil"
+      ]
+    },
+    {
+      "snoId": "0x001f89b4",
+      "internalName": "Generic_Magic_DamageWithEagle",
+      "kind": "Magic",
+      "attributes": [
+        {
+          "attribute": "Damage_Percent_Bonus_Per_Skill_Tag",
+          "param": -1691089489,
+          "formulaName": "ParagonNodeDamageBonus_Magic",
+          "formula": "2 * ParagonPowerBudgetMultiplierNodeMagicOffensive()",
+          "value": 0.05,
+          "isThresholdBonus": false
+        }
+      ],
+      "thresholds": [],
+      "tags": [
+        "Damage",
+        "Skill_Spirit_Sky"
+      ]
+    },
+    {
       "snoId": "0x001f895d",
       "internalName": "Generic_Magic_DamageWithUltimates",
       "kind": "Magic",
@@ -68614,11 +69480,10 @@
       "kind": "Rare",
       "attributes": [
         {
-          "attribute": "Damage_Percent_Bonus_Per_Skill_Tag",
-          "param": -457591688,
-          "formulaName": "ParagonNodeDamageBonus_RareMajor",
-          "formula": "2 * ParagonPowerBudgetMultiplierNodeRareMajorOffensive()",
-          "value": 0.1,
+          "attribute": "Damage_Percent_Bonus_Vs_Elites",
+          "formulaName": "ParagonNodeDamageBonusToElite_RareMajor",
+          "formula": "3 * ParagonPowerBudgetMultiplierNodeRareMajorOffensive()",
+          "value": 0.15,
           "isThresholdBonus": true
         },
         {
@@ -72546,7 +73411,7 @@
     {
       "snoId": "0x0025615f",
       "internalName": "Paladin_Rare_015",
-      "name": "Shieldbearer",
+      "name": "Bodyguard",
       "kind": "Rare",
       "attributes": [
         {
@@ -74245,8 +75110,7 @@
       "kind": "Rare",
       "attributes": [
         {
-          "attribute": "Damage_Percent_Bonus_Per_Skill_Tag",
-          "param": 308759772,
+          "attribute": "Damage_Percent_All_From_Skills",
           "formulaName": "ParagonNodeDamageBonus_RareMajor",
           "formula": "2 * ParagonPowerBudgetMultiplierNodeRareMajorOffensive()",
           "value": 0.1,
@@ -75702,6 +76566,24 @@
       ]
     },
     {
+      "snoId": "0x0028c5e8",
+      "internalName": "Spiritborn_Legendary_010",
+      "name": "Swarm of Storms",
+      "kind": "Legendary",
+      "attributes": [],
+      "thresholds": [],
+      "power": {
+        "snoId": "0x0028c5cf",
+        "name": "Paragon_Spiritborn_Legendary_010"
+      },
+      "tags": [
+        "Damage",
+        "Keyword_PestilentSwarm",
+        "Keyword_SpiritStorm",
+        "Keyword_SpiritFeather"
+      ]
+    },
+    {
       "snoId": "0x00207d73",
       "internalName": "Spiritborn_Magic_Vigor",
       "kind": "Magic",
@@ -76628,6 +77510,66 @@
       ],
       "thresholds": [
         "0x000f7e2e"
+      ],
+      "tags": [
+        "Damage",
+        "DEXTERITY"
+      ]
+    },
+    {
+      "snoId": "0x0028c5d1",
+      "internalName": "Spiritborn_Rare_040",
+      "name": "Avian",
+      "kind": "Rare",
+      "attributes": [
+        {
+          "attribute": "Damage_Percent_Bonus_Per_Skill_Tag",
+          "param": -1691089489,
+          "formulaName": "ParagonNodeDamageBonus_RareMajor",
+          "formula": "2 * ParagonPowerBudgetMultiplierNodeRareMajorOffensive()",
+          "value": 0.1,
+          "isThresholdBonus": true
+        },
+        {
+          "attribute": "Dexterity_Core",
+          "formulaName": "ParagonNodeCoreStat_RareMinor",
+          "formula": "10",
+          "value": 10,
+          "isThresholdBonus": false
+        }
+      ],
+      "thresholds": [
+        "0x000f7e37"
+      ],
+      "tags": [
+        "Damage",
+        "DEXTERITY"
+      ]
+    },
+    {
+      "snoId": "0x0028c5d3",
+      "internalName": "Spiritborn_Rare_041",
+      "name": "Arthropodal",
+      "kind": "Rare",
+      "attributes": [
+        {
+          "attribute": "Damage_Percent_Bonus_Per_Skill_Tag",
+          "param": 28625647,
+          "formulaName": "ParagonNodeDamageBonus_RareMajor",
+          "formula": "2 * ParagonPowerBudgetMultiplierNodeRareMajorOffensive()",
+          "value": 0.1,
+          "isThresholdBonus": true
+        },
+        {
+          "attribute": "Dexterity_Core",
+          "formulaName": "ParagonNodeCoreStat_RareMinor",
+          "formula": "10",
+          "value": 10,
+          "isThresholdBonus": false
+        }
+      ],
+      "thresholds": [
+        "0x001f29cf"
       ],
       "tags": [
         "Damage",
@@ -85428,7 +86370,6 @@
           "tags": [
             "Copy_Corpse",
             "Intelligence",
-            "Keyword_Fortify",
             "DamageReduction"
           ]
         },
@@ -88244,6 +89185,61 @@
           "addedBonusScalarPerLevel": 0.0011500000255182385,
           "tags": [
             "Elite",
+            "Damage"
+          ]
+        }
+      ]
+    },
+    {
+      "snoId": "0x0028c3ef",
+      "internalName": "Rare_133_Intelligence_Side",
+      "name": "Superiority",
+      "rarity": 1,
+      "classes": [
+        "Warlock"
+      ],
+      "affixes": [
+        {
+          "snoId": "0x0012b076",
+          "internalName": "Nodes_BonusToMagic",
+          "affectedNodeRarity": 2,
+          "requiredRarity": 0,
+          "bonusOperation": 1,
+          "attributeMaps": [],
+          "startingBonusScalar": 300,
+          "addedBonusScalarPerLevel": 30,
+          "budgetFormulaName": "ParagonGlyphAdditive_Rare_BonusToNodes",
+          "tags": []
+        },
+        {
+          "snoId": "0x0028c3f1",
+          "internalName": "Power_133_Intelligence_Side",
+          "affectedNodeRarity": 0,
+          "requiredRarity": 0,
+          "bonusOperation": 5,
+          "attributeMaps": [],
+          "startingBonusScalar": 0,
+          "addedBonusScalarPerLevel": 0,
+          "bonusPower": {
+            "snoId": "0x0028c3f3",
+            "name": "ParagonGlyph_133"
+          },
+          "tags": [
+            "Intelligence",
+            "ResourceDominance",
+            "DamageReduction"
+          ]
+        },
+        {
+          "snoId": "0x00203964",
+          "internalName": "MultDmgPercentAll_Legendary",
+          "affectedNodeRarity": 0,
+          "requiredRarity": 2,
+          "bonusOperation": 4,
+          "attributeMaps": [],
+          "startingBonusScalar": 0.004999999888241291,
+          "addedBonusScalarPerLevel": 0.0010000000474974513,
+          "tags": [
             "Damage"
           ]
         }

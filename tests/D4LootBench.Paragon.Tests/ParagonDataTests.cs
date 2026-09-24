@@ -1,5 +1,6 @@
 using D4LootBench.Paragon.Data;
 using D4LootBench.Paragon.Models;
+using D4LootBench.Paragon.Solver;
 using Shouldly;
 
 namespace D4LootBench.Paragon.Tests;
@@ -16,9 +17,9 @@ public class ParagonDataTests
     {
         var data = ParagonDatabase.Data;
         data.FormatVersion.ShouldBe(1);
-        data.Boards.Count.ShouldBe(79);
-        data.Nodes.Count.ShouldBe(561);
-        data.Glyphs.Count.ShouldBe(160);
+        data.Boards.Count.ShouldBe(80);
+        data.Nodes.Count.ShouldBe(566);
+        data.Glyphs.Count.ShouldBe(161);
         data.Thresholds.Count.ShouldBe(52);
         data.Multipliers.Count.ShouldBe(6);
     }
@@ -58,9 +59,9 @@ public class ParagonDataTests
             .GroupBy(n => n.Kind)
             .ToDictionary(g => g.Key, g => g.Count());
 
-        byKind[ParagonNodeKind.Rare].ShouldBe(342);
-        byKind[ParagonNodeKind.Magic].ShouldBe(133);
-        byKind[ParagonNodeKind.Legendary].ShouldBe(72);
+        byKind[ParagonNodeKind.Rare].ShouldBe(344);
+        byKind[ParagonNodeKind.Magic].ShouldBe(135);
+        byKind[ParagonNodeKind.Legendary].ShouldBe(73);
         byKind[ParagonNodeKind.Start].ShouldBe(8);
         byKind[ParagonNodeKind.Normal].ShouldBe(4);
         byKind[ParagonNodeKind.Gate].ShouldBe(1);
@@ -136,5 +137,29 @@ public class ParagonDataTests
             .SelectMany(g => g.Classes)
             .Distinct()
             .ShouldAllBe(c => AllClasses.Contains(c));
+    }
+
+    [Fact]
+    public void Patch_3_2_1_board_attaches_and_solves_to_its_legendary()
+    {
+        var starter = ParagonDatabase.BoardsForClass("Spiritborn").Single(b => b.BoardIndex == 0);
+        var swarm = ParagonDatabase.BoardsForClass("Spiritborn").Single(b => b.Name == "Swarm of Storms");
+        var solved = Enumerable.Range(0, 4).Select(rotation =>
+        {
+            try
+            {
+                var graph = ComposedGraph.Build(new ParagonLayout([
+                    new PlacedBoard { Board = starter },
+                    new PlacedBoard { Board = swarm, ParentSlot = 0, AttachEdge = BoardEdge.Top, RotationSteps = rotation },
+                ]));
+                return PlanSolver.Solve(graph, new PlanRequest { Targets = PlanSolver.LegendaryCells(graph) });
+            }
+            catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
+            {
+                return null;
+            }
+        }).Where(r => r is { Success: true }).ToList();
+
+        solved.ShouldNotBeEmpty("Swarm of Storms should attach to the starter and reach its legendary");
     }
 }

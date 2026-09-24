@@ -41,7 +41,7 @@ D4LootBench.slnx
 │   └── Utilities/            # ColorUtility (HSV/ABGR conversion, contrast helper)
 ├── src/D4LootBench.Paragon/       # Pure class library — paragon board tool (Phase 5)
 │   ├── Models/               # ParagonData, ParagonBoardDef, ParagonNodeDef, ParagonGlyphDef, thresholds
-│   ├── Data/                 # ParagonDatabase lazy singleton, embedded paragon-data.json (79 boards / 561 nodes / 160 glyphs)
+│   ├── Data/                 # ParagonDatabase lazy singleton, embedded paragon-data.json (80 boards / 566 nodes / 161 glyphs, patch 3.2.1)
 │   ├── Solver/               # ParagonLayout, ComposedGraph, SteinerSolver, GlyphRadius, PlanSolver, NodeRules, GlyphOptimizer, PlacementAnalyzer, PointMaximizer, BuildComparer, BuildCombiner, LayoutOptimizer, BuildStats
 │   └── Import/               # MaxrollParagonCodec (variant codes), MobalyticsParagonImporter (build-guide pages), D4BuildsImporter (Firestore docs)
 ├── src/Shared/                # Source files linked into more than one project (d4builds.gg endpoints)

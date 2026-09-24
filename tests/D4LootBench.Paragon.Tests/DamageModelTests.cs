@@ -55,16 +55,20 @@ public class DamageModelTests
     }
 
     [Theory]
-    [InlineData("Barbarian", "Strength_Core", 909.91)]
-    [InlineData("Paladin", "Strength_Core", 800)]
-    [InlineData("Rogue", "Dexterity_Core", 800)]
-    [InlineData("Sorcerer", "Intelligence_Core", 800)]
-    [InlineData("Warlock", "Willpower_Core", 800)]
-    [InlineData("Druid", "Willpower_Core", 800)]
-    public void Class_main_stats_and_coefficients(string className, string mainStat, double coefficient)
+    // Patch 3.2.1 "Core stat" values: % skill damage per 10 main stat.
+    [InlineData("Barbarian", "Strength_Core", 0.8)]
+    [InlineData("Paladin", "Strength_Core", 1.625)]
+    [InlineData("Rogue", "Dexterity_Core", 1.25)]
+    [InlineData("Spiritborn", "Dexterity_Core", 1.625)]
+    [InlineData("Sorcerer", "Intelligence_Core", 1.625)]
+    [InlineData("Necromancer", "Intelligence_Core", 1.625)]
+    [InlineData("Warlock", "Willpower_Core", 1.625)]
+    [InlineData("Druid", "Willpower_Core", 1.625)]
+    public void Class_main_stats_and_coefficients(string className, string mainStat, double percentPer10)
     {
         DamageModel.MainStatAttribute(className).ShouldBe(mainStat);
-        DamageModel.MainStatCoefficient(className).ShouldBe(coefficient);
+        // 10 points of main stat must be worth exactly percentPer10 % skill damage.
+        (10 / DamageModel.MainStatCoefficient(className) * 100).ShouldBe(percentPer10, 1e-9);
     }
 
     [Fact]
@@ -74,12 +78,13 @@ public class DamageModelTests
         {
             ["Damage_Percent_All_From_Skills"] = 0.30,
             ["Vulnerable_Health_Damage_Bonus"] = 0.20,
-            ["Strength_Core"] = 800,
+            ["Dexterity_Core"] = 800,
             ["Crit_Percent_Bonus"] = 0.05,
             ["Armor_Percent"] = 0.50, // defense never enters the damage formula
         };
 
-        var profile = DamageModel.Profile(totals, "Paladin", mainStatOffset: 800);
+        // Rogue: the one class still at 1.25% per 10 main stat (coefficient 800).
+        var profile = DamageModel.Profile(totals, "Rogue", mainStatOffset: 800);
 
         profile.AdditiveFraction.ShouldBe(0.50, 1e-9);
         profile.SituationalAdditiveFraction.ShouldBe(0.20, 1e-9);

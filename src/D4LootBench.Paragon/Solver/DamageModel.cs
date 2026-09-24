@@ -62,9 +62,23 @@ public sealed record DamageProfile(
 /// </summary>
 public static class DamageModel
 {
-    /// <summary>Barbarian needs 9.0991 main stat per 1% skill damage; every other class 8.</summary>
+    /// <summary>
+    /// Main stat per +100% skill damage (the multiplier is 1 + stat / coefficient), from each
+    /// class's "% damage per 10 main stat": patch 3.2.1 (Season 15) moved Barbarian 1.1 → 0.8
+    /// and every other class except Rogue 1.25 → 1.625; Rogue stays 1.25. Re-check after
+    /// balance patches (per-class values in the patch notes' "Core stat" lines).
+    /// </summary>
     public static double MainStatCoefficient(string? className) =>
-        string.Equals(className, "Barbarian", StringComparison.OrdinalIgnoreCase) ? 909.91 : 800.0;
+        1000.0 / MainStatPercentPer10(className);
+
+    /// <summary>The class's "% skill damage per 10 main stat" as of patch 3.2.1.</summary>
+    public static double MainStatPercentPer10(string? className) => className?.ToLowerInvariant() switch
+    {
+        "barbarian" => 0.8,
+        "rogue" => 1.25,
+        "druid" or "necromancer" or "sorcerer" or "spiritborn" or "paladin" or "warlock" => 1.625,
+        _ => 1.25,
+    };
 
     /// <summary>
     /// The core stat that grants the class its skill-damage multiplier. Paladin→Strength and

@@ -39,7 +39,7 @@ dotnet run tools/extract-paragon-data.cs -- --d4data <path-to-d4data> --out src/
 Node magnitudes in the game files are formulas like `"3 * ParagonPowerBudgetMultiplierNodeMagicOffensive()"`.
 The six `ParagonPowerBudgetMultiplierNode{Magic,RareMinor,RareMajor}{Offensive,Defensive}` functions
 are **engine built-ins that do not appear anywhere in the data dump**. Their constants are hardcoded
-in the extractor, calibrated empirically against displayed in-game values (Season 14 / patch 3.1.x):
+in the extractor, calibrated empirically against displayed in-game values (Season 14 / patch 3.1.x). The 3.2.1 regeneration changed no existing node FORMULAS beyond three redesigned nodes, but that can't confirm the constants themselves (they're applied identically every run) — they are NOT yet re-validated against live 3.2.1 values (Wowhead's calculator data was still on 3.1 when checked, 2026-09-24). The new Superiority glyph's scalar 300 does match its patch-note +30% under the ÷10 node-buff rule:
 
 | Function | Value | Anchor |
 |---|---|---|
@@ -72,7 +72,7 @@ The emitted `multipliers` object records the constants used, and every node attr
 }
 ```
 
-Current counts (patch 3.1.0): 79 boards, 561 nodes, 160 glyphs, 52 thresholds.
+Current counts (patch 3.2.1.73552): 80 boards, 566 nodes, 161 glyphs, 52 thresholds.
 
 ## boards
 
