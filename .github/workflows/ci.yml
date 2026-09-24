@@ -10,15 +10,15 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
 
       - name: Cache NuGet packages
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.nuget/packages
           key: nuget-${{ runner.os }}-${{ hashFiles('Directory.Packages.props', '**/*.csproj', 'Directory.Build.props', 'global.json') }}
@@ -35,7 +35,7 @@ jobs:
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-results
           path: TestResults
@@ -51,7 +51,7 @@ jobs:
           --output ./publish
 
       - name: Upload exe
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: D4LootBench-win-x64
           path: publish/D4LootBench.exe

@@ -13,10 +13,10 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
 
@@ -49,7 +49,7 @@ jobs:
           "sha256=$hash" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: publish/D4LootBench.exe
           generate_release_notes: true
