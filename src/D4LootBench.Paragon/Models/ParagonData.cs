@@ -93,7 +93,17 @@ public sealed class NodePower
 {
     public string SnoId { get; init; } = "";
     public string? Name { get; init; }
+
+    /// <summary>The in-game tooltip, rendered from the power's script formulas at extraction;
+    /// values that depend on the live character (e.g. "Current Bonus") show as "?".</summary>
     public string? Description { get; init; }
+
+    /// <summary>The power's script-formula values SF_0..SF_n (null where a value depends on
+    /// attributes or engine functions not in the data).</summary>
+    public IReadOnlyList<double?> Values { get; init; } = [];
+
+    /// <summary>Every multiplicative "[x]" percent in the tooltip, in order (45 = 45%[x]).</summary>
+    public IReadOnlyList<double> MultiplierPercents { get; init; } = [];
 }
 
 public sealed class ParagonGlyphDef

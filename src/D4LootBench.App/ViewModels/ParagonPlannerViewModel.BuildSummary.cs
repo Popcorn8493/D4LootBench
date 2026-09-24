@@ -134,10 +134,12 @@ public partial class ParagonPlannerViewModel
                         ? $", legendary rank: ×{percent:0.#}% ({GlyphInfo.TagsLabel(legendary)})"
                         : $", legendary rank at lvl {GlyphInfo.LegendaryUpgradeLevel}+ adds a multiplicative bonus ({GlyphInfo.TagsLabel(legendary)})";
                 }
-                if (GlyphInfo.AdditionalBonusAffix(socket.SelectedGlyph) is GlyphAffixDef extra
-                    && GlyphInfo.TagsLabel(extra) is { Length: > 0 } tags)
+                if (GlyphInfo.AdditionalBonusAffix(socket.SelectedGlyph) is GlyphAffixDef extra)
                 {
-                    delivery += $", additional bonus while active: {tags} (magnitude not in the data)";
+                    if (extra.BonusPower?.Description is { Length: > 0 } bonus)
+                        delivery += $", additional bonus while active: {bonus}";
+                    else if (GlyphInfo.TagsLabel(extra) is { Length: > 0 } tags)
+                        delivery += $", additional bonus while active: {tags}";
                 }
             }
 
@@ -242,6 +244,19 @@ public partial class ParagonPlannerViewModel
             detail.Add($"Crit chance +{profile.CritChanceBonusFraction * 100:0.#}% from boards.");
         detail.AddRange(profile.GlyphMultipliers.Select(m =>
             $"{m.GlyphName} legendary rank ×{m.Percent:0.#}% ({m.Label}) — multiplies in full."));
+        // Legendary nodes' ×% are real multipliers but conditional (skill/status/situation) —
+        // listed beside the expected range, never folded into it.
+        var legendaryNodes = Cells
+            .Where(c => c.IsPurchased && c.Node.Kind == ParagonNodeKind.Legendary)
+            .Select(c => c.Node)
+            .ToList();
+        foreach (var node in legendaryNodes)
+        {
+            if (LegendaryNodeInfo.HeadlineMultiplierPercent(node) is double percent)
+                detail.Add($"{node.Name ?? node.InternalName} (legendary node) {percent:0.#}%[x] — conditional, not in the expected range.");
+        }
+        if (legendaryNodes.Count > 1 && LegendaryNodeInfo.HeadlineProduct(legendaryNodes) is var product and > 1)
+            detail.Add($"Legendary node ×% combined ×{product:0.00} if every condition holds at once.");
         if (profile.AdditiveOffsetFraction <= 0)
             detail.Add("Gear's additive damage isn't entered (Character Stats → Additive dmg % / Situational dmg %): " +
                        "the bucket is a lower bound, the additive marginal an upper bound.");

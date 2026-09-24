@@ -121,6 +121,10 @@ public static class BuildComparer
         int legendaryA = summaryA.Damage.GlyphMultipliers.Count, legendaryB = summaryB.Damage.GlyphMultipliers.Count;
         Judge($"runs more legendary-rank glyphs (lvl {GlyphInfo.LegendaryUpgradeLevel}+) ({Math.Max(legendaryA, legendaryB)} vs {Math.Min(legendaryA, legendaryB)})",
             legendaryA, legendaryB);
+        // Legendary node ×% are conditional (skill/status/situation), so they're judged on
+        // their own axis rather than folded into the expected multiplier.
+        Judge($"has stronger legendary node multipliers if their conditions hold (×{Math.Max(summaryA.LegendaryProduct, summaryB.LegendaryProduct):0.00} vs ×{Math.Min(summaryA.LegendaryProduct, summaryB.LegendaryProduct):0.00})",
+            summaryA.LegendaryProduct, summaryB.LegendaryProduct);
         Judge($"has a higher expected damage multiplier (×{Math.Max(summaryA.Damage.ExpectedMultiplier, summaryB.Damage.ExpectedMultiplier):0.00} vs ×{Math.Min(summaryA.Damage.ExpectedMultiplier, summaryB.Damage.ExpectedMultiplier):0.00})",
             summaryA.Damage.ExpectedMultiplier, summaryB.Damage.ExpectedMultiplier);
         Judge($"leads in more stats ({Math.Max(leadA, leadB)} vs {Math.Min(leadA, leadB)})", leadA, leadB);
@@ -141,7 +145,7 @@ public static class BuildComparer
     private sealed record BuildSummary(
         int Points, int Rares, int Legendaries, int GlyphCount, string GlyphList,
         int ThresholdsMet, int ThresholdCount, double GlyphDelivery, DamageProfile Damage,
-        IReadOnlyDictionary<string, double> Stats);
+        IReadOnlyDictionary<string, double> Stats, double LegendaryProduct);
 
     private static BuildSummary Summarize(
         BuildSnapshot build, ParagonData data, NonParagonStats nonParagonStats,
@@ -156,6 +160,7 @@ public static class BuildComparer
         var metCells = report.Thresholds.Where(t => t.Met).Select(t => t.Cell).ToHashSet();
 
         int points = 0, rares = 0, legendaries = 0;
+        var legendaryNodes = new List<ParagonNodeDef>();
         var stats = new Dictionary<string, double>();
         var gatePair = GateCrossings.PairMap(graph);
         var allocatedCells = build.AllocatedCells.ToHashSet();
@@ -173,7 +178,11 @@ public static class BuildComparer
                 continue;
             points++;
             if (node.Kind == ParagonNodeKind.Rare) rares++;
-            if (node.Kind == ParagonNodeKind.Legendary) legendaries++;
+            if (node.Kind == ParagonNodeKind.Legendary)
+            {
+                legendaries++;
+                legendaryNodes.Add(node);
+            }
             foreach (var attribute in node.Attributes)
             {
                 if (attribute.Value is not double value
@@ -222,7 +231,8 @@ public static class BuildComparer
             .ToList();
         return new BuildSummary(points, rares, legendaries, glyphNames.Count,
             glyphNames.Count > 0 ? string.Join(", ", glyphNames) : "none",
-            report.ThresholdsMet, report.Thresholds.Count, delivery, damage, stats);
+            report.ThresholdsMet, report.Thresholds.Count, delivery, damage, stats,
+            LegendaryNodeInfo.HeadlineProduct(legendaryNodes));
     }
 
     private static string Describe(BuildSummary s) =>

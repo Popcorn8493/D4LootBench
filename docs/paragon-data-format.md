@@ -22,7 +22,7 @@ git sparse-checkout set --no-cone \
     '/json/enUS_Text/meta/StringList/ParagonBoard_*' \
     '/json/enUS_Text/meta/StringList/ParagonNode_*' \
     '/json/enUS_Text/meta/StringList/ParagonGlyph_*' \
-    '/json/enUS_Text/meta/StringList/Power_Paragon_*'
+    '/json/enUS_Text/meta/StringList/Power_Paragon_*'     '/json/base/meta/Power/Paragon_*' '/json/base/meta/Power/ParagonGlyph_*'
 git checkout HEAD
 # (In Git Bash, write .git/info/sparse-checkout directly — MSYS path mangling corrupts
 #  leading-slash patterns passed on the command line.)
@@ -47,6 +47,8 @@ in the extractor, calibrated empirically against displayed in-game values (Seaso
 | MagicDefensive | 0.02 | magic max-life node = `1 * f()` displays 2.0% |
 | RareMinor/RareMajorOffensive | 0.05 | rare crit-damage node = `3 * f()` displays 15% |
 | RareMinor/RareMajorDefensive | 0.04 | rare max-life node = `1 * f()` displays 4.0% |
+| GlyphThresholdBonusRare (power tuning) | 0.1 | 3.2.1 patch notes: Superiority `1 * f()` = +10% DR, Talon `2.5 * f()` = 25%; Exploit `3 * 10 * f()` = 3 s Vulnerable |
+| NodeLegendary (power tuning) | 0.15 | designers write these pre-divided: Lust for Carnage `(2 / 0.15) * f()` Spirit, Enchantment Master `(.3 / .15) * f()` potency |
 
 Values are fractions (`0.05` = 5%) for percent attributes; flat-stat formulas (core stats, max
 resource) embed their own scaling and produce flat numbers. The full extraction was validated
@@ -127,8 +129,18 @@ Current counts (patch 3.2.1.73552): 80 boards, 566 nodes, 161 glyphs, 52 thresho
 - `value` is the resolved magnitude (fraction for percent attributes, flat otherwise); null only if
   the formula referenced something unknown (currently none do).
 - `isThresholdBonus: true` marks attributes granted only when the node's threshold requirement is met.
-- Legendary nodes carry `power` instead of meaningful attributes:
-  `{ "snoId": "0x…", "name": "Paragon_Sorc_Legendary_001", "description": "…" }`.
+- Legendary nodes carry `power` instead of meaningful attributes (glyph affixes carry the same
+  shape as `bonusPower` — the glyph's Additional Bonus):
+  `{ "snoId", "name": "Paragon_Sorc_Legendary_001", "description", "values", "multiplierPercents" }`.
+  `values` are the power's script formulas SF_0..SF_n from `Power/<name>.pow.json`, evaluated
+  (constants, SF cross-references, the calibrated built-ins, `Min`/`Max`, equal-branch ternaries);
+  null where a value depends on live character attributes. `description` is the `desc` string-list
+  template rendered with those values — `[expr|format|]` tokens where the format flags are `x`
+  (multiplicative, rendered `[x]`), `%`, `+` (sign) and a digit (decimals), several `|…|` segments
+  union; bare `{SF_n}` prints the value; markup is stripped; unresolvable values print `?` (only
+  live-character values such as "Current Bonus" or Maximum Life — 8 of 73 legendaries, 3 glyph
+  bonuses at 3.2.1). `multiplierPercents` lists every `[x]` value in tooltip order; the first is
+  the node's headline multiplier (`LegendaryNodeInfo`).
 - There is no cost field. Every node costs 1 paragon point, with one engine-side exception
   (user-verified vs a live build, July 2026): a board crossing's Attachment Gate PAIR costs one
   point total — buying your side's gate attaches the board and auto-purchases the far gate,

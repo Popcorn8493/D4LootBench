@@ -8,6 +8,7 @@
 //   json/base/meta/ParagonGlyph/          json/base/meta/ParagonGlyphAffix/
 //   json/base/meta/ParagonThreshold/      json/base/meta/GameBalance/AttributeFormulas.gam.json
 //   json/enUS_Text/meta/StringList/Paragon*  json/enUS_Text/meta/StringList/Power_Paragon*
+//   json/base/meta/Power/Paragon_*          json/base/meta/Power/ParagonGlyph_*   (legendary/glyph power values)
 
 #:property JsonSerializerIsReflectionEnabledByDefault=true
 #:property EnableTrimAnalyzer=false
@@ -48,6 +49,13 @@ var multipliers = new Dictionary<string, double>
     ["ParagonPowerBudgetMultiplierNodeRareMinorDefensive"] = 0.04,
     ["ParagonPowerBudgetMultiplierNodeRareMajorOffensive"] = 0.05,
     ["ParagonPowerBudgetMultiplierNodeRareMajorDefensive"] = 0.04,
+    // Power tuning (legendary node effects, glyph Additional Bonuses), calibrated at patch
+    // 3.2.1 against published values. GlyphThresholdBonusRare: Superiority "1 * f()" = +10% DR
+    // and Talon "2.5 * f()" = 25% (both 3.2.1 patch notes), Exploit "3 * 10 * f()" = 3 s
+    // Vulnerable. NodeLegendary: designers write these pre-divided by it — Lust for Carnage
+    // "(2 / 0.15) * f()" Spirit, Enchantment Master "(.3 / .15) * f()" potency — so f() = 0.15.
+    ["ParagonPowerBudgetMultiplierGlyphThresholdBonusRare"] = 0.1,
+    ["ParagonPowerBudgetMultiplierNodeLegendary"] = 0.15,
 };
 
 // Class order for fUsableByClass/arUsableByClass flag arrays, derived from single-class glyph
@@ -118,6 +126,97 @@ double? Evaluate(string formula, Dictionary<string, double>? variables = null)
         return Convert.ToDouble(result);
     }
     catch { return null; }
+}
+
+// ── Powers: legendary node effects and glyph Additional Bonuses ───────────────────
+// Power/<name>.pow.json holds the tuning values as ScriptFormulas SF_0..SF_n (constants, or
+// expressions over other SFs / attributes / engine built-ins); the "desc" string list entry
+// references them as [expr|format|] tokens — format flags: 'x' multiplicative ([x]), '%'
+// percent, '+' explicit sign, a digit = decimal places. Values that depend on attributes or
+// engine built-ins absent from the dump evaluate to null and render as "?".
+object? PowerInfo(JsonObject? powerRef)
+{
+    if (powerRef is null) return null;
+    string? name = powerRef["name"]?.GetValue<string>();
+    string snoId = Hex(powerRef["__raw__"]!.GetValue<long>());
+    if (name is null) return new { snoId, name };
+
+    var formulas = new List<string>();
+    string powPath = Path.Combine(meta, "Power", name + ".pow.json");
+    if (File.Exists(powPath) && Load(powPath)["ptScriptFormulas"] is JsonArray sfs)
+        formulas.AddRange(sfs.Select(f => f?["tFormula"]?["value"]?.GetValue<string>() ?? ""));
+
+    var memo = new Dictionary<int, double?>();
+    double? Sf(int index, int depth = 0)
+    {
+        if (index < 0 || index >= formulas.Count || depth > 16) return null;
+        if (memo.TryGetValue(index, out var cached)) return cached;
+        memo[index] = null; // cycle guard
+        return memo[index] = EvaluateWithSfs(formulas[index], depth + 1);
+    }
+    double? EvaluateWithSfs(string expression, int depth)
+    {
+        string expr = expression.Replace("{", "").Replace("}", "").TrimEnd(']').Trim();
+        bool unresolved = false;
+        expr = Regex.Replace(expr, @"\bSF_(\d+)\b", m =>
+        {
+            var v = Sf(int.Parse(m.Groups[1].Value), depth);
+            if (v is null) unresolved = true;
+            return (v ?? 0).ToString("R", System.Globalization.CultureInfo.InvariantCulture);
+        });
+        if (unresolved || expr.Length == 0) return null;
+        // "cond ? a : b" with identical branches (class-resource switches that ended up equal).
+        var ternary = Regex.Match(expr, @"^[^?]+\?\s*([-\d.]+)\s*:\s*([-\d.]+)\s*$");
+        if (ternary.Success && ternary.Groups[1].Value == ternary.Groups[2].Value)
+            expr = ternary.Groups[1].Value;
+        // Min/Max(a, b) over constant arguments — engine built-ins substituted first, since
+        // their own "()" would otherwise hide the argument list.
+        expr = Regex.Replace(expr, @"\b([A-Za-z_][A-Za-z0-9_]*)\s*\(\s*\)", m =>
+            multipliers.TryGetValue(m.Groups[1].Value, out double builtIn)
+                ? builtIn.ToString("R", System.Globalization.CultureInfo.InvariantCulture)
+                : m.Value);
+        expr = Regex.Replace(expr, @"(?i)\b(min|max)\s*\(([^(),]+),([^(),]+)\)", m =>
+            Evaluate(m.Groups[2].Value) is double a && Evaluate(m.Groups[3].Value) is double b
+                ? (m.Groups[1].Value.Equals("min", StringComparison.OrdinalIgnoreCase) ? Math.Min(a, b) : Math.Max(a, b))
+                    .ToString("R", System.Globalization.CultureInfo.InvariantCulture)
+                : m.Value);
+        return Evaluate(expr);
+    }
+
+    string? template = StringListText("Power_" + name, "desc");
+    var multiplierPercents = new List<double>();
+    // A token may carry several |format| segments ("[x * 100|%x||%|]") — their flags union.
+    string? description = template is null ? null : Regex.Replace(template, @"\[([^\[\]|]+)((?:\|[^\]|]*)*)\]", m =>
+    {
+        string format = m.Groups[2].Value.Replace("|", "");
+        double? value = EvaluateWithSfs(m.Groups[1].Value, 0);
+        if (value is null) return "?";
+        int decimals = format.FirstOrDefault(char.IsDigit) is char d and not '\0' ? d - '0' : 0;
+        string number = Math.Round(value.Value, decimals)
+            .ToString(decimals > 0 ? "0." + new string('0', decimals) : "0.##", System.Globalization.CultureInfo.InvariantCulture);
+        if (format.Contains('x')) multiplierPercents.Add(value.Value);
+        return (format.Contains('+') && value >= 0 ? "+" : "") + number
+            + (format.Contains('%') ? "%" : "") + (format.Contains('x') ? "[x]" : "");
+    });
+    if (description is not null)
+    {
+        // Bare {SF_n} outside a bracket token prints the raw value (durations, counts).
+        description = Regex.Replace(description, @"\{SF_(\d+)\}", m =>
+            Sf(int.Parse(m.Groups[1].Value)) is double v
+                ? Math.Round(v, 2).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)
+                : "?");
+        description = Regex.Replace(description, @"\{/?(c(_[a-z_]+)?|u)\}", "");       // color/underline markup
+        description = Regex.Replace(description, @"\{[^{}]*\}", "?");                  // payload/dot/buff refs
+        description = Regex.Replace(description, @"\s+", " ").Trim();
+    }
+    return new
+    {
+        snoId,
+        name,
+        description,
+        values = Enumerable.Range(0, formulas.Count).Select(i => Sf(i)).ToArray(),
+        multiplierPercents = multiplierPercents.ToArray(),
+    };
 }
 
 // ── Thresholds ────────────────────────────────────────────────────────────────────
@@ -194,15 +293,7 @@ foreach (string path in Directory.GetFiles(Path.Combine(meta, "ParagonNode"), "*
         attrIndex++;
     }
 
-    var power = n["snoPassivePower"] is JsonObject p
-        ? new
-        {
-            snoId = Hex(p["__raw__"]!.GetValue<long>()),
-            name = (string?)p["name"]?.GetValue<string>(),
-            description = StringListText("Power_" + p["name"]!.GetValue<string>(), "Paragon Node Bonus")
-                          ?? StringListText("Power_" + p["name"]!.GetValue<string>()),
-        }
-        : null;
+    var power = PowerInfo(n["snoPassivePower"] as JsonObject);
 
     nodes.Add(new
     {
@@ -289,9 +380,7 @@ foreach (string path in Directory.GetFiles(Path.Combine(meta, "ParagonGlyphAffix
         startingBonusScalar = a["flStartingBonusScalar"]!.GetValue<double>(),
         addedBonusScalarPerLevel = a["flAddedBonusScalarPerLevel"]!.GetValue<double>(),
         budgetFormulaName = a["gbidPowerBudgetFormula"]?["name"]?.GetValue<string>(),
-        bonusPower = a["snoBonusPassivePower"] is JsonObject bp
-            ? new { snoId = Hex(bp["__raw__"]!.GetValue<long>()), name = (string?)bp["name"]?.GetValue<string>() }
-            : null,
+        bonusPower = PowerInfo(a["snoBonusPassivePower"] as JsonObject),
         tags = a["arAffixSkillTags"]!.AsArray()
             .Select(t => t!["name"]!.GetValue<string>().Replace("Search_", "")).ToArray(),
     };

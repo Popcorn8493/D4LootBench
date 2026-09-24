@@ -21,7 +21,7 @@ public class ParagonDataTests
         data.Nodes.Count.ShouldBe(566);
         data.Glyphs.Count.ShouldBe(161);
         data.Thresholds.Count.ShouldBe(52);
-        data.Multipliers.Count.ShouldBe(6);
+        data.Multipliers.Count.ShouldBe(8); // six node multipliers + two power-tuning constants (3.2.1)
     }
 
     [Fact]
@@ -161,5 +161,45 @@ public class ParagonDataTests
         }).Where(r => r is { Success: true }).ToList();
 
         solved.ShouldNotBeEmpty("Swarm of Storms should attach to the starter and reach its legendary");
+    }
+
+    // Legendary node / glyph power values are rendered from the game's power script formulas;
+    // these anchors are the 3.2.1 patch notes' published numbers.
+    [Theory]
+    [InlineData("Hemorrhage", 60)]
+    [InlineData("Blood Rage", 45)]
+    [InlineData("In-Fighter", 70)]
+    [InlineData("Swarm of Storms", 80)]
+    [InlineData("Icefall", 60)]
+    [InlineData("Force of Nature", 45)]
+    public void Legendary_node_headline_multipliers_match_patch_notes(string nodeName, double percent)
+    {
+        var node = ParagonDatabase.Data.Nodes.Single(n => n.Kind == ParagonNodeKind.Legendary && n.Name == nodeName);
+
+        LegendaryNodeInfo.HeadlineMultiplierPercent(node).ShouldBe(percent);
+        node.Power!.Description.ShouldNotBeNull().ShouldContain($"{percent:0}%[x]");
+        node.Power.Description.ShouldNotContain("{");
+        node.Power.Description.ShouldNotContain("[SF_");
+    }
+
+    [Theory]
+    [InlineData("Superiority", "10% Damage Reduction")]
+    [InlineData("Talon", "25%[x] increased Critical Strike damage")]
+    [InlineData("Exhumation", "10% Damage Reduction for 8 seconds")]
+    public void Glyph_additional_bonus_renders_calibrated_values(string glyphName, string expected)
+    {
+        var glyph = ParagonDatabase.Data.Glyphs.First(g => g.Name == glyphName);
+
+        GlyphInfo.AdditionalBonusAffix(glyph)!.BonusPower!.Description.ShouldNotBeNull().ShouldContain(expected);
+    }
+
+    [Fact]
+    public void Every_legendary_node_has_a_rendered_tooltip()
+    {
+        var legendaries = ParagonDatabase.Data.Nodes.Where(n => n.Kind == ParagonNodeKind.Legendary).ToList();
+
+        legendaries.ShouldAllBe(n => !string.IsNullOrWhiteSpace(n.Power!.Description));
+        // Only live-character values ("Current Bonus", Maximum Life) may stay unresolved.
+        legendaries.Count(n => n.Power!.Description!.Contains('?')).ShouldBeLessThanOrEqualTo(8);
     }
 }

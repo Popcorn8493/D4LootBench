@@ -8,7 +8,9 @@
     "ParagonPowerBudgetMultiplierNodeRareMinorOffensive": 0.05,
     "ParagonPowerBudgetMultiplierNodeRareMinorDefensive": 0.04,
     "ParagonPowerBudgetMultiplierNodeRareMajorOffensive": 0.05,
-    "ParagonPowerBudgetMultiplierNodeRareMajorDefensive": 0.04
+    "ParagonPowerBudgetMultiplierNodeRareMajorDefensive": 0.04,
+    "ParagonPowerBudgetMultiplierGlyphThresholdBonusRare": 0.1,
+    "ParagonPowerBudgetMultiplierNodeLegendary": 0.15
   },
   "boards": [
     {
@@ -65162,7 +65164,20 @@
       "thresholds": [],
       "power": {
         "snoId": "0x000a019d",
-        "name": "Paragon_Barb_Legendary_001"
+        "name": "Paragon_Barb_Legendary_001",
+        "description": "Skills that cast Earthquakes and Dust Devils deal 45%[x] increased damage.",
+        "values": [
+          0.75,
+          null,
+          1.8,
+          0.4,
+          2,
+          null,
+          0.45
+        ],
+        "multiplierPercents": [
+          45
+        ]
       },
       "tags": [
         "Keyword_DustDevils",
@@ -65179,7 +65194,17 @@
       "thresholds": [],
       "power": {
         "snoId": "0x000a01a6",
-        "name": "Paragon_Barb_Legendary_002"
+        "name": "Paragon_Barb_Legendary_002",
+        "description": "Applying a Damage Over Time effect to a Vulnerable enemy deals 60%[x] increased damage.",
+        "values": [
+          0.15,
+          null,
+          null,
+          0.6
+        ],
+        "multiplierPercents": [
+          60
+        ]
       },
       "tags": [
         "Bleed",
@@ -65196,7 +65221,19 @@
       "thresholds": [],
       "power": {
         "snoId": "0x000a19e0",
-        "name": "Paragon_Barb_Legendary_004"
+        "name": "Paragon_Barb_Legendary_004",
+        "description": "Killing an enemy affected by a Damage Over Time effect has 10% chance to grant Berserking for 5 seconds. Your damage is increased by 45%[x] while Berserking.",
+        "values": [
+          0.1,
+          5,
+          0.1,
+          null,
+          null,
+          0.45
+        ],
+        "multiplierPercents": [
+          45
+        ]
       },
       "tags": [
         "Bleed",
@@ -65212,7 +65249,12 @@
       "thresholds": [],
       "power": {
         "snoId": "0x000a1bc0",
-        "name": "Paragon_Barb_Legendary_005"
+        "name": "Paragon_Barb_Legendary_005",
+        "description": "Increases the power of your Shout Skills by 35%.",
+        "values": [
+          0.35
+        ],
+        "multiplierPercents": []
       },
       "tags": [
         "Skill_Shout"
@@ -65227,7 +65269,18 @@
       "thresholds": [],
       "power": {
         "snoId": "0x000a24e2",
-        "name": "Paragon_Barb_Legendary_009"
+        "name": "Paragon_Barb_Legendary_009",
+        "description": "Berserking now additionally grants \u002B15% Attack Speed. You deal 45%[x] increased Fire and Physical damage.",
+        "values": [
+          0.020000000000000004,
+          8,
+          6,
+          0.15,
+          0.45
+        ],
+        "multiplierPercents": [
+          45
+        ]
       },
       "tags": [
         "Keyword_Berserk",
@@ -65244,7 +65297,16 @@
       "thresholds": [],
       "power": {
         "snoId": "0x000a258d",
-        "name": "Paragon_Barb_Legendary_011"
+        "name": "Paragon_Barb_Legendary_011",
+        "description": "For every 300 Fury you spend, gain 2% of your Maximum Life (?) as Fortify. Deal 45%[x] increased damage while Fortified.",
+        "values": [
+          300,
+          0.02,
+          0.45
+        ],
+        "multiplierPercents": [
+          45
+        ]
       },
       "tags": [
         "ResourceFury",
@@ -65260,7 +65322,16 @@
       "thresholds": [],
       "power": {
         "snoId": "0x000a4c50",
-        "name": "Paragon_Barb_Legendary_014"
+        "name": "Paragon_Barb_Legendary_014",
+        "description": "You deal 25%[x] increased damage to Vulnerable enemies. You deal 25%[x] increased damage while you have Overpower charges.",
+        "values": [
+          0.25,
+          5
+        ],
+        "multiplierPercents": [
+          25,
+          25
+        ]
       },
       "tags": [
         "Keyword_Vulnerable",
@@ -65276,7 +65347,20 @@
       "thresholds": [],
       "power": {
         "snoId": "0x000a4c61",
-        "name": "Paragon_Barb_Legendary_015"
+        "name": "Paragon_Barb_Legendary_015",
+        "description": "Every 12 seconds, gain a charge of Overpower. Whenever you attack while having an Overpower charge, your Ultimate Skills deal 10%[x] increased damage for 10 seconds, up to 80%[x].",
+        "values": [
+          12,
+          0.1,
+          8,
+          10,
+          80,
+          null
+        ],
+        "multiplierPercents": [
+          10,
+          80
+        ]
       },
       "tags": [
         "Keyword_Overpower"
@@ -65291,7 +65375,18 @@
       "thresholds": [],
       "power": {
         "snoId": "0x000a4c6d",
-        "name": "Paragon_Barb_Legendary_016"
+        "name": "Paragon_Barb_Legendary_016",
+        "description": "Consecutive attacking with the same weapon increases your Critical Strike chance by \u002B5% and Critical Strike Damage by 45%[x] for 4 seconds.",
+        "values": [
+          0.05,
+          8,
+          4,
+          0.5,
+          0.45
+        ],
+        "multiplierPercents": [
+          45
+        ]
       },
       "tags": [
         "Critical",
@@ -65307,7 +65402,15 @@
       "thresholds": [],
       "power": {
         "snoId": "0x000e6d3b",
-        "name": "Paragon_Barb_Legendary_017"
+        "name": "Paragon_Barb_Legendary_017",
+        "description": "Swapping weapons grants you 4 Fury. You deal 75%[x] increased damage to Injured and Healthy enemies.",
+        "values": [
+          4,
+          0.75
+        ],
+        "multiplierPercents": [
+          75
+        ]
       },
       "tags": [
         "ResourceFury",
@@ -66312,7 +66415,16 @@
       "thresholds": [],
       "power": {
         "snoId": "0x000a523c",
-        "name": "Paragon_Druid_Legendary_003"
+        "name": "Paragon_Druid_Legendary_003",
+        "description": "Storm Skills deal 70%[x] increased damage, and 5%[x] Critical Strike Chance.",
+        "values": [
+          0.7,
+          0.05
+        ],
+        "multiplierPercents": [
+          70,
+          5
+        ]
       },
       "tags": [
         "Skill_Nature_Magic_Storm",
@@ -66329,7 +66441,17 @@
       "thresholds": [],
       "power": {
         "snoId": "0x000a5267",
-        "name": "Paragon_Druid_Legendary_006"
+        "name": "Paragon_Druid_Legendary_006",
+        "description": "Your Earth Skills deal 70%[x] increased Critical Strike Damage.",
+        "values": [
+          0.1,
+          0.2,
+          0.7,
+          null
+        ],
+        "multiplierPercents": [
+          70
+        ]
       },
       "tags": [
         "Skill_Nature_Magic_Earth",
@@ -66346,7 +66468,20 @@
       "thresholds": [],
       "power": {
         "snoId": "0x000a5281",
-        "name": "Paragon_Druid_Legendary_007"
+        "name": "Paragon_Druid_Legendary_007",
+        "description": "While in Werebear form, you deal 45%[x] increased damage, as well as an additional 1%[x] increased damage, up to 25%[x], for every 1% difference in current Life percent and Fortified Life percent between you and the enemy.",
+        "values": [
+          0.01,
+          0.25,
+          0.01,
+          0.3,
+          0.45
+        ],
+        "multiplierPercents": [
+          45,
+          1,
+          25
+        ]
       },
       "tags": [
         "Skill_Bear",
@@ -66363,7 +66498,15 @@
       "thresholds": [],
       "power": {
         "snoId": "0x000a53b5",
-        "name": "Paragon_Druid_Legendary_010"
+        "name": "Paragon_Druid_Legendary_010",
+        "description": "Critical Strikes with Werewolf Skills restore 2 Spirit and deal 70%[x] increased damage.",
+        "values": [
+          2,
+          0.7
+        ],
+        "multiplierPercents": [
+          70
+        ]
       },
       "tags": [
         "Skill_Wolf",
@@ -66381,7 +66524,20 @@
       "thresholds": [],
       "power": {
         "snoId": "0x000a53c6",
-        "name": "Paragon_Druid_Legendary_012"
+        "name": "Paragon_Druid_Legendary_012",
+        "description": "While a Poisoned enemy is Nearby, you deal 35%[x] increased damage, plus an additional 5%[x] for each additional Poisoned enemy, up to 4.",
+        "values": [
+          1,
+          0.35,
+          0.25,
+          8,
+          4,
+          0.05
+        ],
+        "multiplierPercents": [
+          35,
+          5
+        ]
       },
       "tags": [
         "Poison",
@@ -66397,7 +66553,15 @@
       "thresholds": [],
       "power": {
         "snoId": "0x000a53c8",
-        "name": "Paragon_Druid_Legendary_013"
+        "name": "Paragon_Druid_Legendary_013",
+        "description": "After Shapeshifting, your Spirit costs are reduced by 4% for 10 seconds, up to 45%. If you reach 10 stacks, this bonus resets and reduces the Cooldown of your Ultimate Skill by 5 seconds.",
+        "values": [
+          0.045,
+          10,
+          10,
+          5
+        ],
+        "multiplierPercents": []
       },
       "tags": [
         "Skill_Shapeshifting",
@@ -66415,7 +66579,19 @@
       "thresholds": [],
       "power": {
         "snoId": "0x000ddfe3",
-        "name": "Paragon_Druid_Legendary_017"
+        "name": "Paragon_Druid_Legendary_017",
+        "description": "Deal 60%[x] increased damage against Poisoned enemies. Lucky Hit: Nature Magic Skills have up to a 40% chance to Poison the enemy for ? damage over 4 seconds.",
+        "values": [
+          40,
+          2,
+          10,
+          4,
+          0.6,
+          2.5
+        ],
+        "multiplierPercents": [
+          60
+        ]
       },
       "tags": [
         "Skill_Nature_Magic",
@@ -66434,7 +66610,18 @@
       "thresholds": [],
       "power": {
         "snoId": "0x000ddfe4",
-        "name": "Paragon_Druid_Legendary_018"
+        "name": "Paragon_Druid_Legendary_018",
+        "description": "After spending 75 Spirit, you deal 40%[x] increased damage for 5 seconds. Your Ultimate Skills deal 1%[x] increased damage per Spirit when cast.",
+        "values": [
+          75,
+          0.4,
+          5,
+          0.01
+        ],
+        "multiplierPercents": [
+          40,
+          1
+        ]
       },
       "tags": [
         "ResourceSpirit",
@@ -66450,7 +66637,17 @@
       "thresholds": [],
       "power": {
         "snoId": "0x001f6ee2",
-        "name": "Paragon_Druid_Legendary_019"
+        "name": "Paragon_Druid_Legendary_019",
+        "description": "Casting a Companion Skill grants 20%[x] increased Companion damage for 10 seconds, stacking up to 80%[x].",
+        "values": [
+          0.2,
+          10,
+          4
+        ],
+        "multiplierPercents": [
+          20,
+          80
+        ]
       },
       "tags": [
         "FILTER_Flex_Druid_Companions",
@@ -71913,7 +72110,16 @@
       "thresholds": [],
       "power": {
         "snoId": "0x000a6649",
-        "name": "Paragon_Necro_Legendary_001"
+        "name": "Paragon_Necro_Legendary_001",
+        "description": "Your Minions deal 40%[x] increased damage for each 20% of Attack Speed Bonus they have, up to a maximum of 100% Attack Speed Bonus.",
+        "values": [
+          0.4,
+          0.2,
+          1
+        ],
+        "multiplierPercents": [
+          40
+        ]
       },
       "tags": [
         "Minion",
@@ -71930,7 +72136,23 @@
       "thresholds": [],
       "power": {
         "snoId": "0x000a6651",
-        "name": "Paragon_Necro_Legendary_005"
+        "name": "Paragon_Necro_Legendary_005",
+        "description": "Your Golem has 40%[x] increased Maximum Life and deals 100%[x] increased damage. Skeletal Mages and Warriors Sacrifice Bonuses grant an additional 60%[x] Golem damage.",
+        "values": [
+          null,
+          null,
+          0.39999999999999997,
+          null,
+          1,
+          0.6,
+          null,
+          null
+        ],
+        "multiplierPercents": [
+          39.99999999999999,
+          100,
+          60
+        ]
       },
       "tags": [
         "Minion",
@@ -71947,7 +72169,18 @@
       "thresholds": [],
       "power": {
         "snoId": "0x000a6653",
-        "name": "Paragon_Necro_Legendary_007"
+        "name": "Paragon_Necro_Legendary_007",
+        "description": "You gain 15% Damage Reduction and deal 45%[x] increased damage.",
+        "values": [
+          2,
+          0.15,
+          8,
+          0.25,
+          0.45
+        ],
+        "multiplierPercents": [
+          45
+        ]
       },
       "tags": [
         "Armor",
@@ -71965,7 +72198,16 @@
       "thresholds": [],
       "power": {
         "snoId": "0x000a6820",
-        "name": "Paragon_Necro_Legendary_008"
+        "name": "Paragon_Necro_Legendary_008",
+        "description": "Consuming a Corpse grants 60%[x] increased damage for 8 seconds.",
+        "values": [
+          0.6,
+          1,
+          8
+        ],
+        "multiplierPercents": [
+          60
+        ]
       },
       "tags": [
         "Damage",
@@ -71981,7 +72223,17 @@
       "thresholds": [],
       "power": {
         "snoId": "0x000a6657",
-        "name": "Paragon_Necro_Legendary_010"
+        "name": "Paragon_Necro_Legendary_010",
+        "description": "You deal 20%[x] increased damage while you have a stack of Overpower. After gaining or losing a stack of Overpower, you deal 50%[x] increased damage for 5 seconds.",
+        "values": [
+          0.2,
+          0.5,
+          5
+        ],
+        "multiplierPercents": [
+          20,
+          50
+        ]
       },
       "tags": [
         "Keyword_Overpower",
@@ -71997,7 +72249,17 @@
       "thresholds": [],
       "power": {
         "snoId": "0x000a6633",
-        "name": "Paragon_Necro_Legendary_011"
+        "name": "Paragon_Necro_Legendary_011",
+        "description": "Blood Orbs grant 15%[x] increased damage, up to 75%[x], for 10 seconds.",
+        "values": [
+          0.15,
+          5,
+          10
+        ],
+        "multiplierPercents": [
+          15,
+          75
+        ]
       },
       "tags": [
         "Keyword_Blood_Orb",
@@ -72013,7 +72275,15 @@
       "thresholds": [],
       "power": {
         "snoId": "0x000a664b",
-        "name": "Paragon_Necro_Legendary_016"
+        "name": "Paragon_Necro_Legendary_016",
+        "description": "Your Shadow and Cold damage has a 20% chance to deal 300%[x] increased damage.",
+        "values": [
+          0.2,
+          3
+        ],
+        "multiplierPercents": [
+          300
+        ]
       },
       "tags": [
         "ShadowDOT",
@@ -72030,7 +72300,15 @@
       "thresholds": [],
       "power": {
         "snoId": "0x000e4278",
-        "name": "Paragon_Necro_Legendary_017"
+        "name": "Paragon_Necro_Legendary_017",
+        "description": "Your Bone Skills deal 60%[x] increased damage and your Maximum Essence is increased by 10.",
+        "values": [
+          0.6,
+          10
+        ],
+        "multiplierPercents": [
+          60
+        ]
       },
       "tags": [
         "Skill_Bone",
@@ -72047,7 +72325,17 @@
       "thresholds": [],
       "power": {
         "snoId": "0x001f8916",
-        "name": "Paragon_Necro_Legendary_018"
+        "name": "Paragon_Necro_Legendary_018",
+        "description": "Deal 60%[x] increased damage to Cursed enemies.",
+        "values": [
+          1,
+          0.6,
+          1,
+          0.6
+        ],
+        "multiplierPercents": [
+          60
+        ]
       },
       "tags": [
         "Skill_Primary_Curse",
@@ -72966,7 +73254,15 @@
       "thresholds": [],
       "power": {
         "snoId": "0x0025f7c3",
-        "name": "Paragon_Paladin_Legendary_001"
+        "name": "Paragon_Paladin_Legendary_001",
+        "description": "You deal increased damage equal to 125% of your Damage Reduction granted from Armor. Current Bonus: ?",
+        "values": [
+          null,
+          1.25,
+          null,
+          1.5
+        ],
+        "multiplierPercents": []
       },
       "tags": [
         "Armor",
@@ -72982,7 +73278,15 @@
       "thresholds": [],
       "power": {
         "snoId": "0x0025fc04",
-        "name": "Paragon_Paladin_Legendary_002"
+        "name": "Paragon_Paladin_Legendary_002",
+        "description": "You deal increased damage equal to 110% of your Block chance. Current Bonus: ?",
+        "values": [
+          null,
+          null,
+          1.1,
+          null
+        ],
+        "multiplierPercents": []
       },
       "tags": [
         "Block",
@@ -72998,7 +73302,15 @@
       "thresholds": [],
       "power": {
         "snoId": "0x00260062",
-        "name": "Paragon_Paladin_Legendary_003"
+        "name": "Paragon_Paladin_Legendary_003",
+        "description": "You gain 35%[x] increased Critical Strike damage and \u002B3% Critical Strike chance for each stack of Fervor you have.",
+        "values": [
+          0.35,
+          0.03
+        ],
+        "multiplierPercents": [
+          35
+        ]
       },
       "tags": [
         "Critical",
@@ -73015,7 +73327,13 @@
       "thresholds": [],
       "power": {
         "snoId": "0x00260187",
-        "name": "Paragon_Paladin_Legendary_004"
+        "name": "Paragon_Paladin_Legendary_004",
+        "description": "Your Zealot skills gain \u002B15.0% increased Attack Speed. You deal increased damage equal to 65% of your Bonus Attack Speed.",
+        "values": [
+          0.15,
+          0.65
+        ],
+        "multiplierPercents": []
       },
       "tags": [
         "AttackSpeed",
@@ -73032,7 +73350,14 @@
       "thresholds": [],
       "power": {
         "snoId": "0x00260bdb",
-        "name": "Paragon_Paladin_Legendary_005"
+        "name": "Paragon_Paladin_Legendary_005",
+        "description": "While in Arbiter you deal 90%[x] increased damage to Vulnerable enemies.",
+        "values": [
+          0.9
+        ],
+        "multiplierPercents": [
+          90
+        ]
       },
       "tags": [
         "Keyword_Arbiter",
@@ -73049,7 +73374,16 @@
       "thresholds": [],
       "power": {
         "snoId": "0x00260c51",
-        "name": "Paragon_Paladin_Legendary_006"
+        "name": "Paragon_Paladin_Legendary_006",
+        "description": "While moving and for 2 seconds after, you deal 80%[x] increased damage and have \u002B30% Cooldown Reduction.",
+        "values": [
+          0.8,
+          2,
+          0.3
+        ],
+        "multiplierPercents": [
+          80
+        ]
       },
       "tags": [
         "Cooldown",
@@ -73065,7 +73399,14 @@
       "thresholds": [],
       "power": {
         "snoId": "0x00260d27",
-        "name": "Paragon_Paladin_Legendary_007"
+        "name": "Paragon_Paladin_Legendary_007",
+        "description": "Judging an enemy causes them to take 90%[x] more damage from you until they die.",
+        "values": [
+          0.9
+        ],
+        "multiplierPercents": [
+          90
+        ]
       },
       "tags": [
         "Keyword_Judgement",
@@ -73081,7 +73422,14 @@
       "thresholds": [],
       "power": {
         "snoId": "0x002610a4",
-        "name": "Paragon_Paladin_Legendary_008"
+        "name": "Paragon_Paladin_Legendary_008",
+        "description": "You deal 90%[x] increased damage while Fortified.",
+        "values": [
+          0.9
+        ],
+        "multiplierPercents": [
+          90
+        ]
       },
       "tags": [
         "Keyword_Fortify",
@@ -73097,7 +73445,14 @@
       "thresholds": [],
       "power": {
         "snoId": "0x002611db",
-        "name": "Paragon_Paladin_Legendary_009"
+        "name": "Paragon_Paladin_Legendary_009",
+        "description": "While at least one ally or mercenary is within one of your Auras you deal 90%[x] increased damage.",
+        "values": [
+          0.9
+        ],
+        "multiplierPercents": [
+          90
+        ]
       },
       "tags": [
         "Skill_Primary_Aura"
@@ -74250,7 +74605,18 @@
       "thresholds": [],
       "power": {
         "snoId": "0x000a5f22",
-        "name": "Paragon_Rogue_Legendary_002"
+        "name": "Paragon_Rogue_Legendary_002",
+        "description": "You gain 25%[x] Resistance to All Elements. You gain 60%[x] increased Poison, Shadow, and Cold damage.",
+        "values": [
+          1,
+          0.6,
+          9,
+          0.25
+        ],
+        "multiplierPercents": [
+          25,
+          60
+        ]
       },
       "tags": [
         "Resistance",
@@ -74267,7 +74633,15 @@
       "thresholds": [],
       "power": {
         "snoId": "0x000a5f26",
-        "name": "Paragon_Rogue_Legendary_006"
+        "name": "Paragon_Rogue_Legendary_006",
+        "description": "Enemies damaged by your Marksman, Cutthroat, Mobility, or Trap Skills take 20%[x] increased damage each while in combat.",
+        "values": [
+          0.2,
+          8
+        ],
+        "multiplierPercents": [
+          20
+        ]
       },
       "tags": [
         "Skill_Marksman",
@@ -74284,7 +74658,14 @@
       "thresholds": [],
       "power": {
         "snoId": "0x000a5f27",
-        "name": "Paragon_Rogue_Legendary_007"
+        "name": "Paragon_Rogue_Legendary_007",
+        "description": "You deal 50%[x] increased damage, doubled against Crowd Controlled enemies.",
+        "values": [
+          0.5
+        ],
+        "multiplierPercents": [
+          50
+        ]
       },
       "tags": [
         "CrowdControl",
@@ -74300,7 +74681,14 @@
       "thresholds": [],
       "power": {
         "snoId": "0x000a5f28",
-        "name": "Paragon_Rogue_Legendary_008"
+        "name": "Paragon_Rogue_Legendary_008",
+        "description": "You deal 60%[x] increased Critical Strike Damage and Damage Over Time to enemies affected by your Trap Skills.",
+        "values": [
+          0.6
+        ],
+        "multiplierPercents": [
+          60
+        ]
       },
       "tags": [
         "Skill_Trap",
@@ -74317,7 +74705,20 @@
       "thresholds": [],
       "power": {
         "snoId": "0x000a5fc8",
-        "name": "Paragon_Rogue_Legendary_009"
+        "name": "Paragon_Rogue_Legendary_009",
+        "description": "Your Core Skills deal 60%[x] increased damage. When Inner Sight\u0027s gauge becomes full, you gain \u002B100% Dodge Chance for 2.0 seconds.",
+        "values": [
+          1,
+          2,
+          null,
+          null,
+          null,
+          3,
+          0.6
+        ],
+        "multiplierPercents": [
+          60
+        ]
       },
       "tags": [
         "SEARCH_DODGE"
@@ -74332,7 +74733,17 @@
       "thresholds": [],
       "power": {
         "snoId": "0x000a5f2c",
-        "name": "Paragon_Rogue_Legendary_010"
+        "name": "Paragon_Rogue_Legendary_010",
+        "description": "You deal 60%[x] increased Vulnerable damage. The first time you hit a Vulnerable enemy, their damage is reduced by 20%[x] for 6 seconds.",
+        "values": [
+          0.6,
+          0.2,
+          6
+        ],
+        "multiplierPercents": [
+          60,
+          20
+        ]
       },
       "tags": [
         "Keyword_Vulnerable",
@@ -74349,7 +74760,19 @@
       "thresholds": [],
       "power": {
         "snoId": "0x000a5f2d",
-        "name": "Paragon_Rogue_Legendary_011"
+        "name": "Paragon_Rogue_Legendary_011",
+        "description": "Your Ultimate Skills gain an additional 30%[x] damage from your Damage with Ultimate bonus and grant this bonus to all other Skills for 10 seconds when cast. Current Bonus: ? Maximum Bonus: 60%[x]",
+        "values": [
+          0.3,
+          null,
+          10,
+          null,
+          0.6
+        ],
+        "multiplierPercents": [
+          30,
+          60
+        ]
       },
       "tags": [
         "Copy_Ultimate",
@@ -74365,7 +74788,18 @@
       "thresholds": [],
       "power": {
         "snoId": "0x000a5f2e",
-        "name": "Paragon_Rogue_Legendary_012"
+        "name": "Paragon_Rogue_Legendary_012",
+        "description": "Your Combo Point bonuses are increased by 60%[x].",
+        "values": [
+          null,
+          1,
+          null,
+          null,
+          0.6
+        ],
+        "multiplierPercents": [
+          60
+        ]
       },
       "tags": []
     },
@@ -74378,7 +74812,15 @@
       "thresholds": [],
       "power": {
         "snoId": "0x001f86ed",
-        "name": "Paragon_Rogue_Legendary_017"
+        "name": "Paragon_Rogue_Legendary_017",
+        "description": "Casting a Mobility or Subterfuge Skill increases your damage by 60%[x] for 10 seconds.",
+        "values": [
+          0.6,
+          10
+        ],
+        "multiplierPercents": [
+          60
+        ]
       },
       "tags": [
         "Damage",
@@ -75338,7 +75780,14 @@
       "thresholds": [],
       "power": {
         "snoId": "0x000a440a",
-        "name": "Paragon_Sorc_Legendary_001"
+        "name": "Paragon_Sorc_Legendary_001",
+        "description": "Deal 90%[x] increased Burning damage.",
+        "values": [
+          0.9
+        ],
+        "multiplierPercents": [
+          90
+        ]
       },
       "tags": [
         "Burn",
@@ -75356,7 +75805,18 @@
       "thresholds": [],
       "power": {
         "snoId": "0x000a441c",
-        "name": "Paragon_Sorc_Legendary_002"
+        "name": "Paragon_Sorc_Legendary_002",
+        "description": "Pyromancy Skills have a \u002B5% increased Critical Strike Chance and all of your Skills deal increased Direct damage equal to 10% of your Critical Strike Damage Bonus, up to 70%[x]. Current Direct Damage Bonus: ?",
+        "values": [
+          5,
+          0.1,
+          0.7,
+          null,
+          null
+        ],
+        "multiplierPercents": [
+          70
+        ]
       },
       "tags": [
         "Skill_Fire",
@@ -75373,7 +75833,17 @@
       "thresholds": [],
       "power": {
         "snoId": "0x000a4484",
-        "name": "Paragon_Sorc_Legendary_005"
+        "name": "Paragon_Sorc_Legendary_005",
+        "description": "Deal 60%[x] increased damage to Vulnerable enemies.",
+        "values": [
+          0.6,
+          0.15,
+          null,
+          null
+        ],
+        "multiplierPercents": [
+          60
+        ]
       },
       "tags": [
         "Keyword_Vulnerable",
@@ -75390,7 +75860,16 @@
       "thresholds": [],
       "power": {
         "snoId": "0x000a4486",
-        "name": "Paragon_Sorc_Legendary_006"
+        "name": "Paragon_Sorc_Legendary_006",
+        "description": "Your Frost Skills deal 60%[x] increased damage. All Skills deal an extra 15%[x] increased damage if the enemy is Frozen or a Boss.",
+        "values": [
+          0.6,
+          0.15
+        ],
+        "multiplierPercents": [
+          60,
+          15
+        ]
       },
       "tags": [
         "Keyword_Freeze",
@@ -75407,7 +75886,18 @@
       "thresholds": [],
       "power": {
         "snoId": "0x000a44b8",
-        "name": "Paragon_Sorc_Legendary_007"
+        "name": "Paragon_Sorc_Legendary_007",
+        "description": "Hitting enemies at least 8 times in a second with Shock Skills grants 30 Mana Regeneration and increases your damage by 50%[x] for 2 seconds.",
+        "values": [
+          0.5,
+          8,
+          30,
+          2,
+          0.6666666666666666
+        ],
+        "multiplierPercents": [
+          50
+        ]
       },
       "tags": [
         "ResourceMana",
@@ -75424,7 +75914,15 @@
       "thresholds": [],
       "power": {
         "snoId": "0x000a454f",
-        "name": "Paragon_Sorc_Legendary_008"
+        "name": "Paragon_Sorc_Legendary_008",
+        "description": "While you have Crackling Energy charges, you deal 45%[x] increased damage. When you reach full charges, your Crackling Energy damage is increased by 4 times this amount until you run out of charges.",
+        "values": [
+          0.45,
+          4
+        ],
+        "multiplierPercents": [
+          45
+        ]
       },
       "tags": [
         "Keyword_Resource_Pickup",
@@ -75441,7 +75939,17 @@
       "thresholds": [],
       "power": {
         "snoId": "0x000a4566",
-        "name": "Paragon_Sorc_Legendary_011"
+        "name": "Paragon_Sorc_Legendary_011",
+        "description": "Your Conjuration Skills have a 20%[x] reduced Cooldown or Mana cost. Casting a Conjuration Skill increases your damage with their element by 60%[x] for 6 seconds.",
+        "values": [
+          0.2,
+          0.6,
+          6
+        ],
+        "multiplierPercents": [
+          20,
+          60
+        ]
       },
       "tags": [
         "Skill_Primary_Conjuration",
@@ -75458,7 +75966,18 @@
       "thresholds": [],
       "power": {
         "snoId": "0x000a46a8",
-        "name": "Paragon_Sorc_Legendary_015"
+        "name": "Paragon_Sorc_Legendary_015",
+        "description": "Increases your Enchantment Potency by \u002B30%. If your equipped Enchantments are different elements, deal 60%[x] increased damage with their elements. If they are the same, they deal 75%[x] increased damage.",
+        "values": [
+          0.3,
+          null,
+          0.6,
+          0.75
+        ],
+        "multiplierPercents": [
+          60,
+          75
+        ]
       },
       "tags": []
     },
@@ -75471,7 +75990,20 @@
       "thresholds": [],
       "power": {
         "snoId": "0x001fe8b1",
-        "name": "Paragon_Sorc_Legendary_017"
+        "name": "Paragon_Sorc_Legendary_017",
+        "description": "Casting a Pyromancy, Shock, or Frost Skill increases your Burning, Shocking, or Frostbite damage by 30%[x] for 8 seconds. Each element only stacks once, maxing at 90%[x], with each element active.",
+        "values": [
+          0.3,
+          3,
+          null,
+          0.4,
+          0.1,
+          8
+        ],
+        "multiplierPercents": [
+          30,
+          90
+        ]
       },
       "tags": [
         "Keyword_Vulnerable",
@@ -76447,7 +76979,17 @@
       "thresholds": [],
       "power": {
         "snoId": "0x001ede4c",
-        "name": "Paragon_Spiritborn_Legendary_001"
+        "name": "Paragon_Spiritborn_Legendary_001",
+        "description": "When you Dodge or Block an attack you gain \u002B20% increased Attack Speed and 70%[x] increased Damage for 8 seconds.",
+        "values": [
+          8,
+          0.2,
+          1,
+          0.7
+        ],
+        "multiplierPercents": [
+          70
+        ]
       },
       "tags": [
         "SEARCH_DODGE",
@@ -76465,7 +77007,13 @@
       "thresholds": [],
       "power": {
         "snoId": "0x001ee684",
-        "name": "Paragon_Spiritborn_Legendary_002"
+        "name": "Paragon_Spiritborn_Legendary_002",
+        "description": "When you use a Cooldown you gain 100% Thorns for 5 seconds.",
+        "values": [
+          1,
+          5
+        ],
+        "multiplierPercents": []
       },
       "tags": [
         "Thorns",
@@ -76481,7 +77029,16 @@
       "thresholds": [],
       "power": {
         "snoId": "0x001ee9e3",
-        "name": "Paragon_Spiritborn_Legendary_003"
+        "name": "Paragon_Spiritborn_Legendary_003",
+        "description": "You do 1%[x] increased damage for each 1% of your Maximum Life you have as a Barrier.",
+        "values": [
+          0.01,
+          1,
+          0.25
+        ],
+        "multiplierPercents": [
+          1
+        ]
       },
       "tags": [
         "Keyword_Barrier",
@@ -76497,7 +77054,22 @@
       "thresholds": [],
       "power": {
         "snoId": "0x001eeae2",
-        "name": "Paragon_Spiritborn_Legendary_004"
+        "name": "Paragon_Spiritborn_Legendary_004",
+        "description": "After Healing for 100% of your Maximum Life you afflict Close enemies, dealing ? Poisoning damage over ? seconds and causing them to take 140%[x] more Poisoning damage.",
+        "values": [
+          2,
+          1,
+          2,
+          null,
+          0.3333333333333333,
+          6,
+          1.4,
+          1,
+          null
+        ],
+        "multiplierPercents": [
+          140
+        ]
       },
       "tags": [
         "Damage",
@@ -76513,7 +77085,18 @@
       "thresholds": [],
       "power": {
         "snoId": "0x001eebf7",
-        "name": "Paragon_Spiritborn_Legendary_005"
+        "name": "Paragon_Spiritborn_Legendary_005",
+        "description": "Lucky Hit: Up to a 30% chance to Knock Down Vulnerable enemies. You deal 60%[x] increased damage, doubled against Crowd Controlled enemies.",
+        "values": [
+          30,
+          0.6,
+          1.2,
+          1,
+          0.375
+        ],
+        "multiplierPercents": [
+          60
+        ]
       },
       "tags": [
         "CrowdControl",
@@ -76530,7 +77113,18 @@
       "thresholds": [],
       "power": {
         "snoId": "0x001eec99",
-        "name": "Paragon_Spiritborn_Legendary_006"
+        "name": "Paragon_Spiritborn_Legendary_006",
+        "description": "Gain \u002B1 additional Evade |4Charge:Charges;. After moving 10 meters, you deal 10.0%[x] increased damage for 5 seconds. This can stack up to 20 times but will no longer refresh at Maximum.",
+        "values": [
+          20,
+          5,
+          0.1,
+          10,
+          1
+        ],
+        "multiplierPercents": [
+          10
+        ]
       },
       "tags": [
         "Damage",
@@ -76546,7 +77140,17 @@
       "thresholds": [],
       "power": {
         "snoId": "0x001f6a5b",
-        "name": "Paragon_Spiritborn_Legendary_007"
+        "name": "Paragon_Spiritborn_Legendary_007",
+        "description": "You deal bonus damage equal to 7.5%[x] of all your bonuses to Damage with Physical, Fire, Lightning, Cold, Poison, and Shadow combined, up to 100%[x] total. Current Bonus: ?",
+        "values": [
+          1,
+          0.075,
+          null
+        ],
+        "multiplierPercents": [
+          7.5,
+          100
+        ]
       },
       "tags": []
     },
@@ -76559,7 +77163,18 @@
       "thresholds": [],
       "power": {
         "snoId": "0x001f7016",
-        "name": "Paragon_Spiritborn_Legendary_008"
+        "name": "Paragon_Spiritborn_Legendary_008",
+        "description": "Every 3rd consecutive Cast of the same Basic Skill increases all purchased Skills\u0027 Ranks by 5 for 5 seconds. Every 3rd consecutive Cast of the same Core or Potency Skill reduces all Skills\u0027 active Cooldowns by 30%.",
+        "values": [
+          0.5,
+          2,
+          1,
+          5,
+          5,
+          null,
+          0.3
+        ],
+        "multiplierPercents": []
       },
       "tags": [
         "Cooldown"
@@ -76574,7 +77189,16 @@
       "thresholds": [],
       "power": {
         "snoId": "0x0028c5cf",
-        "name": "Paragon_Spiritborn_Legendary_010"
+        "name": "Paragon_Spiritborn_Legendary_010",
+        "description": "Skills that cast Pestilent Swarms and Spirit Storms deal 80%[x] increased damage. Your Storm Feathers deal 150%[x] increased damage.",
+        "values": [
+          0.8,
+          1.5
+        ],
+        "multiplierPercents": [
+          80,
+          150
+        ]
       },
       "tags": [
         "Damage",
@@ -77657,7 +78281,17 @@
       "thresholds": [],
       "power": {
         "snoId": "0x00267931",
-        "name": "Paragon_Warlock_Legendary_001"
+        "name": "Paragon_Warlock_Legendary_001",
+        "description": "Each demon you\u0027ve summoned in the last 20 seconds increases your damage by 15%[x] up to 105%[x].",
+        "values": [
+          0.15,
+          7,
+          20
+        ],
+        "multiplierPercents": [
+          15,
+          105
+        ]
       },
       "tags": []
     },
@@ -77670,7 +78304,17 @@
       "thresholds": [],
       "power": {
         "snoId": "0x0026874e",
-        "name": "Paragon_Warlock_Legendary_002"
+        "name": "Paragon_Warlock_Legendary_002",
+        "description": "Damaging enemies with Demonology Skills shreds their soul, permanently increasing all damage you deal to them by 40%[x] and gaining \u002B2% per hit, up to 120%[x].",
+        "values": [
+          0.02,
+          60,
+          20
+        ],
+        "multiplierPercents": [
+          40,
+          120
+        ]
       },
       "tags": [
         "Skill_Demonology",
@@ -77686,7 +78330,19 @@
       "thresholds": [],
       "power": {
         "snoId": "0x00268498",
-        "name": "Paragon_Warlock_Legendary_003"
+        "name": "Paragon_Warlock_Legendary_003",
+        "description": "While in Demonform, your Demonology Skill damage is increased by 2.5%[x] for every point of Dominance you currently have. While not in Demonform, your Summon Skills deal 85%[x] increased damage and you gain 2% of your Maximum Dominance every second.",
+        "values": [
+          0.025,
+          1,
+          2,
+          1,
+          0.85
+        ],
+        "multiplierPercents": [
+          2.5,
+          85
+        ]
       },
       "tags": [
         "Keyword_Demonform"
@@ -77701,7 +78357,14 @@
       "thresholds": [],
       "power": {
         "snoId": "0x00269024",
-        "name": "Paragon_Warlock_Legendary_004"
+        "name": "Paragon_Warlock_Legendary_004",
+        "description": "Hellfire Skills deal 450%[x] increased damage to Healthy enemies.",
+        "values": [
+          4.5
+        ],
+        "multiplierPercents": [
+          450
+        ]
       },
       "tags": [
         "Damage",
@@ -77717,7 +78380,16 @@
       "thresholds": [],
       "power": {
         "snoId": "0x00268588",
-        "name": "Paragon_Warlock_Legendary_005"
+        "name": "Paragon_Warlock_Legendary_005",
+        "description": "Abyss Skills deal 45%[x] increased damage to Crowd Controlled enemies and 65%[x] increased damage to Elites.",
+        "values": [
+          0.45,
+          0.65
+        ],
+        "multiplierPercents": [
+          45,
+          65
+        ]
       },
       "tags": []
     },
@@ -77730,7 +78402,16 @@
       "thresholds": [],
       "power": {
         "snoId": "0x00269030",
-        "name": "Paragon_Warlock_Legendary_006"
+        "name": "Paragon_Warlock_Legendary_006",
+        "description": "Applying Hex, Vulnerable, or Weakened to enemies permanently reduces the damage they deal to you by 25% and they take 75%[x] increased damage from you.",
+        "values": [
+          0.75,
+          0.25,
+          10
+        ],
+        "multiplierPercents": [
+          75
+        ]
       },
       "tags": [
         "Damage",
@@ -77748,7 +78429,16 @@
       "thresholds": [],
       "power": {
         "snoId": "0x00268bd8",
-        "name": "Paragon_Warlock_Legendary_007"
+        "name": "Paragon_Warlock_Legendary_007",
+        "description": "You gain 90%[x] increased damage for 20 seconds after Casting a Sigil Skill. Greater Demons now count as 10 kills when dying within Sigils.",
+        "values": [
+          0.9,
+          9,
+          20
+        ],
+        "multiplierPercents": [
+          90
+        ]
       },
       "tags": []
     },
@@ -77761,7 +78451,16 @@
       "thresholds": [],
       "power": {
         "snoId": "0x0026903e",
-        "name": "Paragon_Warlock_Legendary_008"
+        "name": "Paragon_Warlock_Legendary_008",
+        "description": "Your Occult Skills deal 100%[x] increased damage while you have Overpower, but when you lose a stack you either gain 2 stacks or lose 1 additional stack.",
+        "values": [
+          1,
+          2,
+          1
+        ],
+        "multiplierPercents": [
+          100
+        ]
       },
       "tags": [
         "Damage",
@@ -77778,7 +78477,16 @@
       "thresholds": [],
       "power": {
         "snoId": "0x00268601",
-        "name": "Paragon_Warlock_Legendary_010"
+        "name": "Paragon_Warlock_Legendary_010",
+        "description": "Spending Dominance to Summon a demon reduces the Wrath cost of your Demonology Skills by 50% and increases all of your damage by 80%[x] for 20 seconds.",
+        "values": [
+          0.8,
+          0.5,
+          20
+        ],
+        "multiplierPercents": [
+          80
+        ]
       },
       "tags": [
         "ResourceDominance",
@@ -79466,7 +80174,12 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000f9cec",
-            "name": "ParagonGlyph_001"
+            "name": "ParagonGlyph_001",
+            "description": "For each Skill equipped in your Enchantment Slots, gain \u002B5% Resistance to that Skill\u0027s Element.",
+            "values": [
+              0.05
+            ],
+            "multiplierPercents": []
           },
           "tags": [
             "Intelligence",
@@ -79520,7 +80233,17 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fa67b",
-            "name": "ParagonGlyph_002"
+            "name": "ParagonGlyph_002",
+            "description": "After spending 50 Mana, you deal 8%[x] increased damage and gain 25% increased Mana Regeneration for 3 seconds.",
+            "values": [
+              50,
+              0.08000000000000002,
+              0.25,
+              3
+            ],
+            "multiplierPercents": [
+              8.000000000000002
+            ]
           },
           "tags": [
             "Intelligence",
@@ -79575,7 +80298,16 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fa6d3",
-            "name": "ParagonGlyph_003"
+            "name": "ParagonGlyph_003",
+            "description": "Dealing Fire, Cold, or Lightning damage to an enemy increases all damage you deal to them by 5%[x] for 10 seconds, stacking once per Element.",
+            "values": [
+              0.05,
+              10,
+              0.25
+            ],
+            "multiplierPercents": [
+              5
+            ]
           },
           "tags": [
             "Intelligence",
@@ -79643,7 +80375,12 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fa6f6",
-            "name": "ParagonGlyph_004"
+            "name": "ParagonGlyph_004",
+            "description": "Mastery Skills have 30% increased area.",
+            "values": [
+              0.3
+            ],
+            "multiplierPercents": []
           },
           "tags": [
             "Intelligence",
@@ -79708,7 +80445,13 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fa706",
-            "name": "ParagonGlyph_005"
+            "name": "ParagonGlyph_005",
+            "description": "Conjuration Skills have 10% increased Critical Hit Chance.",
+            "values": [
+              0,
+              0.1
+            ],
+            "multiplierPercents": []
           },
           "tags": [
             "Intelligence",
@@ -79773,7 +80516,17 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fa7de",
-            "name": "ParagonGlyph_006"
+            "name": "ParagonGlyph_006",
+            "description": "Picking up Crackling Energy grants you 5%[x] increased damage for 5 seconds, up to 15%[x].",
+            "values": [
+              0.05,
+              5,
+              3
+            ],
+            "multiplierPercents": [
+              5,
+              15
+            ]
           },
           "tags": [
             "Intelligence",
@@ -79839,7 +80592,17 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fa805",
-            "name": "ParagonGlyph_007"
+            "name": "ParagonGlyph_007",
+            "description": "You deal 2.5%[x] increased damage per Nearby Burning enemy, up to 25.0%[x].",
+            "values": [
+              0.025,
+              10,
+              null
+            ],
+            "multiplierPercents": [
+              2.5,
+              25
+            ]
           },
           "tags": [
             "Willpower",
@@ -79894,7 +80657,18 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000faa8f",
-            "name": "ParagonGlyph_008"
+            "name": "ParagonGlyph_008",
+            "description": "Every Pyromancy Skill you cast or every second you channel Incinerate increases your Fire damage by 3%[x] for 6 seconds, up to 15%[x].",
+            "values": [
+              0.03,
+              5,
+              6,
+              1
+            ],
+            "multiplierPercents": [
+              3,
+              15
+            ]
           },
           "tags": [
             "Willpower",
@@ -79961,7 +80735,13 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000faaab",
-            "name": "ParagonGlyph_009"
+            "name": "ParagonGlyph_009",
+            "description": "Enemies deal 15% reduced damage to you for 5 seconds after they are no longer Frozen.",
+            "values": [
+              0.15,
+              5
+            ],
+            "multiplierPercents": []
           },
           "tags": [
             "Willpower",
@@ -80017,7 +80797,15 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000faab2",
-            "name": "ParagonGlyph_010"
+            "name": "ParagonGlyph_010",
+            "description": "You deal 15%[x] increased damage for 4 |4second:seconds; after casting a Defensive Skill. This duration is increased by 4 seconds for each Defensive Skill not on your Action Bar.",
+            "values": [
+              0.15,
+              4
+            ],
+            "multiplierPercents": [
+              15
+            ]
           },
           "tags": [
             "DEXTERITY",
@@ -80083,7 +80871,18 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000faaba",
-            "name": "ParagonGlyph_011"
+            "name": "ParagonGlyph_011",
+            "description": "You gain 5%[x] increased damage and \u002B5% increased Potion Healing for each missing Healing Potion, up to 20%[x] each.",
+            "values": [
+              0.05,
+              0.05,
+              null,
+              0.2
+            ],
+            "multiplierPercents": [
+              5,
+              20
+            ]
           },
           "tags": [
             "Intelligence",
@@ -80150,7 +80949,18 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000faaba",
-            "name": "ParagonGlyph_011"
+            "name": "ParagonGlyph_011",
+            "description": "You gain 5%[x] increased damage and \u002B5% increased Potion Healing for each missing Healing Potion, up to 20%[x] each.",
+            "values": [
+              0.05,
+              0.05,
+              null,
+              0.2
+            ],
+            "multiplierPercents": [
+              5,
+              20
+            ]
           },
           "tags": [
             "Willpower",
@@ -80205,7 +81015,13 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000faabd",
-            "name": "ParagonGlyph_012"
+            "name": "ParagonGlyph_012",
+            "description": "You gain 15% Damage Reduction while you have an active Barrier.",
+            "values": [
+              0.15,
+              1.5
+            ],
+            "multiplierPercents": []
           },
           "tags": [
             "Intelligence",
@@ -80260,7 +81076,13 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000faabd",
-            "name": "ParagonGlyph_012"
+            "name": "ParagonGlyph_012",
+            "description": "You gain 15% Damage Reduction while you have an active Barrier.",
+            "values": [
+              0.15,
+              1.5
+            ],
+            "multiplierPercents": []
           },
           "tags": [
             "Willpower",
@@ -80315,7 +81137,15 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fab03",
-            "name": "ParagonGlyph_013"
+            "name": "ParagonGlyph_013",
+            "description": "You have a 30% chance when Shapeshifting to gain a Barrier that absorbs 15% of your Maximum Life (?) in damage for 6 seconds.",
+            "values": [
+              0.15,
+              1.5,
+              0.3,
+              6
+            ],
+            "multiplierPercents": []
           },
           "tags": [
             "DEXTERITY",
@@ -80381,7 +81211,14 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fab17",
-            "name": "ParagonGlyph_014"
+            "name": "ParagonGlyph_014",
+            "description": "You gain 15% Damage Reduction against Close enemies.",
+            "values": [
+              0.15,
+              null,
+              null
+            ],
+            "multiplierPercents": []
           },
           "tags": [
             "DEXTERITY",
@@ -80444,7 +81281,14 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fab17",
-            "name": "ParagonGlyph_014"
+            "name": "ParagonGlyph_014",
+            "description": "You gain 15% Damage Reduction against Close enemies.",
+            "values": [
+              0.15,
+              null,
+              null
+            ],
+            "multiplierPercents": []
           },
           "tags": [
             "Strength",
@@ -80507,7 +81351,14 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fab17",
-            "name": "ParagonGlyph_014"
+            "name": "ParagonGlyph_014",
+            "description": "You gain 15% Damage Reduction against Close enemies.",
+            "values": [
+              0.15,
+              null,
+              null
+            ],
+            "multiplierPercents": []
           },
           "tags": [
             "Strength",
@@ -80571,7 +81422,15 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fab1d",
-            "name": "ParagonGlyph_015"
+            "name": "ParagonGlyph_015",
+            "description": "You deal 10%[x] increased Non-Physical damage.",
+            "values": [
+              0.1,
+              1
+            ],
+            "multiplierPercents": [
+              10
+            ]
           },
           "tags": [
             "DEXTERITY",
@@ -80636,7 +81495,13 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fab1f",
-            "name": "ParagonGlyph_016"
+            "name": "ParagonGlyph_016",
+            "description": "When an enemy is damaged by you, they become Vulnerable for 3 seconds. This cannot happen more than once every 5 seconds per enemy.",
+            "values": [
+              3,
+              5
+            ],
+            "multiplierPercents": []
           },
           "tags": [
             "DEXTERITY",
@@ -80700,7 +81565,13 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fab1f",
-            "name": "ParagonGlyph_016"
+            "name": "ParagonGlyph_016",
+            "description": "When an enemy is damaged by you, they become Vulnerable for 3 seconds. This cannot happen more than once every 5 seconds per enemy.",
+            "values": [
+              3,
+              5
+            ],
+            "multiplierPercents": []
           },
           "tags": [
             "Intelligence",
@@ -80765,7 +81636,13 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fab1f",
-            "name": "ParagonGlyph_016"
+            "name": "ParagonGlyph_016",
+            "description": "When an enemy is damaged by you, they become Vulnerable for 3 seconds. This cannot happen more than once every 5 seconds per enemy.",
+            "values": [
+              3,
+              5
+            ],
+            "multiplierPercents": []
           },
           "tags": [
             "Strength",
@@ -80820,7 +81697,18 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fab2c",
-            "name": "ParagonGlyph_017"
+            "name": "ParagonGlyph_017",
+            "description": "Whenever you Chill or Freeze an enemy, you deal 4%[x] increased Cold damage for 10 seconds, up to 18%[x].",
+            "values": [
+              0.036,
+              1.8,
+              10,
+              5
+            ],
+            "multiplierPercents": [
+              3.6,
+              18
+            ]
           },
           "tags": [
             "DEXTERITY",
@@ -80878,7 +81766,13 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fab2d",
-            "name": "ParagonGlyph_018"
+            "name": "ParagonGlyph_018",
+            "description": "Your Lightning damage has a \u002B15% increased chance to Critically Strike enemies who are Stunned, Immobilized, or Frozen.",
+            "values": [
+              0.15,
+              1.5
+            ],
+            "multiplierPercents": []
           },
           "tags": [
             "DEXTERITY",
@@ -80945,7 +81839,17 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fab2e",
-            "name": "ParagonGlyph_019"
+            "name": "ParagonGlyph_019",
+            "description": "Critical Strikes increase all damage the enemy takes from you by 2%[x] for 10 seconds, up to 12%[x].",
+            "values": [
+              0.02,
+              6,
+              10
+            ],
+            "multiplierPercents": [
+              2,
+              12
+            ]
           },
           "tags": [
             "DEXTERITY",
@@ -81010,7 +81914,16 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fab2f",
-            "name": "ParagonGlyph_020"
+            "name": "ParagonGlyph_020",
+            "description": "You deal 10%[x] increased damage to Slowed or Chilled enemies or, instead, 20%[x] increased damage to Stunned or Frozen enemies.",
+            "values": [
+              0.1,
+              0.2
+            ],
+            "multiplierPercents": [
+              10,
+              20
+            ]
           },
           "tags": [
             "DEXTERITY",
@@ -81077,7 +81990,15 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x0014528f",
-            "name": "ParagonGlyph_020_Necro"
+            "name": "ParagonGlyph_020_Necro",
+            "description": "You deal 20%[x] increased damage to Crowd Controlled enemies.",
+            "values": [
+              0.1,
+              0.2
+            ],
+            "multiplierPercents": [
+              20
+            ]
           },
           "tags": [
             "Intelligence",
@@ -81143,7 +82064,16 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fab2f",
-            "name": "ParagonGlyph_020"
+            "name": "ParagonGlyph_020",
+            "description": "You deal 10%[x] increased damage to Slowed or Chilled enemies or, instead, 20%[x] increased damage to Stunned or Frozen enemies.",
+            "values": [
+              0.1,
+              0.2
+            ],
+            "multiplierPercents": [
+              10,
+              20
+            ]
           },
           "tags": [
             "Intelligence",
@@ -81201,7 +82131,14 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000facee",
-            "name": "ParagonGlyph_021"
+            "name": "ParagonGlyph_021",
+            "description": "You deal 8%[x] increased damage while wielding One-Handed weapons.",
+            "values": [
+              0.08
+            ],
+            "multiplierPercents": [
+              8
+            ]
           },
           "tags": [
             "Strength",
@@ -81256,7 +82193,14 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000facef",
-            "name": "ParagonGlyph_022"
+            "name": "ParagonGlyph_022",
+            "description": "You deal 8%[x] increased damage while wielding Two-Handed weapons.",
+            "values": [
+              0.08
+            ],
+            "multiplierPercents": [
+              8
+            ]
           },
           "tags": [
             "Strength",
@@ -81322,7 +82266,14 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000facf0",
-            "name": "ParagonGlyph_023"
+            "name": "ParagonGlyph_023",
+            "description": "While wielding an Axe, you deal 12%[x] increased Critical Strike Damage.",
+            "values": [
+              0.12
+            ],
+            "multiplierPercents": [
+              12
+            ]
           },
           "tags": [
             "Strength",
@@ -81387,7 +82338,12 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000facf1",
-            "name": "ParagonGlyph_024"
+            "name": "ParagonGlyph_024",
+            "description": "While wielding a Sword, you gain 5 Fury when you kill an enemy.",
+            "values": [
+              5
+            ],
+            "multiplierPercents": []
           },
           "tags": [
             "Strength",
@@ -81456,7 +82412,14 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000facf3",
-            "name": "ParagonGlyph_025"
+            "name": "ParagonGlyph_025",
+            "description": "While wielding a Mace or Flail, attacks while having an Overpower charge deal 15%[x] increased damage.",
+            "values": [
+              0.15
+            ],
+            "multiplierPercents": [
+              15
+            ]
           },
           "tags": [
             "Strength",
@@ -81521,7 +82484,14 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000facf4",
-            "name": "ParagonGlyph_026"
+            "name": "ParagonGlyph_026",
+            "description": "While wielding a Polearm, you deal 15%[x] increased damage.",
+            "values": [
+              0.15
+            ],
+            "multiplierPercents": [
+              15
+            ]
           },
           "tags": [
             "Strength",
@@ -81586,7 +82556,12 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000facf5",
-            "name": "ParagonGlyph_027"
+            "name": "ParagonGlyph_027",
+            "description": "While Berserking, you take 10% reduced damage from Elites.",
+            "values": [
+              0.1
+            ],
+            "multiplierPercents": []
           },
           "tags": [
             "Strength",
@@ -81642,7 +82617,14 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000facf6",
-            "name": "ParagonGlyph_028"
+            "name": "ParagonGlyph_028",
+            "description": "After casting a Shout Skill, the active Cooldown of every other Non-Shout Skill is reduced by 2.0 seconds. If Rallying Cry is used, reduce the Fury cost of the next Core Skill by 20% instead.",
+            "values": [
+              2,
+              0.2,
+              1
+            ],
+            "multiplierPercents": []
           },
           "tags": [
             "Strength",
@@ -81707,7 +82689,14 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000facf7",
-            "name": "ParagonGlyph_029"
+            "name": "ParagonGlyph_029",
+            "description": "You deal 10%[x] increased damage to enemies affected by Damage Over Time.",
+            "values": [
+              0.1
+            ],
+            "multiplierPercents": [
+              10
+            ]
           },
           "tags": [
             "DEXTERITY",
@@ -81771,7 +82760,12 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000facf8",
-            "name": "ParagonGlyph_030"
+            "name": "ParagonGlyph_030",
+            "description": "Skills that Critically Strike generate 3 Fury.",
+            "values": [
+              3
+            ],
+            "multiplierPercents": []
           },
           "tags": [
             "DEXTERITY",
@@ -81827,7 +82821,12 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000facf9",
-            "name": "ParagonGlyph_031"
+            "name": "ParagonGlyph_031",
+            "description": "Hitting with a Weapon Mastery Skill reduces the active Cooldown of another random Weapon Mastery Skill by 2 seconds.",
+            "values": [
+              2
+            ],
+            "multiplierPercents": []
           },
           "tags": [
             "DEXTERITY",
@@ -81891,7 +82890,12 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000facfa",
-            "name": "ParagonGlyph_032"
+            "name": "ParagonGlyph_032",
+            "description": "Swapping weapons has a 18% chance to cause the Skill\u0027s damage to Critically Strike.",
+            "values": [
+              0.18
+            ],
+            "multiplierPercents": []
           },
           "tags": [
             "DEXTERITY",
@@ -81946,7 +82950,17 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000facfb",
-            "name": "ParagonGlyph_033"
+            "name": "ParagonGlyph_033",
+            "description": "Dealing Thorns damage to an enemy increases all damage it takes from you by 1%[x], up to 15%[x], for 10 seconds.",
+            "values": [
+              0.01,
+              15,
+              10
+            ],
+            "multiplierPercents": [
+              1,
+              15
+            ]
           },
           "tags": [
             "Intelligence",
@@ -82000,7 +83014,17 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x00145281",
-            "name": "ParagonGlyph_033_Necro"
+            "name": "ParagonGlyph_033_Necro",
+            "description": "Thorns damage increases all damage an enemy takes from you by 1%[x], up to 10%[x], for 10 seconds.",
+            "values": [
+              0.010000000000000002,
+              10,
+              10
+            ],
+            "multiplierPercents": [
+              1.0000000000000002,
+              10.000000000000002
+            ]
           },
           "tags": [
             "Willpower",
@@ -82054,7 +83078,17 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000facfb",
-            "name": "ParagonGlyph_033"
+            "name": "ParagonGlyph_033",
+            "description": "Dealing Thorns damage to an enemy increases all damage it takes from you by 1%[x], up to 15%[x], for 10 seconds.",
+            "values": [
+              0.01,
+              15,
+              10
+            ],
+            "multiplierPercents": [
+              1,
+              15
+            ]
           },
           "tags": [
             "Willpower",
@@ -82117,7 +83151,13 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000facfc",
-            "name": "ParagonGlyph_034"
+            "name": "ParagonGlyph_034",
+            "description": "You gain up to 15% Damage Reduction the more Fortify you have.",
+            "values": [
+              0.15,
+              1.5
+            ],
+            "multiplierPercents": []
           },
           "tags": [
             "Intelligence",
@@ -82183,7 +83223,13 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000facfc",
-            "name": "ParagonGlyph_034"
+            "name": "ParagonGlyph_034",
+            "description": "You gain up to 15% Damage Reduction the more Fortify you have.",
+            "values": [
+              0.15,
+              1.5
+            ],
+            "multiplierPercents": []
           },
           "tags": [
             "Willpower",
@@ -82238,7 +83284,14 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000facfd",
-            "name": "ParagonGlyph_035"
+            "name": "ParagonGlyph_035",
+            "description": "Gain 15%[x] increased damage while you have Overpower.",
+            "values": [
+              0.15
+            ],
+            "multiplierPercents": [
+              15
+            ]
           },
           "tags": [
             "Intelligence",
@@ -82302,7 +83355,15 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x0014526d",
-            "name": "ParagonGlyph_035_Necro"
+            "name": "ParagonGlyph_035_Necro",
+            "description": "When you gain an Overpower charge, you deal 12%[x] increased damage for 5 seconds.",
+            "values": [
+              0.12,
+              5
+            ],
+            "multiplierPercents": [
+              12
+            ]
           },
           "tags": [
             "Willpower",
@@ -82366,7 +83427,12 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x0014583b",
-            "name": "ParagonGlyph_035_Barb"
+            "name": "ParagonGlyph_035_Barb",
+            "description": "Every 12 seconds, you gain a charge of Overpower.",
+            "values": [
+              12
+            ],
+            "multiplierPercents": []
           },
           "tags": [
             "Willpower",
@@ -82430,7 +83496,14 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000facfe",
-            "name": "ParagonGlyph_036"
+            "name": "ParagonGlyph_036",
+            "description": "You deal 15%[x] increased Damage Over Time damage.",
+            "values": [
+              0.15
+            ],
+            "multiplierPercents": [
+              15
+            ]
           },
           "tags": [
             "Willpower",
@@ -82485,7 +83558,14 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000facff",
-            "name": "ParagonGlyph_037"
+            "name": "ParagonGlyph_037",
+            "description": "Brawling Skills deal 25%[x] increased damage.",
+            "values": [
+              0.25
+            ],
+            "multiplierPercents": [
+              25
+            ]
           },
           "tags": [
             "Willpower",
@@ -82541,7 +83621,15 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fbb72",
-            "name": "ParagonGlyph_038"
+            "name": "ParagonGlyph_038",
+            "description": "You deal 10%[x] increased Physical damage and you gain \u002B1% Movement Speed for each active Minion.",
+            "values": [
+              0.1,
+              0.01
+            ],
+            "multiplierPercents": [
+              10
+            ]
           },
           "tags": [
             "Intelligence",
@@ -82598,7 +83686,16 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fb1a2",
-            "name": "ParagonGlyph_039"
+            "name": "ParagonGlyph_039",
+            "description": "While in Werewolf or Werebear form, Close enemies take 15%[x] increased damage from you.",
+            "values": [
+              0.15,
+              4,
+              0.25
+            ],
+            "multiplierPercents": [
+              15
+            ]
           },
           "tags": [
             "Willpower",
@@ -82655,7 +83752,14 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fb1a8",
-            "name": "ParagonGlyph_040"
+            "name": "ParagonGlyph_040",
+            "description": "Nature Magic Skills deal 18%[x] increased damage to Crowd Controlled or Vulnerable enemies.",
+            "values": [
+              0.18
+            ],
+            "multiplierPercents": [
+              18
+            ]
           },
           "tags": [
             "Willpower",
@@ -82723,7 +83827,14 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fb1a9",
-            "name": "ParagonGlyph_041"
+            "name": "ParagonGlyph_041",
+            "description": "The Passive portion of Companion Skills deal 130%[x] increased damage.",
+            "values": [
+              1.3
+            ],
+            "multiplierPercents": [
+              130
+            ]
           },
           "tags": [
             "Intelligence",
@@ -82789,7 +83900,12 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fb1aa",
-            "name": "ParagonGlyph_042"
+            "name": "ParagonGlyph_042",
+            "description": "You gain 15% Damage Reduction while in Werebear form.",
+            "values": [
+              0.15
+            ],
+            "multiplierPercents": []
           },
           "tags": [
             "Willpower",
@@ -82855,7 +83971,12 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fb1ab",
-            "name": "ParagonGlyph_043"
+            "name": "ParagonGlyph_043",
+            "description": "You gain 15% Damage Reduction while in Werewolf form.",
+            "values": [
+              0.15
+            ],
+            "multiplierPercents": []
           },
           "tags": [
             "Willpower",
@@ -82920,7 +84041,13 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fb1ad",
-            "name": "ParagonGlyph_044"
+            "name": "ParagonGlyph_044",
+            "description": "You gain 12% increased damage and Damage Reduction while in Human form.",
+            "values": [
+              0.12,
+              0.12
+            ],
+            "multiplierPercents": []
           },
           "tags": [
             "Willpower",
@@ -82985,7 +84112,12 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fb1ae",
-            "name": "ParagonGlyph_045"
+            "name": "ParagonGlyph_045",
+            "description": "Poisoning damage effects have a 15% chance to deal double the amount of damage over their duration.",
+            "values": [
+              0.15
+            ],
+            "multiplierPercents": []
           },
           "tags": [
             "Intelligence",
@@ -83052,7 +84184,12 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fb1ae",
-            "name": "ParagonGlyph_045"
+            "name": "ParagonGlyph_045",
+            "description": "Poisoning damage effects have a 15% chance to deal double the amount of damage over their duration.",
+            "values": [
+              0.15
+            ],
+            "multiplierPercents": []
           },
           "tags": [
             "Strength",
@@ -83108,7 +84245,14 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fb1af",
-            "name": "ParagonGlyph_046"
+            "name": "ParagonGlyph_046",
+            "description": "You deal 10%[x] increased Non-Physical damage.",
+            "values": [
+              0.1
+            ],
+            "multiplierPercents": [
+              10
+            ]
           },
           "tags": [
             "DEXTERITY",
@@ -83164,7 +84308,14 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x00146a93",
-            "name": "ParagonGlyph_046_Druid"
+            "name": "ParagonGlyph_046_Druid",
+            "description": "You and your Companions deal 15%[x] increased Non-Physical damage.",
+            "values": [
+              0.15
+            ],
+            "multiplierPercents": [
+              15
+            ]
           },
           "tags": [
             "Intelligence",
@@ -83231,7 +84382,14 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fb1b0",
-            "name": "ParagonGlyph_047"
+            "name": "ParagonGlyph_047",
+            "description": "You deal 35%[x] increased Lightning damage to both Healthy and Injured enemies.",
+            "values": [
+              0.35
+            ],
+            "multiplierPercents": [
+              35
+            ]
           },
           "tags": [
             "DEXTERITY",
@@ -83299,7 +84457,14 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fb1b0",
-            "name": "ParagonGlyph_047"
+            "name": "ParagonGlyph_047",
+            "description": "You deal 35%[x] increased Lightning damage to both Healthy and Injured enemies.",
+            "values": [
+              0.35
+            ],
+            "multiplierPercents": [
+              35
+            ]
           },
           "tags": [
             "DEXTERITY",
@@ -83367,7 +84532,14 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fb1b1",
-            "name": "ParagonGlyph_048"
+            "name": "ParagonGlyph_048",
+            "description": "Poisoning damage effects last 40%[x] longer.",
+            "values": [
+              0.4
+            ],
+            "multiplierPercents": [
+              40
+            ]
           },
           "tags": [
             "DEXTERITY",
@@ -83431,7 +84603,14 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fb1b1",
-            "name": "ParagonGlyph_048"
+            "name": "ParagonGlyph_048",
+            "description": "Poisoning damage effects last 40%[x] longer.",
+            "values": [
+              0.4
+            ],
+            "multiplierPercents": [
+              40
+            ]
           },
           "tags": [
             "Intelligence",
@@ -83485,7 +84664,14 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fb1b2",
-            "name": "ParagonGlyph_049"
+            "name": "ParagonGlyph_049",
+            "description": "You deal 20%[x] increased Physical damage to Non-Elites and Bosses.",
+            "values": [
+              0.2
+            ],
+            "multiplierPercents": [
+              20
+            ]
           },
           "tags": [
             "DEXTERITY",
@@ -83540,7 +84726,14 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fb1b2",
-            "name": "ParagonGlyph_049"
+            "name": "ParagonGlyph_049",
+            "description": "You deal 20%[x] increased Physical damage to Non-Elites and Bosses.",
+            "values": [
+              0.2
+            ],
+            "multiplierPercents": [
+              20
+            ]
           },
           "tags": [
             "Strength",
@@ -83596,7 +84789,14 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fb1b2",
-            "name": "ParagonGlyph_049"
+            "name": "ParagonGlyph_049",
+            "description": "You deal 20%[x] increased Physical damage to Non-Elites and Bosses.",
+            "values": [
+              0.2
+            ],
+            "multiplierPercents": [
+              20
+            ]
           },
           "tags": [
             "Strength",
@@ -83661,7 +84861,17 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fb1b3",
-            "name": "ParagonGlyph_050"
+            "name": "ParagonGlyph_050",
+            "description": "Critical Strikes increase the damage an enemy takes from you by 3%[x] for 20 seconds, up to 12%[x].",
+            "values": [
+              0.03,
+              4,
+              20
+            ],
+            "multiplierPercents": [
+              3,
+              12
+            ]
           },
           "tags": [
             "DEXTERITY",
@@ -83726,7 +84936,17 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fb1b3",
-            "name": "ParagonGlyph_050"
+            "name": "ParagonGlyph_050",
+            "description": "Critical Strikes increase the damage an enemy takes from you by 3%[x] for 20 seconds, up to 12%[x].",
+            "values": [
+              0.03,
+              4,
+              20
+            ],
+            "multiplierPercents": [
+              3,
+              12
+            ]
           },
           "tags": [
             "DEXTERITY",
@@ -83791,7 +85011,17 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fb1b3",
-            "name": "ParagonGlyph_050"
+            "name": "ParagonGlyph_050",
+            "description": "Critical Strikes increase the damage an enemy takes from you by 3%[x] for 20 seconds, up to 12%[x].",
+            "values": [
+              0.03,
+              4,
+              20
+            ],
+            "multiplierPercents": [
+              3,
+              12
+            ]
           },
           "tags": [
             "Willpower",
@@ -83847,7 +85077,13 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fb1b4",
-            "name": "ParagonGlyph_051"
+            "name": "ParagonGlyph_051",
+            "description": "Shapeshifting increases Critical Strike Chance and Critical Strike Damage by 5% for 4 seconds.",
+            "values": [
+              0.05,
+              4
+            ],
+            "multiplierPercents": []
           },
           "tags": [
             "DEXTERITY",
@@ -83903,7 +85139,14 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fb590",
-            "name": "ParagonGlyph_052"
+            "name": "ParagonGlyph_052",
+            "description": "Non-Basic and Non-Core Skills deal 25%[x] increased damage.",
+            "values": [
+              0.25
+            ],
+            "multiplierPercents": [
+              25
+            ]
           },
           "tags": [
             "DEXTERITY",
@@ -83967,7 +85210,12 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fb591",
-            "name": "ParagonGlyph_053"
+            "name": "ParagonGlyph_053",
+            "description": "While wielding a Melee weapon, you take 10% reduced damage.",
+            "values": [
+              0.1
+            ],
+            "multiplierPercents": []
           },
           "tags": [
             "DEXTERITY",
@@ -84031,7 +85279,12 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fb592",
-            "name": "ParagonGlyph_054"
+            "name": "ParagonGlyph_054",
+            "description": "While wielding a Ranged weapon, you take 10% reduced damage.",
+            "values": [
+              0.1
+            ],
+            "multiplierPercents": []
           },
           "tags": [
             "DEXTERITY",
@@ -84096,7 +85349,17 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fb593",
-            "name": "ParagonGlyph_055"
+            "name": "ParagonGlyph_055",
+            "description": "Physical damage increases the damage an enemy takes from you by 1%[x], up to 15%[x], for 15 seconds.",
+            "values": [
+              0.010000000000000002,
+              15,
+              15
+            ],
+            "multiplierPercents": [
+              1.0000000000000002,
+              15.000000000000002
+            ]
           },
           "tags": [
             "DEXTERITY",
@@ -84160,7 +85423,17 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fb593",
-            "name": "ParagonGlyph_055"
+            "name": "ParagonGlyph_055",
+            "description": "Physical damage increases the damage an enemy takes from you by 1%[x], up to 15%[x], for 15 seconds.",
+            "values": [
+              0.010000000000000002,
+              15,
+              15
+            ],
+            "multiplierPercents": [
+              1.0000000000000002,
+              15.000000000000002
+            ]
           },
           "tags": [
             "DEXTERITY",
@@ -84226,7 +85499,17 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fb593",
-            "name": "ParagonGlyph_055"
+            "name": "ParagonGlyph_055",
+            "description": "Physical damage increases the damage an enemy takes from you by 1%[x], up to 15%[x], for 15 seconds.",
+            "values": [
+              0.010000000000000002,
+              15,
+              15
+            ],
+            "multiplierPercents": [
+              1.0000000000000002,
+              15.000000000000002
+            ]
           },
           "tags": [
             "Willpower",
@@ -84292,7 +85575,16 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fb594",
-            "name": "ParagonGlyph_056"
+            "name": "ParagonGlyph_056",
+            "description": "Non-Ultimate Grenade Skills have 25%[x] increased radius and 12%[x] increased damage.",
+            "values": [
+              0.25,
+              0.12
+            ],
+            "multiplierPercents": [
+              25,
+              12
+            ]
           },
           "tags": [
             "DEXTERITY",
@@ -84347,7 +85639,17 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fb595",
-            "name": "ParagonGlyph_057"
+            "name": "ParagonGlyph_057",
+            "description": "When you cast an Agility Skill, you deal 10%[x] increased damage and gain 15%[x] increased Energy Regeneration for 6 seconds.",
+            "values": [
+              0.15,
+              6,
+              0.1
+            ],
+            "multiplierPercents": [
+              10,
+              15
+            ]
           },
           "tags": [
             "DEXTERITY",
@@ -84411,7 +85713,12 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fb596",
-            "name": "ParagonGlyph_058"
+            "name": "ParagonGlyph_058",
+            "description": "Casting an Imbuement Skill reduces the active Cooldown of another random Imbuement Skill by 2.0 seconds.",
+            "values": [
+              2
+            ],
+            "multiplierPercents": []
           },
           "tags": [
             "Intelligence",
@@ -84467,7 +85774,17 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fb597",
-            "name": "ParagonGlyph_059"
+            "name": "ParagonGlyph_059",
+            "description": "When you hit an enemy or Boss with an attack that applies a Crowd Control effect, they take 3%[x], up to 15%[x], increased damage from you for 20 seconds.",
+            "values": [
+              0.03,
+              5,
+              20
+            ],
+            "multiplierPercents": [
+              3,
+              15
+            ]
           },
           "tags": [
             "DEXTERITY",
@@ -84534,7 +85851,14 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fbb73",
-            "name": "ParagonGlyph_060"
+            "name": "ParagonGlyph_060",
+            "description": "Gain 20%[x] Summon damage.",
+            "values": [
+              0.2
+            ],
+            "multiplierPercents": [
+              20
+            ]
           },
           "tags": [
             "DEXTERITY",
@@ -84598,7 +85922,12 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fb598",
-            "name": "ParagonGlyph_061"
+            "name": "ParagonGlyph_061",
+            "description": "Skills that Critically Strike restore 12% of their Energy cost.",
+            "values": [
+              0.12
+            ],
+            "multiplierPercents": []
           },
           "tags": [
             "Intelligence",
@@ -84654,7 +85983,18 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fbb74",
-            "name": "ParagonGlyph_062"
+            "name": "ParagonGlyph_062",
+            "description": "You deal 3%[x] increased damage, up to 18%[x], for every Close Corpse.",
+            "values": [
+              0.03,
+              6,
+              4,
+              0.5
+            ],
+            "multiplierPercents": [
+              3,
+              18
+            ]
           },
           "tags": [
             "DEXTERITY",
@@ -84722,7 +86062,17 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fb599",
-            "name": "ParagonGlyph_063"
+            "name": "ParagonGlyph_063",
+            "description": "Non-Physical damage increases all the Non-Physical damage an enemy takes from you by 1%[x], up to 15%[x], for 15 seconds.",
+            "values": [
+              0.010000000000000002,
+              15,
+              15
+            ],
+            "multiplierPercents": [
+              1.0000000000000002,
+              15.000000000000002
+            ]
           },
           "tags": [
             "Intelligence",
@@ -84778,7 +86128,14 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fb59a",
-            "name": "ParagonGlyph_064"
+            "name": "ParagonGlyph_064",
+            "description": "Imbuement Skill effects have 20%[x] increased potency.",
+            "values": [
+              0.2
+            ],
+            "multiplierPercents": [
+              20
+            ]
           },
           "tags": [
             "Intelligence",
@@ -84843,7 +86200,14 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fb59b",
-            "name": "ParagonGlyph_065"
+            "name": "ParagonGlyph_065",
+            "description": "Non-Ultimate Trap Skills have 25%[x] increased radius.",
+            "values": [
+              0.25
+            ],
+            "multiplierPercents": [
+              25
+            ]
           },
           "tags": [
             "Intelligence",
@@ -84907,7 +86271,14 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fbb75",
-            "name": "ParagonGlyph_066"
+            "name": "ParagonGlyph_066",
+            "description": "Critical Strikes deal 22%[x] increased damage to enemies that are not Healthy.",
+            "values": [
+              0.22
+            ],
+            "multiplierPercents": [
+              22
+            ]
           },
           "tags": [
             "DEXTERITY",
@@ -84964,7 +86335,14 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fb59c",
-            "name": "ParagonGlyph_067"
+            "name": "ParagonGlyph_067",
+            "description": "You deal 35%[x] increased Physical damage to both Healthy and Injured enemies.",
+            "values": [
+              0.35
+            ],
+            "multiplierPercents": [
+              35
+            ]
           },
           "tags": [
             "Strength",
@@ -85032,7 +86410,14 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fb59d",
-            "name": "ParagonGlyph_068"
+            "name": "ParagonGlyph_068",
+            "description": "Enemies affected by Trap Skills take 12%[x] increased damage from you.",
+            "values": [
+              0.12
+            ],
+            "multiplierPercents": [
+              12
+            ]
           },
           "tags": [
             "Strength",
@@ -85088,7 +86473,14 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fbb76",
-            "name": "ParagonGlyph_069"
+            "name": "ParagonGlyph_069",
+            "description": "You deal 20%[x] increased damage while you have no active Minions.",
+            "values": [
+              0.2
+            ],
+            "multiplierPercents": [
+              20
+            ]
           },
           "tags": [
             "Intelligence",
@@ -85142,7 +86534,15 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fbb77",
-            "name": "ParagonGlyph_070"
+            "name": "ParagonGlyph_070",
+            "description": "Blood Orbs Fortify you for 3% of your Maximum Life (?). Gain 15%[x] Blood damage.",
+            "values": [
+              0.03,
+              0.15
+            ],
+            "multiplierPercents": [
+              15
+            ]
           },
           "tags": [
             "Intelligence",
@@ -85201,7 +86601,17 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fbb78",
-            "name": "ParagonGlyph_071"
+            "name": "ParagonGlyph_071",
+            "description": "Each time your Summons deal damage to an enemy, that enemy takes 1%[x] increased damage from you for 10 seconds, up to 15%[x].",
+            "values": [
+              0.010000000000000002,
+              15,
+              10
+            ],
+            "multiplierPercents": [
+              1.0000000000000002,
+              15.000000000000002
+            ]
           },
           "tags": [
             "Intelligence",
@@ -85266,7 +86676,14 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fbb79",
-            "name": "ParagonGlyph_072"
+            "name": "ParagonGlyph_072",
+            "description": "Gain 20%[x] Summon damage.",
+            "values": [
+              0.2
+            ],
+            "multiplierPercents": [
+              20
+            ]
           },
           "tags": [
             "Intelligence",
@@ -85322,7 +86739,14 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fbb7a",
-            "name": "ParagonGlyph_073"
+            "name": "ParagonGlyph_073",
+            "description": "Enemies affected by Curse Skills take 10%[x] increased damage from you.",
+            "values": [
+              0.1
+            ],
+            "multiplierPercents": [
+              10
+            ]
           },
           "tags": [
             "Intelligence",
@@ -85387,7 +86811,14 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fbb7b",
-            "name": "ParagonGlyph_074"
+            "name": "ParagonGlyph_074",
+            "description": "Golems deal 25%[x] increased damage.",
+            "values": [
+              0.25
+            ],
+            "multiplierPercents": [
+              25
+            ]
           },
           "tags": [
             "Willpower",
@@ -85458,7 +86889,14 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x000fbb7c",
-            "name": "ParagonGlyph_075"
+            "name": "ParagonGlyph_075",
+            "description": "You deal 10%[x] increased damage to Corrupted or Frostbitten enemies.",
+            "values": [
+              0.1
+            ],
+            "multiplierPercents": [
+              10
+            ]
           },
           "tags": [
             "Intelligence",
@@ -85514,7 +86952,12 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x001291fc",
-            "name": "ParagonGlyph_076"
+            "name": "ParagonGlyph_076",
+            "description": "You take 15% reduced Physical damage from Vulnerable enemies.",
+            "values": [
+              0.15
+            ],
+            "multiplierPercents": []
           },
           "tags": [
             "Strength",
@@ -85571,7 +87014,12 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x001291fc",
-            "name": "ParagonGlyph_076"
+            "name": "ParagonGlyph_076",
+            "description": "You take 15% reduced Physical damage from Vulnerable enemies.",
+            "values": [
+              0.15
+            ],
+            "multiplierPercents": []
           },
           "tags": [
             "Strength",
@@ -85628,7 +87076,16 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x0013c05c",
-            "name": "ParagonGlyph_077"
+            "name": "ParagonGlyph_077",
+            "description": "You take reduced damage the less Mana you have, up to 25%.",
+            "values": [
+              0.25,
+              null,
+              null,
+              null,
+              null
+            ],
+            "multiplierPercents": []
           },
           "tags": [
             "Willpower",
@@ -85700,7 +87157,15 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x0013c059",
-            "name": "ParagonGlyph_078"
+            "name": "ParagonGlyph_078",
+            "description": "Whenever you deal Shadow or Cold damage to an enemy, that enemy deals 2% reduced damage, up to 10%, for 5 seconds.",
+            "values": [
+              0.020000000000000004,
+              1,
+              5,
+              5
+            ],
+            "multiplierPercents": []
           },
           "tags": [
             "Intelligence",
@@ -85768,7 +87233,18 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x0013c692",
-            "name": "ParagonGlyph_079"
+            "name": "ParagonGlyph_079",
+            "description": "Dealing damage to a Vulnerable enemy increases your damage by 1%[x] for 6 seconds, up to 10%[x].",
+            "values": [
+              0.010000000000000002,
+              1,
+              10,
+              6
+            ],
+            "multiplierPercents": [
+              1.0000000000000002,
+              10.000000000000002
+            ]
           },
           "tags": [
             "DEXTERITY",
@@ -85834,7 +87310,17 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x0018c0c6",
-            "name": "ParagonGlyph_080"
+            "name": "ParagonGlyph_080",
+            "description": "You deal 13%[x] increased damage for 4 seconds after creating a Dust Devil.",
+            "values": [
+              0.13,
+              4,
+              0.13,
+              0.1
+            ],
+            "multiplierPercents": [
+              13
+            ]
           },
           "tags": [
             "Strength",
@@ -85900,7 +87386,19 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x0018c330",
-            "name": "ParagonGlyph_081"
+            "name": "ParagonGlyph_081",
+            "description": "You deal 3%[x] increased damage to Bosses and Crowd Controlled enemies for each active Earthquake, up to 15%[x].",
+            "values": [
+              0.03,
+              null,
+              0.03,
+              0.1,
+              5
+            ],
+            "multiplierPercents": [
+              3,
+              15
+            ]
           },
           "tags": [
             "Strength",
@@ -85964,7 +87462,17 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x0018c36a",
-            "name": "ParagonGlyph_082"
+            "name": "ParagonGlyph_082",
+            "description": "You gain 15%[x] Damage Reduction for 2 seconds after dropping a Stun Grenade.",
+            "values": [
+              0.15,
+              2,
+              0.15,
+              0.1
+            ],
+            "multiplierPercents": [
+              15
+            ]
           },
           "tags": [
             "DEXTERITY",
@@ -86030,7 +87538,14 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x0018c3b1",
-            "name": "ParagonGlyph_083"
+            "name": "ParagonGlyph_083",
+            "description": "Entering Stealth reduces the active cooldown of Shadow Imbuement by 4.0 seconds.",
+            "values": [
+              4,
+              4,
+              0.1
+            ],
+            "multiplierPercents": []
           },
           "tags": [
             "Shadow",
@@ -86097,7 +87612,14 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x0018c6b2",
-            "name": "ParagonGlyph_084"
+            "name": "ParagonGlyph_084",
+            "description": "Your Ice Spikes gain \u002B15% Critical Strike Chance.",
+            "values": [
+              0.15,
+              0.15,
+              0.1
+            ],
+            "multiplierPercents": []
           },
           "tags": [
             "Cold",
@@ -86164,7 +87686,17 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x0018c6cd",
-            "name": "ParagonGlyph_085"
+            "name": "ParagonGlyph_085",
+            "description": "Enemies damaged by your Conjuration Skills deal 1% reduced damage to you for 6 seconds, stacking up to 15%.",
+            "values": [
+              0.01,
+              0.01,
+              0.1,
+              6,
+              0.15,
+              15
+            ],
+            "multiplierPercents": []
           },
           "tags": [
             "DamageReduction",
@@ -86229,7 +87761,16 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x0018d6d6",
-            "name": "ParagonGlyph_086"
+            "name": "ParagonGlyph_086",
+            "description": "You gain 15%[x] Damage to Crowd Controlled enemies.",
+            "values": [
+              0.15,
+              0.15,
+              0.1
+            ],
+            "multiplierPercents": [
+              15
+            ]
           },
           "tags": [
             "LuckyHit",
@@ -86300,7 +87841,17 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x0018da98",
-            "name": "ParagonGlyph_087"
+            "name": "ParagonGlyph_087",
+            "description": "Enemies damaged by your Dancing Bolts take 20%[x] increased damage from you for 5 seconds.",
+            "values": [
+              0.2,
+              0.2,
+              0.1,
+              5
+            ],
+            "multiplierPercents": [
+              20
+            ]
           },
           "tags": [
             "Lightning",
@@ -86365,7 +87916,18 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x0018dc33",
-            "name": "ParagonGlyph_088"
+            "name": "ParagonGlyph_088",
+            "description": "Consuming a Corpse grants 10% Damage Reduction for 8 seconds. Lucky Hit: Up to a 15% chance to form a Corpse when hitting enemies.",
+            "values": [
+              0.1,
+              0.1,
+              0.1,
+              0.01,
+              0.01,
+              8,
+              15
+            ],
+            "multiplierPercents": []
           },
           "tags": [
             "Copy_Corpse",
@@ -86431,7 +87993,16 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x0018e31d",
-            "name": "ParagonGlyph_089"
+            "name": "ParagonGlyph_089",
+            "description": "While standing in your Desecrated Ground, you deal 20%[x] increased Shadow damage.",
+            "values": [
+              0.2,
+              0.2,
+              0.1
+            ],
+            "multiplierPercents": [
+              20
+            ]
           },
           "tags": [
             "Shadow",
@@ -86486,7 +88057,16 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x001f8122",
-            "name": "ParagonGlyph_090"
+            "name": "ParagonGlyph_090",
+            "description": "Dealing damage with your Gorilla, Jaguar, Eagle, or Centipede Skills increases all damage you deal by 4%[x] for 10 seconds, stacking once per Spirit.",
+            "values": [
+              0.04,
+              10,
+              0.25
+            ],
+            "multiplierPercents": [
+              4
+            ]
           },
           "tags": [
             "DEXTERITY",
@@ -86555,7 +88135,15 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x001f9298",
-            "name": "ParagonGlyph_091"
+            "name": "ParagonGlyph_091",
+            "description": "Dealing damage with your Jaguar Skills increases your Critical Strike Chance by \u002B1% for 6 seconds, up to \u002B5%.",
+            "values": [
+              0.01,
+              0.5,
+              5,
+              6
+            ],
+            "multiplierPercents": []
           },
           "tags": [
             "Strength",
@@ -86621,7 +88209,14 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x001f9b33",
-            "name": "ParagonGlyph_092"
+            "name": "ParagonGlyph_092",
+            "description": "You deal 2%[x] increased damage each active Pestilent Swarm and Touch of Death swarm.",
+            "values": [
+              0.02
+            ],
+            "multiplierPercents": [
+              2
+            ]
           },
           "tags": [
             "Intelligence",
@@ -86686,7 +88281,12 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x001f8588",
-            "name": "ParagonGlyph_093"
+            "name": "ParagonGlyph_093",
+            "description": "Skills that Critically Strike generate 3 Vigor.",
+            "values": [
+              3
+            ],
+            "multiplierPercents": []
           },
           "tags": [
             "Critical",
@@ -86751,7 +88351,16 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x001f95bc",
-            "name": "ParagonGlyph_094"
+            "name": "ParagonGlyph_094",
+            "description": "While standing in a Mystic Circle you deal 10%[x] increased damage and take 10%[x] reduced damage.",
+            "values": [
+              0.1,
+              0.1
+            ],
+            "multiplierPercents": [
+              10,
+              10
+            ]
           },
           "tags": [
             "Intelligence",
@@ -86814,7 +88423,17 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x001f898f",
-            "name": "ParagonGlyph_095"
+            "name": "ParagonGlyph_095",
+            "description": "Spawning a Storm Feather grants you 3%[x] increased damage and 2% increased Movement Speed for 5 seconds, stacking up to 10 times.",
+            "values": [
+              0.03,
+              10,
+              5,
+              0.02
+            ],
+            "multiplierPercents": [
+              3
+            ]
           },
           "tags": [
             "DEXTERITY",
@@ -86879,7 +88498,15 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x001f8c7b",
-            "name": "ParagonGlyph_096"
+            "name": "ParagonGlyph_096",
+            "description": "Casting an Incarnate Skill grants you 15%[x] Damage Reduction for 7 seconds.",
+            "values": [
+              0.15,
+              7
+            ],
+            "multiplierPercents": [
+              15
+            ]
           },
           "tags": [
             "Strength",
@@ -86944,7 +88571,13 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x001f8cba",
-            "name": "ParagonGlyph_097"
+            "name": "ParagonGlyph_097",
+            "description": "Lucky Hit: Damaging enemies with direct Fire damage has up to a 30% chance to reduce one of your active Cooldowns by 0.5 seconds.",
+            "values": [
+              0.5,
+              30
+            ],
+            "multiplierPercents": []
           },
           "tags": [
             "Cooldown",
@@ -87010,7 +88643,14 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x001f931a",
-            "name": "ParagonGlyph_098"
+            "name": "ParagonGlyph_098",
+            "description": "You deal 2%[x] increased damage for each stack of Resolve you have.",
+            "values": [
+              0.02
+            ],
+            "multiplierPercents": [
+              2
+            ]
           },
           "tags": [
             "Strength",
@@ -87075,7 +88715,14 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x001f8c49",
-            "name": "ParagonGlyph_100"
+            "name": "ParagonGlyph_100",
+            "description": "Your Eagle skills deal 25%[x] increased Critical Strike damage.",
+            "values": [
+              0.25
+            ],
+            "multiplierPercents": [
+              25
+            ]
           },
           "tags": [
             "Critical",
@@ -87131,7 +88778,13 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x001f9876",
-            "name": "ParagonGlyph_101"
+            "name": "ParagonGlyph_101",
+            "description": "You gain up to ? Thorns based on your Dodge bonus.",
+            "values": [
+              7.5,
+              null
+            ],
+            "multiplierPercents": []
           },
           "tags": [
             "Strength",
@@ -87196,7 +88849,14 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x001fa028",
-            "name": "ParagonGlyph_102"
+            "name": "ParagonGlyph_102",
+            "description": "Your Centipede Skills deal 15%[x] increased damage to Crowd Controlled enemies.",
+            "values": [
+              0.15
+            ],
+            "multiplierPercents": [
+              15
+            ]
           },
           "tags": [
             "DEXTERITY",
@@ -87261,7 +88921,15 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x0025cf3f",
-            "name": "ParagonGlyph_103"
+            "name": "ParagonGlyph_103",
+            "description": "You deal 1.5%[x] increased damage for each stack of Resolve you have.",
+            "values": [
+              0.015,
+              22
+            ],
+            "multiplierPercents": [
+              1.5
+            ]
           },
           "tags": [
             "Strength",
@@ -87324,7 +88992,12 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x0025cf47",
-            "name": "ParagonGlyph_104"
+            "name": "ParagonGlyph_104",
+            "description": "Skills that Critically Strike generate 1 Faith.",
+            "values": [
+              1
+            ],
+            "multiplierPercents": []
           },
           "tags": [
             "Intelligence",
@@ -87390,7 +89063,15 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x0025d093",
-            "name": "ParagonGlyph_105"
+            "name": "ParagonGlyph_105",
+            "description": "Judging an enemy causes them to take 15%[x] damage from you for 5 seconds.",
+            "values": [
+              0.15,
+              5
+            ],
+            "multiplierPercents": [
+              15
+            ]
           },
           "tags": [
             "Strength",
@@ -87445,7 +89126,15 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x0027f1f8",
-            "name": "ParagonGlyph_106_Paladin"
+            "name": "ParagonGlyph_106_Paladin",
+            "description": "Retribution gains 10%[x] increased damage and \u002B50% increased Size.",
+            "values": [
+              0.1,
+              0.5
+            ],
+            "multiplierPercents": [
+              10
+            ]
           },
           "tags": [
             "Strength",
@@ -87509,7 +89198,17 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x0025d0a0",
-            "name": "ParagonGlyph_106"
+            "name": "ParagonGlyph_106",
+            "description": "You deal 3%[x] increased damage for each second you\u0027ve been in Arbiter form, up to 18%[x].",
+            "values": [
+              0.03,
+              6,
+              0.18
+            ],
+            "multiplierPercents": [
+              3,
+              18
+            ]
           },
           "tags": [
             "Willpower",
@@ -87564,7 +89263,12 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x0025d1d3",
-            "name": "ParagonGlyph_107"
+            "name": "ParagonGlyph_107",
+            "description": "After casting an Aura Skill, the active cooldown of every Non-Aura skill is reduced by 2 seconds.",
+            "values": [
+              2
+            ],
+            "multiplierPercents": []
           },
           "tags": [
             "Strength",
@@ -87629,7 +89333,14 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x0025d1e0",
-            "name": "ParagonGlyph_108"
+            "name": "ParagonGlyph_108",
+            "description": "Deal an additional 20%[x] Non-physical Damage to Elites.",
+            "values": [
+              0.2
+            ],
+            "multiplierPercents": [
+              20
+            ]
           },
           "tags": [
             "Intelligence",
@@ -87696,7 +89407,14 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x0025d1ea",
-            "name": "ParagonGlyph_109"
+            "name": "ParagonGlyph_109",
+            "description": "You deal 5.0%[x] increased damage for each stack of Fervor you have.",
+            "values": [
+              0.05
+            ],
+            "multiplierPercents": [
+              5
+            ]
           },
           "tags": [
             "Willpower",
@@ -87760,7 +89478,14 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x0025d1f2",
-            "name": "ParagonGlyph_110"
+            "name": "ParagonGlyph_110",
+            "description": "Disciple skills deal an additional 15%[x] damage to Vulnerable enemies.",
+            "values": [
+              0.15
+            ],
+            "multiplierPercents": [
+              15
+            ]
           },
           "tags": [
             "Strength",
@@ -87825,7 +89550,14 @@
           "addedBonusScalarPerLevel": 0.1875,
           "bonusPower": {
             "snoId": "0x00269a2c",
-            "name": "ParagonGlyph_111"
+            "name": "ParagonGlyph_111",
+            "description": "You deal 18%[x] increased damage against enemies you have Eviscerated.",
+            "values": [
+              0.18
+            ],
+            "multiplierPercents": [
+              18
+            ]
           },
           "tags": [
             "Willpower",
@@ -87881,7 +89613,14 @@
           "addedBonusScalarPerLevel": 0.1875,
           "bonusPower": {
             "snoId": "0x002699af",
-            "name": "ParagonGlyph_112"
+            "name": "ParagonGlyph_112",
+            "description": "Demonology Skills deal 15%[x] increased damage.",
+            "values": [
+              0.15
+            ],
+            "multiplierPercents": [
+              15
+            ]
           },
           "tags": [
             "Willpower",
@@ -87937,7 +89676,13 @@
           "addedBonusScalarPerLevel": 0.1875,
           "bonusPower": {
             "snoId": "0x00269cbd",
-            "name": "ParagonGlyph_113"
+            "name": "ParagonGlyph_113",
+            "description": "You gain \u002B40% to All Resistances for 10 seconds when one of your Demons dies.",
+            "values": [
+              0.4,
+              10
+            ],
+            "multiplierPercents": []
           },
           "tags": [
             "Willpower",
@@ -88003,7 +89748,15 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x00269d0d",
-            "name": "ParagonGlyph_114"
+            "name": "ParagonGlyph_114",
+            "description": "Hitting an enemy while you have Overpower increases the damage you deal to them by 15%[x] for 10 seconds.",
+            "values": [
+              0.15,
+              10
+            ],
+            "multiplierPercents": [
+              15
+            ]
           },
           "tags": [
             "Intelligence",
@@ -88060,7 +89813,17 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x00269ebd",
-            "name": "ParagonGlyph_115"
+            "name": "ParagonGlyph_115",
+            "description": "After spending 50 Wrath, you deal 10%[x] increased damage and gain 25% increased Wrath Regeneration for 3 seconds.",
+            "values": [
+              50,
+              0.1,
+              0.25,
+              3
+            ],
+            "multiplierPercents": [
+              10
+            ]
           },
           "tags": [
             "Intelligence",
@@ -88125,7 +89888,14 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x0026a085",
-            "name": "ParagonGlyph_116"
+            "name": "ParagonGlyph_116",
+            "description": "Skills empowered by Volatility deal an additional 15%[x] damage.",
+            "values": [
+              0.15
+            ],
+            "multiplierPercents": [
+              15
+            ]
           },
           "tags": [
             "Intelligence",
@@ -88193,7 +89963,14 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x0026a0ec",
-            "name": "ParagonGlyph_117"
+            "name": "ParagonGlyph_117",
+            "description": "Increase damage to Vulnerable targets by 15%[x].",
+            "values": [
+              0.15
+            ],
+            "multiplierPercents": [
+              15
+            ]
           },
           "tags": [
             "Willpower",
@@ -88260,7 +90037,12 @@
           "addedBonusScalarPerLevel": 0.1875,
           "bonusPower": {
             "snoId": "0x0026a297",
-            "name": "ParagonGlyph_118"
+            "name": "ParagonGlyph_118",
+            "description": "You gain \u002B35% increased Armor.",
+            "values": [
+              0.35
+            ],
+            "multiplierPercents": []
           },
           "tags": [
             "Willpower",
@@ -88324,7 +90106,12 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x0026a2a3",
-            "name": "ParagonGlyph_119"
+            "name": "ParagonGlyph_119",
+            "description": "Skills that Critically Strike generate 1 Wrath.",
+            "values": [
+              1
+            ],
+            "multiplierPercents": []
           },
           "tags": [
             "Willpower",
@@ -88389,7 +90176,17 @@
           "addedBonusScalarPerLevel": 0.1875,
           "bonusPower": {
             "snoId": "0x0026a2fc",
-            "name": "ParagonGlyph_120"
+            "name": "ParagonGlyph_120",
+            "description": "Dealing damage to a Vulnerable target increases your damage by 3%[x] for 20 seconds, up to 18%[x].",
+            "values": [
+              0.03,
+              20,
+              6
+            ],
+            "multiplierPercents": [
+              3,
+              18
+            ]
           },
           "tags": [
             "Willpower",
@@ -88454,7 +90251,14 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x0026a3c1",
-            "name": "ParagonGlyph_121"
+            "name": "ParagonGlyph_121",
+            "description": "Skills empowered by Volatility deal an additional 15%[x] damage.",
+            "values": [
+              0.15
+            ],
+            "multiplierPercents": [
+              15
+            ]
           },
           "tags": [
             "Intelligence",
@@ -88519,7 +90323,14 @@
           "addedBonusScalarPerLevel": 0.1875,
           "bonusPower": {
             "snoId": "0x0026a622",
-            "name": "ParagonGlyph_122"
+            "name": "ParagonGlyph_122",
+            "description": "You deal 18%[x] increased damage against Close enemies.",
+            "values": [
+              0.18
+            ],
+            "multiplierPercents": [
+              18
+            ]
           },
           "tags": [
             "Willpower",
@@ -88584,7 +90395,14 @@
           "addedBonusScalarPerLevel": 0.1875,
           "bonusPower": {
             "snoId": "0x0026a662",
-            "name": "ParagonGlyph_123"
+            "name": "ParagonGlyph_123",
+            "description": "You deal 18%[x] increased damage while in Shadowform.",
+            "values": [
+              0.18
+            ],
+            "multiplierPercents": [
+              18
+            ]
           },
           "tags": [
             "Willpower",
@@ -88650,7 +90468,14 @@
           "addedBonusScalarPerLevel": 0.1875,
           "bonusPower": {
             "snoId": "0x0026a690",
-            "name": "ParagonGlyph_124"
+            "name": "ParagonGlyph_124",
+            "description": "Demonform increases your Demonology Skill damage by 14%[x].",
+            "values": [
+              0.14
+            ],
+            "multiplierPercents": [
+              14
+            ]
           },
           "tags": [
             "Willpower",
@@ -88715,7 +90540,16 @@
           "addedBonusScalarPerLevel": 0.1875,
           "bonusPower": {
             "snoId": "0x0026a6cb",
-            "name": "ParagonGlyph_125"
+            "name": "ParagonGlyph_125",
+            "description": "You deal 15%[x] increased damage to Slowed or Taunted enemies or instead deal 30%[x] increased damage to Tethered or Knocked Down enemies.",
+            "values": [
+              0.15,
+              0.3
+            ],
+            "multiplierPercents": [
+              15,
+              30
+            ]
           },
           "tags": [
             "Willpower",
@@ -88781,7 +90615,16 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x0026a7f0",
-            "name": "ParagonGlyph_126"
+            "name": "ParagonGlyph_126",
+            "description": "Each Hex stack increases Abyss Skill damage taken by enemies up to 8%[x] based on their missing Life.",
+            "values": [
+              10,
+              5,
+              0.08
+            ],
+            "multiplierPercents": [
+              8
+            ]
           },
           "tags": [
             "Willpower",
@@ -88838,7 +90681,17 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x0026a82b",
-            "name": "ParagonGlyph_127"
+            "name": "ParagonGlyph_127",
+            "description": "Hits from Archfiend Skills increase the damage enemies take by 4%[x] for 20 seconds, stacking up to 20%[x].",
+            "values": [
+              0.04,
+              20,
+              5
+            ],
+            "multiplierPercents": [
+              4,
+              20
+            ]
           },
           "tags": [
             "Intelligence",
@@ -88903,7 +90756,14 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x0026a859",
-            "name": "ParagonGlyph_128"
+            "name": "ParagonGlyph_128",
+            "description": "You gain 17%[x] increased damage while you have a Greater Demon summoned.",
+            "values": [
+              0.17
+            ],
+            "multiplierPercents": [
+              17
+            ]
           },
           "tags": [
             "Willpower",
@@ -88968,7 +90828,14 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x0026a961",
-            "name": "ParagonGlyph_129"
+            "name": "ParagonGlyph_129",
+            "description": "Your Occult Skills deal 15%[x] increased damage while you have any Overpower.",
+            "values": [
+              0.15
+            ],
+            "multiplierPercents": [
+              15
+            ]
           },
           "tags": [
             "Willpower",
@@ -89034,7 +90901,13 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x0027fc5e",
-            "name": "ParagonGlyph_130"
+            "name": "ParagonGlyph_130",
+            "description": "You gain 20% Dodge Chance for 3 seconds after creating an Arrow Storm.",
+            "values": [
+              0.2,
+              3
+            ],
+            "multiplierPercents": []
           },
           "tags": [
             "DEXTERITY",
@@ -89101,7 +90974,15 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x0027fc70",
-            "name": "ParagonGlyph_131"
+            "name": "ParagonGlyph_131",
+            "description": "You gain 20%[x] Cast Speed for 3 seconds after using a Shade Skill.",
+            "values": [
+              0.2,
+              3
+            ],
+            "multiplierPercents": [
+              20
+            ]
           },
           "tags": [
             "Intelligence",
@@ -89165,7 +91046,15 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x00280830",
-            "name": "ParagonGlyph_132"
+            "name": "ParagonGlyph_132",
+            "description": "You deal 25%[x] increased damage to Elites with Cutthroat and Marksman Skills.",
+            "values": [
+              0.25,
+              0.25
+            ],
+            "multiplierPercents": [
+              25
+            ]
           },
           "tags": [
             "Strength",
@@ -89222,7 +91111,15 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x0028c3f3",
-            "name": "ParagonGlyph_133"
+            "name": "ParagonGlyph_133",
+            "description": "You gain 10% Damage Reduction and your Dominance Regeneration is increased by 2.0% of your most recent Dominance spend.",
+            "values": [
+              null,
+              0.1,
+              0.02,
+              null
+            ],
+            "multiplierPercents": []
           },
           "tags": [
             "Intelligence",
@@ -89278,7 +91175,14 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x001fa0b3",
-            "name": "ParagonGlyph_DamageElite"
+            "name": "ParagonGlyph_DamageElite",
+            "description": "You deal 18%[x] increased damage to Elites.",
+            "values": [
+              0.18
+            ],
+            "multiplierPercents": [
+              18
+            ]
           },
           "tags": [
             "DEXTERITY",
@@ -89334,7 +91238,14 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x001fa0b3",
-            "name": "ParagonGlyph_DamageElite"
+            "name": "ParagonGlyph_DamageElite",
+            "description": "You deal 18%[x] increased damage to Elites.",
+            "values": [
+              0.18
+            ],
+            "multiplierPercents": [
+              18
+            ]
           },
           "tags": [
             "Intelligence",
@@ -89391,7 +91302,14 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x001fa0b3",
-            "name": "ParagonGlyph_DamageElite"
+            "name": "ParagonGlyph_DamageElite",
+            "description": "You deal 18%[x] increased damage to Elites.",
+            "values": [
+              0.18
+            ],
+            "multiplierPercents": [
+              18
+            ]
           },
           "tags": [
             "Strength",
@@ -89448,7 +91366,14 @@
           "addedBonusScalarPerLevel": 0,
           "bonusPower": {
             "snoId": "0x001fa0b3",
-            "name": "ParagonGlyph_DamageElite"
+            "name": "ParagonGlyph_DamageElite",
+            "description": "You deal 18%[x] increased damage to Elites.",
+            "values": [
+              0.18
+            ],
+            "multiplierPercents": [
+              18
+            ]
           },
           "tags": [
             "DEXTERITY",
