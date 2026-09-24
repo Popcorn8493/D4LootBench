@@ -5,6 +5,7 @@ using System.Text.Json.Serialization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using D4LootBench.Ai;
+using D4LootBench.Ai.Providers;
 using D4LootBench.App.Services;
 using D4LootBench.Core.Models;
 
@@ -229,12 +230,34 @@ public partial class AiAssistantViewModel : ObservableObject
 
         try
         {
-            var provider   = LlmProviderFactory.Create(tempSettings);
-            var completion = await provider.GetCompletionAsync(
-                "Respond with: {\"ok\":true}", "ping", ct);
-
-            StatusText = completion.IsSuccess ? "Connection OK." : $"Failed: {completion.Error}";
-            HasError   = !completion.IsSuccess;
+            var provider = LlmProviderFactory.Create(tempSettings);
+            if (provider is OllamaProvider ollama)
+            {
+                // Metadata only: a real generation would first load the model, which for a large
+                // model (or one sharing the GPU with the game) takes minutes and looks hung.
+                var status = await ollama.CheckAsync(ct);
+                (StatusText, HasError) = status switch
+                {
+                    { Reachable: false } =>
+                        ($"{status.Error} — is Ollama running? Start it from the Start menu, then test again.", true),
+                    { ModelInstalled: false } =>
+                        ($"Connected, but model '{ModelName}' isn't installed. " +
+                         (status.InstalledModels.Count > 0
+                             ? $"Installed: {string.Join(", ", status.InstalledModels)} — pick one, or run: ollama pull {ModelName}"
+                             : $"No models installed yet — run: ollama pull {ModelName}"), true),
+                    _ =>
+                        ($"Connected — '{ModelName}' is installed{(status.IsThinkingModel ? " (thinking model; reasoning is switched off for rule generation)" : "")}. " +
+                         "The first rule request loads the model into memory, which can take a few minutes for large " +
+                         "models; later requests are much faster.", false),
+                };
+            }
+            else
+            {
+                var completion = await provider.GetCompletionAsync(
+                    "Respond with: {\"ok\":true}", "ping", ct);
+                StatusText = completion.IsSuccess ? "Connection OK." : $"Failed: {completion.Error}";
+                HasError   = !completion.IsSuccess;
+            }
         }
         catch (OperationCanceledException)
         {

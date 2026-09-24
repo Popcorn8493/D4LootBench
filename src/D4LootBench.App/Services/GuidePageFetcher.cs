@@ -28,12 +28,21 @@ public static class GuidePageFetcher
     /// in-box builds lack %{stderr}), and the marker can't plausibly occur in page content.</summary>
     internal const string StatusMarker = "\n<<D4LB_HTTP_STATUS:";
 
+    /// <summary>
+    /// Fetches a page in a real (embedded) browser — set by the app at startup. Used when a site
+    /// answers with a Cloudflare JavaScript challenge, which no plain HTTP client can pass.
+    /// Null (tests, headless use) keeps the HTTP error.
+    /// </summary>
+    public static Func<string, CancellationToken, Task<string>>? BrowserFallback { get; set; }
+
     public static async Task<string> FetchPageAsync(string url, CancellationToken cancellationToken = default)
     {
         string curl = Path.Combine(Environment.SystemDirectory, "curl.exe");
         if (File.Exists(curl))
         {
             var (exitCode, status, body) = await RunCurlAsync(curl, url, cancellationToken);
+            if (status >= 400 && IsCloudflareChallenge(body) && BrowserFallback is { } browser)
+                return await browser(url, cancellationToken);
             if (status >= 400)
                 throw HttpError(status, url);
             if (exitCode == 0 && status is >= 200 and < 400 && body.Length > 0)
@@ -44,9 +53,20 @@ public static class GuidePageFetcher
 
         using var response = await Http.GetAsync(url, cancellationToken);
         if (!response.IsSuccessStatusCode)
+        {
+            if (BrowserFallback is { } browser
+                && IsCloudflareChallenge(await response.Content.ReadAsStringAsync(cancellationToken)))
+                return await browser(url, cancellationToken);
             throw HttpError((int)response.StatusCode, url);
+        }
         return await response.Content.ReadAsStringAsync(cancellationToken);
     }
+
+    /// <summary>A Cloudflare interstitial ("Just a moment…" JavaScript challenge) instead of the page.</summary>
+    internal static bool IsCloudflareChallenge(string body) =>
+        body.Contains("<title>Just a moment", StringComparison.OrdinalIgnoreCase)
+        || body.Contains("cf_chl", StringComparison.Ordinal)
+        || body.Contains("challenge-platform", StringComparison.Ordinal);
 
     private static HttpRequestException HttpError(int status, string url)
     {

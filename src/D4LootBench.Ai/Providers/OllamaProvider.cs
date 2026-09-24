@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Net.Http.Json;
 using System.Text.Json;
 
@@ -22,7 +23,14 @@ public sealed class OllamaProvider : ILlmProvider, IDisposable
 
     private static readonly HttpClient SharedHttp = new() { Timeout = Timeout.InfiniteTimeSpan };
 
+    /// <summary>Lookups (tags, model capabilities) are quick metadata calls — never minutes.</summary>
+    private static readonly TimeSpan MetadataTimeout = TimeSpan.FromSeconds(5);
+
+    /// <summary>Whether a model thinks, per server + model; only successful lookups are cached.</summary>
+    private static readonly ConcurrentDictionary<string, bool> ThinkingSupport = new(StringComparer.OrdinalIgnoreCase);
+
     private readonly HttpClient _http;
+    private readonly Uri _baseUri;
     private readonly Uri _chatUri;
     private readonly string _model;
 
@@ -33,7 +41,8 @@ public sealed class OllamaProvider : ILlmProvider, IDisposable
     {
         _model   = settings.ModelName;
         _http    = http;
-        _chatUri = new Uri(new Uri(settings.BaseUrl.TrimEnd('/') + "/"), "api/chat");
+        _baseUri = new Uri(settings.BaseUrl.TrimEnd('/') + "/");
+        _chatUri = new Uri(_baseUri, "api/chat");
     }
 
     /// <summary>Per-request timeout (default <see cref="DefaultRequestTimeout"/>).</summary>
@@ -42,15 +51,15 @@ public sealed class OllamaProvider : ILlmProvider, IDisposable
     public async Task<LlmCompletion> GetCompletionAsync(
         string systemPrompt, string userPrompt, CancellationToken ct = default)
     {
-        var body = new
+        var body = new Dictionary<string, object>
         {
-            model    = _model,
-            messages = new[]
+            ["model"]    = _model,
+            ["messages"] = new[]
             {
                 new { role = "system", content = systemPrompt },
                 new { role = "user",   content = userPrompt   }
             },
-            format = new
+            ["format"] = new
             {
                 type       = "object",
                 required   = new[] { "name", "visibility", "conditions" },
@@ -61,9 +70,21 @@ public sealed class OllamaProvider : ILlmProvider, IDisposable
                     conditions = new { type = "array", items = new { type = "object" } }
                 }
             },
-            stream  = false,
-            options = new { temperature = 0.1 }
+            ["stream"]  = false,
+            ["options"] = new { temperature = 0.1 },
         };
+        // Thinking models (qwen3, deepseek-r1 …) reason before answering by default — several
+        // times slower for no gain on a schema-constrained JSON task. "think" is only sent to
+        // models that support it; older servers and other models may reject the field.
+        try
+        {
+            if (await SupportsThinkingAsync(ct))
+                body["think"] = false;
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            return LlmCompletion.Fail("Request cancelled.");
+        }
 
         using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         timeoutCts.CancelAfter(RequestTimeout);
@@ -107,6 +128,81 @@ public sealed class OllamaProvider : ILlmProvider, IDisposable
         }
     }
 
+    /// <summary>
+    /// A quick health check for the settings screen — server reachable, model installed, and
+    /// whether it's a thinking model — using metadata calls only. It deliberately doesn't run a
+    /// generation: loading a large model can take minutes, which reads as a hung test.
+    /// </summary>
+    public async Task<OllamaStatus> CheckAsync(CancellationToken ct = default)
+    {
+        IReadOnlyList<string> installed;
+        try
+        {
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            timeout.CancelAfter(MetadataTimeout);
+            using var response = await _http.GetAsync(new Uri(_baseUri, "api/tags"), timeout.Token);
+            if (!response.IsSuccessStatusCode)
+                return new OllamaStatus(false, false, [], false, $"Ollama returned {(int)response.StatusCode}.");
+            using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync(timeout.Token));
+            installed = doc.RootElement.TryGetProperty("models", out var models)
+                ? models.EnumerateArray()
+                    .Select(m => m.TryGetProperty("name", out var n) ? n.GetString() : null)
+                    .OfType<string>()
+                    .ToList()
+                : [];
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException or JsonException)
+        {
+            return new OllamaStatus(false, false, [], false,
+                $"Can't reach Ollama at {_baseUri.GetLeftPart(UriPartial.Authority)}: {ex.Message}");
+        }
+
+        bool modelInstalled = installed.Any(name => SameModel(name, _model));
+        bool thinking = modelInstalled && await SupportsThinkingAsync(ct);
+        return new OllamaStatus(true, modelInstalled, installed, thinking, null);
+    }
+
+    /// <summary>"qwen3.8" and "qwen3.8:latest" name the same model.</summary>
+    private static bool SameModel(string installed, string configured) =>
+        string.Equals(installed, configured, StringComparison.OrdinalIgnoreCase)
+        || string.Equals(installed, configured + ":latest", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Whether the configured model lists the "thinking" capability (POST /api/show).
+    /// Unknown (server too old, lookup failed) reads as false and isn't cached.</summary>
+    private async Task<bool> SupportsThinkingAsync(CancellationToken ct)
+    {
+        string key = _baseUri + "|" + _model;
+        if (ThinkingSupport.TryGetValue(key, out bool known))
+            return known;
+        try
+        {
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            timeout.CancelAfter(MetadataTimeout);
+            using var response = await _http.PostAsJsonAsync(
+                new Uri(_baseUri, "api/show"), new { model = _model }, timeout.Token);
+            if (!response.IsSuccessStatusCode)
+                return false;
+            using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync(timeout.Token));
+            bool thinking = doc.RootElement.TryGetProperty("capabilities", out var caps)
+                && caps.ValueKind == JsonValueKind.Array
+                && caps.EnumerateArray().Any(c => c.GetString() == "thinking");
+            ThinkingSupport[key] = thinking;
+            return thinking;
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException or JsonException)
+        {
+            return false;
+        }
+    }
+
     /// <summary>Strips markdown code fences some models add even in JSON mode.</summary>
     internal static string StripFences(string content)
     {
@@ -120,3 +216,7 @@ public sealed class OllamaProvider : ILlmProvider, IDisposable
     /// <summary>No-op: the shared <see cref="HttpClient"/> lives for the process.</summary>
     public void Dispose() { }
 }
+
+/// <summary>Result of <see cref="OllamaProvider.CheckAsync"/>.</summary>
+public sealed record OllamaStatus(
+    bool Reachable, bool ModelInstalled, IReadOnlyList<string> InstalledModels, bool IsThinkingModel, string? Error);

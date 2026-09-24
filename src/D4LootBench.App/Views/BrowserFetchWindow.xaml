@@ -1,0 +1,21 @@
+<Window
+    x:Class="D4LootBench.App.Views.BrowserFetchWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+    Title="Loading guide page…"
+    Height="640" Width="900" MinHeight="360" MinWidth="520"
+    WindowStartupLocation="CenterOwner"
+    ShowInTaskbar="False">
+
+    <DockPanel>
+        <Border DockPanel.Dock="Top" Padding="12,8">
+            <DockPanel>
+                <Button DockPanel.Dock="Right" Content="Cancel" Padding="10,2" Click="OnCancel" />
+                <TextBlock x:Name="StatusText" VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,0,12,0"
+                           Text="The site asked for a browser check. This window passes it like your browser would — if a checkbox appears, click it. The import continues automatically once the page loads." />
+            </DockPanel>
+        </Border>
+        <wv2:WebView2 x:Name="Browser" />
+    </DockPanel>
+</Window>

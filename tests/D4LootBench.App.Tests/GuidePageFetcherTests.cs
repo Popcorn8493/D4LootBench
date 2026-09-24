@@ -51,4 +51,14 @@ public sealed class GuidePageFetcherTests
         status.ShouldBe(200);
         body.ShouldBe(page);
     }
+
+    [Theory]
+    [InlineData("<!DOCTYPE html><html><head><title>Just a moment...</title></head></html>", true)]
+    [InlineData("<script src=\"/cdn-cgi/challenge-platform/h/g/orchestrate/chl_page/v1\"></script>", true)]
+    [InlineData("<html><head><title>Whirlwind Barbarian Build</title></head><body>equipmentPriorityList</body></html>", false)]
+    [InlineData("<html><body>403 Forbidden</body></html>", false)]
+    public void Cloudflare_challenge_pages_are_recognized(string body, bool isChallenge)
+    {
+        GuidePageFetcher.IsCloudflareChallenge(body).ShouldBe(isChallenge);
+    }
 }

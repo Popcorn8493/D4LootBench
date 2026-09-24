@@ -83,6 +83,11 @@ public partial class BuildGuideImportViewModel(
         {
             // The dialog closed mid-fetch — nobody is waiting for the result.
         }
+        catch (OperationCanceledException)
+        {
+            SetError("Loading the page was cancelled. Try again, or open the build in a browser, view the " +
+                     "page source (Ctrl+U), copy it all, and paste the HTML here instead.");
+        }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
         {
             SetError($"Couldn't fetch the page ({ex.Message}). Open the build in a browser, view the " +

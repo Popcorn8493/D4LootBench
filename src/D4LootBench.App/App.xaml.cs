@@ -20,6 +20,14 @@ public partial class App
 
         Services = ServiceConfiguration.Build();
         FilterDataContext.Set(Services.GetRequiredService<IFilterDataService>());
+        // Guide sites behind a Cloudflare JavaScript challenge (Mobalytics) can only be read by
+        // a real browser: the fetcher falls back to an embedded one, shown on the UI thread and
+        // owned by the window the user is working in.
+        GuidePageFetcher.BrowserFallback = (url, cancellationToken) =>
+            Dispatcher.InvokeAsync(() => Views.BrowserFetchWindow.FetchAsync(
+                url,
+                Current.Windows.OfType<Window>().FirstOrDefault(w => w.IsActive) ?? Current.MainWindow,
+                cancellationToken)).Task.Unwrap();
         base.OnStartup(e);
 
         var window = Services.GetRequiredService<MainWindow>();
