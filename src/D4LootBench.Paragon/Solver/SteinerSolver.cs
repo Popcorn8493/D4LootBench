@@ -1,3 +1,4 @@
+using System.Buffers;
 using D4LootBench.Paragon.Models;
 
 namespace D4LootBench.Paragon.Solver;
@@ -80,94 +81,103 @@ public static class SteinerSolver
         int n = graph.Vertices.Count;
         int k = terminals.Count;
         int full = (1 << k) - 1;
+        var adjacency = graph.Adjacency;
 
-        var dp = new int[full + 1][];
-        // parent[S][v]: how dp[S][v] was achieved — merge of (S1,v)+(S2,v), or grow from (S,u).
-        var parent = new (int Kind, int A, int B)[full + 1][]; // Kind 0=base, 1=merge(A=subset), 2=grow(A=vertex)
-        for (int s = 1; s <= full; s++)
+        // Flat (subset × vertex) tables rented from the pool: at k = 10 they run ~1000·n ints
+        // each, and the placement search solves hundreds of candidates in parallel.
+        // parent packs how dp[S][v] was achieved: 0 = base, > 0 = grown from vertex (p - 1),
+        // < 0 = merge of subset (-p) with its complement at v.
+        int size = (full + 1) * n;
+        int[] dp = ArrayPool<int>.Shared.Rent(size);
+        int[] parent = ArrayPool<int>.Shared.Rent(size);
+        try
         {
-            dp[s] = new int[n];
-            parent[s] = new (int, int, int)[n];
-            Array.Fill(dp[s], Infinity);
-        }
+            Array.Fill(dp, Infinity, 0, size);
+            Array.Clear(parent, 0, size);
 
-        for (int t = 0; t < k; t++)
-        {
-            dp[1 << t][terminals[t]] = weights[terminals[t]];
-        }
+            for (int t = 0; t < k; t++)
+                dp[(1 << t) * n + terminals[t]] = weights[terminals[t]];
 
-        var queue = new PriorityQueue<int, int>();
-        for (int s = 1; s <= full; s++)
-        {
-            var dpS = dp[s];
-            for (int sub = (s - 1) & s; sub > 0; sub = (sub - 1) & s)
+            var queue = new PriorityQueue<int, int>();
+            for (int s = 1; s <= full; s++)
             {
-                if (sub < (s ^ sub))
-                    break; // each unordered split visited once
-                var dpA = dp[sub];
-                var dpB = dp[s ^ sub];
+                var dpS = dp.AsSpan(s * n, n);
+                var parentS = parent.AsSpan(s * n, n);
+                for (int sub = (s - 1) & s; sub > 0; sub = (sub - 1) & s)
+                {
+                    if (sub < (s ^ sub))
+                        break; // each unordered split visited once
+                    var dpA = dp.AsSpan(sub * n, n);
+                    var dpB = dp.AsSpan((s ^ sub) * n, n);
+                    for (int v = 0; v < n; v++)
+                    {
+                        if (dpA[v] >= Infinity || dpB[v] >= Infinity)
+                            continue;
+                        int cost = dpA[v] + dpB[v] - weights[v];
+                        if (cost < dpS[v])
+                        {
+                            dpS[v] = cost;
+                            parentS[v] = -sub;
+                        }
+                    }
+                }
+
+                // Grow step: Dijkstra relaxation, paying the weight of each vertex entered.
+                queue.Clear();
                 for (int v = 0; v < n; v++)
                 {
-                    if (dpA[v] >= Infinity || dpB[v] >= Infinity)
-                        continue;
-                    int cost = dpA[v] + dpB[v] - weights[v];
-                    if (cost < dpS[v])
-                    {
-                        dpS[v] = cost;
-                        parent[s][v] = (1, sub, 0);
-                    }
+                    if (dpS[v] < Infinity)
+                        queue.Enqueue(v, dpS[v]);
                 }
-            }
-
-            // Grow step: Dijkstra relaxation, paying the weight of each vertex entered.
-            queue.Clear();
-            for (int v = 0; v < n; v++)
-            {
-                if (dpS[v] < Infinity)
-                    queue.Enqueue(v, dpS[v]);
-            }
-            while (queue.TryDequeue(out int v, out int cost))
-            {
-                if (cost > dpS[v])
-                    continue;
-                foreach (int u in graph.Adjacency[v])
+                int offset = s * n;
+                while (queue.TryDequeue(out int v, out int cost))
                 {
-                    if (blocked[u])
+                    if (cost > dp[offset + v])
                         continue;
-                    int next = cost + weights[u];
-                    if (next < dpS[u])
+                    foreach (int u in adjacency[v])
                     {
-                        dpS[u] = next;
-                        parent[s][u] = (2, v, 0);
-                        queue.Enqueue(u, next);
+                        if (blocked[u])
+                            continue;
+                        int next = cost + weights[u];
+                        if (next < dp[offset + u])
+                        {
+                            dp[offset + u] = next;
+                            parent[offset + u] = v + 1;
+                            queue.Enqueue(u, next);
+                        }
                     }
                 }
             }
+
+            if (dp[full * n + graph.StartVertex] >= Infinity)
+                return null;
+
+            var chosen = new HashSet<int> { graph.StartVertex };
+            var stack = new Stack<(int S, int V)>();
+            stack.Push((full, graph.StartVertex));
+            while (stack.Count > 0)
+            {
+                var (s, v) = stack.Pop();
+                chosen.Add(v);
+                int how = parent[s * n + v];
+                if (how < 0)
+                {
+                    stack.Push((-how, v));
+                    stack.Push((s ^ -how, v));
+                }
+                else if (how > 0)
+                {
+                    stack.Push((s, how - 1));
+                }
+                // 0: single-terminal base case — nothing to expand.
+            }
+            return chosen;
         }
-
-        if (dp[full][graph.StartVertex] >= Infinity)
-            return null;
-
-        var chosen = new HashSet<int> { graph.StartVertex };
-        var stack = new Stack<(int S, int V)>();
-        stack.Push((full, graph.StartVertex));
-        while (stack.Count > 0)
+        finally
         {
-            var (s, v) = stack.Pop();
-            chosen.Add(v);
-            var (kind, a, _) = parent[s][v];
-            if (kind == 1)
-            {
-                stack.Push((a, v));
-                stack.Push((s ^ a, v));
-            }
-            else if (kind == 2)
-            {
-                stack.Push((s, a));
-            }
-            // kind 0: single-terminal base case — nothing to expand.
+            ArrayPool<int>.Shared.Return(dp);
+            ArrayPool<int>.Shared.Return(parent);
         }
-        return chosen;
     }
 
     /// <summary>

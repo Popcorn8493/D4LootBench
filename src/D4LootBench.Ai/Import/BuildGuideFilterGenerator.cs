@@ -52,6 +52,14 @@ public sealed class BuildGuideFilterGenerator(NameResolver nameResolver)
             outputRules.Add(new FilterRule("Target Uniques", Visibility.Show, ColorUnique,
                 [new SpecificUniqueCondition(uniqueIds)]));
 
+        // Game-enforced 25-rule cap: keep the trailing Hide All, drop the lowest-priority slot rules.
+        int slotBudget = FilterRuleset.MaxRuleCount - outputRules.Count - 1;
+        if (slotRules.Count > slotBudget)
+        {
+            warnings.Add($"Guide produced {slotRules.Count} slot rules; kept the first {slotBudget} " +
+                $"to stay within the game's {FilterRuleset.MaxRuleCount}-rule limit.");
+            slotRules = slotRules.Take(slotBudget).ToList();
+        }
         outputRules.AddRange(slotRules);
 
         outputRules.Add(new FilterRule("Hide All", Visibility.HideAll, ColorHideAll, []));

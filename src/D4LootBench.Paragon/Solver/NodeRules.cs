@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using D4LootBench.Paragon.Models;
 
 namespace D4LootBench.Paragon.Solver;
@@ -75,8 +76,16 @@ public static class NodeGrouping
         }
     }
 
-    /// <summary>Distinct groups present in a composed layout, ordered by kind then name.</summary>
-    public static IReadOnlyList<NodeGroup> GroupsIn(ComposedGraph graph)
+    private static readonly ConditionalWeakTable<ComposedGraph, IReadOnlyList<NodeGroup>> GroupsCache = new();
+    private static readonly ConditionalWeakTable<ComposedGraph, IReadOnlyList<NodeGroup>> StatGroupsCache = new();
+    private static readonly ConditionalWeakTable<ComposedGraph, IReadOnlyDictionary<string, IReadOnlyList<CellRef>>>
+        CellsByGroupCache = new();
+
+    /// <summary>Distinct groups present in a composed layout, ordered by kind then name.
+    /// Cached per graph (graphs are immutable).</summary>
+    public static IReadOnlyList<NodeGroup> GroupsIn(ComposedGraph graph) => GroupsCache.GetValue(graph, BuildGroupsIn);
+
+    private static IReadOnlyList<NodeGroup> BuildGroupsIn(ComposedGraph graph)
     {
         var groups = new Dictionary<string, (string DisplayName, ParagonNodeKind Kind, int Count)>();
         foreach (var vertex in graph.Vertices)
@@ -100,7 +109,10 @@ public static class NodeGrouping
     /// (an attribute confined to a single group is already coverable by that group's row).
     /// Threshold-gated grants count too — a conditional +Life node is still a Life node.
     /// </summary>
-    public static IReadOnlyList<NodeGroup> StatGroupsIn(ComposedGraph graph)
+    public static IReadOnlyList<NodeGroup> StatGroupsIn(ComposedGraph graph) =>
+        StatGroupsCache.GetValue(graph, BuildStatGroupsIn);
+
+    private static IReadOnlyList<NodeGroup> BuildStatGroupsIn(ComposedGraph graph)
     {
         var byAttribute = new Dictionary<string, (int Cells, HashSet<string> Groups)>(StringComparer.OrdinalIgnoreCase);
         foreach (var vertex in graph.Vertices)
@@ -126,8 +138,12 @@ public static class NodeGrouping
             .ToList();
     }
 
-    /// <summary>Cells of the layout belonging to each group key, including "Stat:" groups.</summary>
-    public static IReadOnlyDictionary<string, IReadOnlyList<CellRef>> CellsByGroup(ComposedGraph graph)
+    /// <summary>Cells of the layout belonging to each group key, including "Stat:" groups.
+    /// Cached per graph (graphs are immutable).</summary>
+    public static IReadOnlyDictionary<string, IReadOnlyList<CellRef>> CellsByGroup(ComposedGraph graph) =>
+        CellsByGroupCache.GetValue(graph, BuildCellsByGroup);
+
+    private static IReadOnlyDictionary<string, IReadOnlyList<CellRef>> BuildCellsByGroup(ComposedGraph graph)
     {
         var cells = new Dictionary<string, IReadOnlyList<CellRef>>();
         void Add(string key, CellRef cell)

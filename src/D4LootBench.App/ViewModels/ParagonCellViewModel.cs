@@ -31,10 +31,14 @@ public partial class ParagonCellViewModel : ObservableObject
     public string Kind => Node.Kind.ToString();
     public bool IsStart => Node.Kind == ParagonNodeKind.Start;
 
+    /// <summary>Built on demand when the cell's tooltip opens (the view reads it lazily).</summary>
     public string ToolTipText => string.Join(
         Environment.NewLine + Environment.NewLine,
-        new[] { Paragon.ParagonDisplay.DescribeNode(Node), BuffInfo, DynamicInfo }
+        new[] { _description ??= Paragon.ParagonDisplay.DescribeNode(Node), BuffInfo, DynamicInfo }
             .Where(part => !string.IsNullOrEmpty(part)));
+
+    /// <summary>The static node description — the node never changes, so it's formatted once.</summary>
+    private string? _description;
 
     /// <summary>Live extra tooltip lines: threshold math on rares, the socketed glyph on sockets.</summary>
     [ObservableProperty]

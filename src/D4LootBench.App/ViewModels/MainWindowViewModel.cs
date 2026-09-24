@@ -15,7 +15,6 @@ using D4LootBench.Core.Import;
 using D4LootBench.Core.Models;
 using D4LootBench.Core.Serialization;
 using D4LootBench.Core.Validation;
-using Microsoft.Win32;
 
 namespace D4LootBench.App.ViewModels;
 
@@ -25,6 +24,7 @@ public partial class MainWindowViewModel : ObservableObject
     private readonly IFilterValidator _validator;
     private readonly BuildGuideImporter _buildGuideImporter;
     private readonly BuildGuideFilterGenerator _buildGuideGenerator;
+    private readonly IDialogService _dialogs;
 
     public AiAssistantViewModel AiAssistant { get; }
 
@@ -40,12 +40,14 @@ public partial class MainWindowViewModel : ObservableObject
         RuleAssistant ruleAssistant,
         LlmSettingsService llmSettings,
         BuildGuideImporter buildGuideImporter,
-        BuildGuideFilterGenerator buildGuideGenerator)
+        BuildGuideFilterGenerator buildGuideGenerator,
+        IDialogService dialogs)
     {
         _conditionFactory    = conditionFactory;
         _validator           = validator;
         _buildGuideImporter  = buildGuideImporter;
         _buildGuideGenerator = buildGuideGenerator;
+        _dialogs             = dialogs;
 
         AiAssistant = new AiAssistantViewModel(
             ruleAssistant, llmSettings,
@@ -121,7 +123,18 @@ public partial class MainWindowViewModel : ObservableObject
     private void ShowAbout() => ShowAboutRequested?.Invoke();
 
     [RelayCommand]
-    private async Task ExtractGameDataAsync() => await GameDataHelper.ExtractAsync();
+    private async Task ExtractGameDataAsync()
+    {
+        try
+        {
+            await GameDataHelper.ExtractAsync(_dialogs);
+        }
+        catch (Exception ex)
+        {
+            ErrorLog.Write(ex, "Extracting game data");
+            SetStatus($"Extracting the game data failed: {ex.Message}", error: true);
+        }
+    }
 
     [RelayCommand]
     private void ReportIssue() =>
@@ -134,7 +147,7 @@ public partial class MainWindowViewModel : ObservableObject
     private void NewFilter()
     {
         RefreshIssues(ValidationResult.Empty);
-        Editor = new VisualEditorViewModel(_conditionFactory,new FilterRuleset("New Filter", []));
+        Editor = NewEditor(new FilterRuleset("New Filter", []));
         SetStatus("New filter created.", error: false);
     }
 
@@ -143,26 +156,23 @@ public partial class MainWindowViewModel : ObservableObject
     [RelayCommand]
     private void ImportFromBuildGuide()
     {
-        var dlg = new BuildGuideImportDialog(_buildGuideImporter, _buildGuideGenerator)
-        {
-            Owner = Application.Current.MainWindow
-        };
-
-        if (dlg.ShowDialog() != true) return;
+        var dlg = new BuildGuideImportDialog(_buildGuideImporter, _buildGuideGenerator);
+        if (_dialogs.ShowDialog(dlg, this) != true) return;
 
         if (Editor is not null)
         {
-            var confirm = MessageBox.Show(
+            var confirm = _dialogs.ShowMessage(
                 "This will replace your current filter. Continue?",
                 "Import from Build Guide",
                 MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
+                MessageBoxImage.Question,
+                this);
             if (confirm != MessageBoxResult.Yes) return;
         }
 
         var ruleset = dlg.Vm.ImportedRuleset!;
         RefreshIssues(ValidationResult.Empty);
-        Editor = new VisualEditorViewModel(_conditionFactory, ruleset);
+        Editor = NewEditor(ruleset);
 
         var warningNote = dlg.Vm.Warnings.Count > 0
             ? $" ({dlg.Vm.Warnings.Count} unresolved name(s))"
@@ -173,30 +183,29 @@ public partial class MainWindowViewModel : ObservableObject
     [RelayCommand]
     private void PasteCode()
     {
-        var text = Clipboard.GetText()?.Trim();
-        if (string.IsNullOrEmpty(text)) { SetStatus("Clipboard is empty.", error: true); return; }
+        var text = ClipboardHelper.TryGetText()?.Trim();
+        if (string.IsNullOrEmpty(text))
+        {
+            SetStatus("Clipboard is empty (or another app is holding it — try again).", error: true);
+            return;
+        }
         TryLoadCode(text);
     }
 
     [RelayCommand]
     private void OpenJson()
     {
-        var dlg = new OpenFileDialog
-        {
-            Title      = "Open Filter JSON",
-            Filter     = "Filter JSON|*.json|All Files|*.*",
-            DefaultExt = ".json",
-        };
-        if (dlg.ShowDialog() != true) return;
+        if (_dialogs.ShowOpenFileDialog("Open Filter JSON", "Filter JSON|*.json|All Files|*.*", ".json", this)
+            is not string fileName) return;
 
         try
         {
-            var json    = File.ReadAllText(dlg.FileName);
+            var json    = File.ReadAllText(fileName);
             var ruleset = JsonSerializer.Deserialize<FilterRuleset>(json, FilterJsonOptions.Default)
                           ?? throw new InvalidOperationException("File deserialised to null.");
             RefreshIssues(ValidationResult.Empty);
-        Editor = new VisualEditorViewModel(_conditionFactory,ruleset);
-            SetStatus($"Opened \"{Path.GetFileName(dlg.FileName)}\".", error: false);
+        Editor = NewEditor(ruleset);
+            SetStatus($"Opened \"{Path.GetFileName(fileName)}\".", error: false);
         }
         catch (Exception ex)
         {
@@ -219,8 +228,10 @@ public partial class MainWindowViewModel : ObservableObject
                 SetStatus($"Cannot export — {result.Errors.Count()} validation error(s). See panel.", error: true);
                 return;
             }
-            Clipboard.SetText(FilterCodec.Encode(ruleset));
-            SetStatus("Filter code copied to clipboard.", error: false);
+            if (ClipboardHelper.TrySetText(FilterCodec.Encode(ruleset)))
+                SetStatus("Filter code copied to clipboard.", error: false);
+            else
+                SetStatus("Couldn't copy — another app is holding the clipboard. Try again.", error: true);
         }
         catch (Exception ex)
         {
@@ -233,14 +244,8 @@ public partial class MainWindowViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanExport))]
     private void SaveJson()
     {
-        var dlg = new SaveFileDialog
-        {
-            Title      = "Save Filter JSON",
-            Filter     = "Filter JSON|*.json|All Files|*.*",
-            DefaultExt = ".json",
-            FileName   = Editor!.FilterName,
-        };
-        if (dlg.ShowDialog() != true) return;
+        if (_dialogs.ShowSaveFileDialog("Save Filter JSON", "Filter JSON|*.json|All Files|*.*", ".json",
+                Editor!.FilterName, this) is not string fileName) return;
 
         try
         {
@@ -253,8 +258,8 @@ public partial class MainWindowViewModel : ObservableObject
                 return;
             }
             var json = JsonSerializer.Serialize(ruleset, FilterJsonOptions.Default);
-            File.WriteAllText(dlg.FileName, json);
-            SetStatus($"Saved \"{Path.GetFileName(dlg.FileName)}\".", error: false);
+            File.WriteAllText(fileName, json);
+            SetStatus($"Saved \"{Path.GetFileName(fileName)}\".", error: false);
         }
         catch (Exception ex)
         {
@@ -281,7 +286,7 @@ public partial class MainWindowViewModel : ObservableObject
     private void ApplyFromRawEditor(FilterRuleset ruleset)
     {
         RefreshIssues(ValidationResult.Empty);
-        Editor = new VisualEditorViewModel(_conditionFactory,ruleset);
+        Editor = NewEditor(ruleset);
         SetStatus("Filter updated from Raw Editor.", error: false);
     }
 
@@ -293,7 +298,7 @@ public partial class MainWindowViewModel : ObservableObject
         {
             var ruleset = FilterCodec.Decode(code);
             RefreshIssues(ValidationResult.Empty);
-        Editor = new VisualEditorViewModel(_conditionFactory,ruleset);
+        Editor = NewEditor(ruleset);
             SetStatus($"Loaded \"{ruleset.Name}\" — {ruleset.Rules.Count} rule(s).", error: false);
         }
         catch (Exception ex)
@@ -301,6 +306,9 @@ public partial class MainWindowViewModel : ObservableObject
             SetStatus($"Invalid filter code: {ex.Message}", error: true);
         }
     }
+
+    private VisualEditorViewModel NewEditor(FilterRuleset ruleset) =>
+        new(_conditionFactory, ruleset, _dialogs);
 
     private void SetStatus(string message, bool error)
     {

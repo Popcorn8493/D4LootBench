@@ -4,12 +4,13 @@
 A standalone WPF desktop application for editing Diablo IV loot filter share codes. D4's in-game filter UI is clunky; this app lets players import a filter code, visually edit all its rules, then re-export the code to paste back into the game. Distribution via GitHub Releases as a self-contained single-file `.exe` — no installer, no hosting required.
 
 ## Technology Stack
-- **.NET 10 / WPF** (`net10.0-windows`) — Windows-only desktop app
+- **.NET 10 / WPF** (App: `net10.0-windows10.0.19041.0` for the WinRT OCR projections; libraries `net10.0`) — Windows-only desktop app; SDK pinned in `global.json`
+- **Central package management** — versions live in `Directory.Packages.props`; shared build properties in `Directory.Build.props`; warnings are errors in CI
 - **CommunityToolkit.Mvvm 8.4.2** — MVVM source generators (D4LootBench.App)
-- **Microsoft.Extensions.DependencyInjection 10.0.0** — DI container for the App
-- **AvalonEdit 6.3.0** — JSON editor with syntax highlighting, folding, search
+- **Microsoft.Extensions.DependencyInjection 10.0.x** — DI container for the App
+- **AvalonEdit 6.3.1** — JSON editor with syntax highlighting, folding, search
 - **Shouldly 4.3.0** — test assertions
-- **xUnit** — test runner
+- **xUnit v3** on Microsoft.Testing.Platform (opted in via `global.json`) — test runner
 
 ## Solution Layout
 ```
@@ -22,14 +23,14 @@ D4LootBench.slnx
 │   └── Serialization/        # FilterJsonOptions, HexUInt32Converter, annotated {id,name} converters, FilterDataContext
 ├── src/D4LootBench.Ai/            # Pure .NET 10 class library — no WPF dependency
 │   ├── ILlmProvider.cs       # Core abstraction (GetCompletionAsync)
-│   ├── LlmSettings.cs        # Provider enum + config model (BaseUrl, ModelName, ApiKey)
+│   ├── LlmSettings.cs        # Provider enum (Mock, Ollama) + config model (BaseUrl, ModelName)
 │   ├── LlmCompletion.cs      # Result wrapper (Content, Error, IsSuccess)
 │   ├── RuleGenerationResult.cs # Success/failure + Rule + Suggestions + Warnings
 │   ├── RuleAssistant.cs      # Orchestrates prompt → provider → parse → resolve → validate
 │   ├── SystemPromptBuilder.cs # Builds/caches system prompt from live catalogs
 │   ├── NameResolver.cs       # Name → hash ID resolution with fuzzy fallback
 │   └── Providers/
-│       ├── OllamaProvider.cs # HTTP to localhost OpenAI-compat endpoint
+│       ├── OllamaProvider.cs # Ollama native /api/chat with JSON-Schema format; shared HttpClient, 5-min timeout
 │       └── MockLlmProvider.cs # Hardcoded response for UI dev / test mode
 ├── src/D4LootBench.App/           # WPF app
 │   ├── ViewModels/           # MainWindowVM, VisualEditorVM, FilterRuleVM, RawEditorVM, ColorPickerVM, AiAssistantVM, Conditions/*
@@ -43,11 +44,15 @@ D4LootBench.slnx
 │   ├── Data/                 # ParagonDatabase lazy singleton, embedded paragon-data.json (79 boards / 561 nodes / 160 glyphs)
 │   ├── Solver/               # ParagonLayout, ComposedGraph, SteinerSolver, GlyphRadius, PlanSolver, NodeRules, GlyphOptimizer, PlacementAnalyzer, PointMaximizer, BuildComparer, BuildCombiner, LayoutOptimizer, BuildStats
 │   └── Import/               # MaxrollParagonCodec (variant codes), MobalyticsParagonImporter (build-guide pages), D4BuildsImporter (Firestore docs)
+├── src/Shared/                # Source files linked into more than one project (d4builds.gg endpoints)
 ├── tests/D4LootBench.Core.Tests/
-│   ├── Codec/                # FilterCodecTests — round-trip, real Raxx filter, idempotency
-│   ├── Validation/           # FilterValidatorTests — 19 tests for limits, boundaries, indices
+│   ├── Codec/                # FilterCodecTests (round-trip, real Raxx filter, idempotency) + malformed-input/fuzz tests
+│   ├── Validation/           # FilterValidator, redundancy and rule-analysis tests
 │   ├── SerializationTests/   # AnnotatedJsonTests — id-wins, name-only, legacy form, unknown hash
+│   ├── Import/ Compare/ Data/ # guide parsers + URL importers, item comparer + tooltip OCR parser, catalog init
 │   └── TestSetup.cs          # ModuleInitializer that wires FilterDataContext for tests
+├── tests/D4LootBench.Ai.Tests/    # NameResolver, RuleAssistant (mock + fake providers), OllamaProvider (fake HTTP), BuildGuideFilterGenerator
+├── tests/D4LootBench.Paragon.Tests/ # solver, planner layers, importers, damage model
 ├── docs/
 │   ├── filter-format.md      # Full protobuf spec with field tables and hash IDs
 │   ├── d4-data-format.md     # d4-data.json schema reference (for community edits)
@@ -61,7 +66,7 @@ D4LootBench.slnx
 ```
 
 ## Current State
-All phases complete (0–4B); Phase 5 (paragon) data layer in progress. **121 tests**, 0 warnings. See `docs/design/phase-history.md` for the full build narrative.
+Phases 0–4B complete; Phase 5 (paragon board planner) is feature-complete and in active refinement — see the Phase 5 sections below and AGENTS.md. Also shipped since 4B: Compare Items (with tooltip OCR and a saved-gear library), d4builds.gg/Maxroll-planner/Mobalytics URL import, and app-wide light/dark theming. **480+ tests** across three test projects, 0 warnings. See `docs/design/phase-history.md` for the full build narrative.
 
 Editor ergonomics round (July 2026): duplicate rule (toolbar + Ctrl+D), Delete key removes the selected rule, drag-to-reorder in the rule list, drag entries between picker lists (Available→Selected adds; cross-picker Selected→Selected moves; drops into the greater-affix picker copy instead of move via `PickerViewModel.OwnsEntries`), Required⇄Optional affix condition conversion (keeps affixes/count/greater flags; blocked while the rule already has the target type), and redundancy detection: `RedundancyAnalyzer` in Core finds duplicate rules and shadowing catch-alls, `FilterValidator` surfaces them as warnings (plus "min count exceeds selected affixes" never-match warnings), and a Clean Up toolbar button removes duplicates after confirmation.
 
@@ -101,8 +106,7 @@ Filter JSON emits hash IDs as `{ "id": "0x…", "name": "…" }` objects across 
 - **Per-type ViewModels** — each condition type gets its own editor ViewModel + DataTemplate
 - **DI via Microsoft.Extensions.DependencyInjection** — standard; `SettingsAwareLlmProvider`, `SystemPromptBuilder`, `NameResolver`, `RuleAssistant` registered as singletons
 - **`SettingsAwareLlmProvider` singleton** — lets `RuleAssistant` be a singleton while provider selection changes at runtime; reads `LlmSettingsService.Current` on each call
-- **DPAPI for API key storage** — `ProtectedData.Protect/Unprotect` with `DataProtectionScope.CurrentUser`; in-box on `net10.0-windows`, no extra NuGet package needed
-- **No hardcoded API key** — users bring their own Ollama instance; Ollama is the recommended free path
+- **No API keys at all** — only the Mock and Ollama providers exist (hosted providers are not implemented), so nothing secret is stored; users bring their own Ollama instance
 - **Annotated JSON over wire form** — `{id, name}` makes the format human-editable AND lets an LLM reason about content; old string-hash form still reads for backward compat
 - **Static `FilterDataContext` for JSON converters** — STJ reflectively constructs converters with no ctor args, so the data service is reached via a narrow set-once static
 - **Phantom `% X` primary stats removed from `d4-data.json`** — hashes `0x001d5ded..0x001d5df5` exist in CoreTOC but D4's filter editor doesn't expose them. See `docs/filter-format.md`.
@@ -110,8 +114,8 @@ Filter JSON emits hash IDs as `{ "id": "0x…", "name": "…" }` objects across 
 
 ## Running / Testing
 ```powershell
-dotnet build          # full solution (0 warnings)
-dotnet test           # 109 tests in D4LootBench.Core.Tests
+dotnet build          # full solution (0 warnings; warnings are errors in CI)
+dotnet test           # all three test projects (480+ tests)
 dotnet publish src/D4LootBench.App -r win-x64 -p:PublishSingleFile=true --self-contained true
 ```
 

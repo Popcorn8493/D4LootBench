@@ -1,6 +1,3 @@
-using System.IO;
-using System.Text.Json;
-
 namespace D4LootBench.App.Services;
 
 /// <summary>One stored affix line of a saved gear piece (value kept as entered, may be empty).</summary>
@@ -20,16 +17,12 @@ public sealed record SavedGearItem(
 /// </summary>
 public sealed class SavedGearService
 {
-    private static readonly string DefaultPath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "D4LootBench", "saved-gear.json");
-
-    private readonly string _path;
+    private readonly JsonFileStore<List<SavedGearItem>> _store;
     private readonly List<SavedGearItem> _items = [];
 
     public SavedGearService(string? path = null)
     {
-        _path = path ?? DefaultPath;
+        _store = new JsonFileStore<List<SavedGearItem>>(path ?? JsonFileStore.AppDataPath("saved-gear.json"));
         Load();
     }
 
@@ -60,28 +53,11 @@ public sealed class SavedGearService
 
     private void Load()
     {
-        try
-        {
-            if (!File.Exists(_path))
-                return;
-            var stored = JsonSerializer.Deserialize<List<SavedGearItem>>(File.ReadAllText(_path));
-            if (stored is not null)
-                _items.AddRange(stored.Where(i => !string.IsNullOrWhiteSpace(i.Name)));
-        }
-        catch { /* corrupt file — start empty */ }
+        // A corrupt file is moved aside by the store — start empty.
+        if (_store.Load() is { } stored)
+            _items.AddRange(stored.Where(i => !string.IsNullOrWhiteSpace(i?.Name)));
     }
 
-    private void Persist()
-    {
-        try
-        {
-            Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
-            File.WriteAllText(_path, JsonSerializer.Serialize(_items,
-                new JsonSerializerOptions { WriteIndented = true }));
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            // Best-effort — the library just won't persist this change.
-        }
-    }
+    // Best-effort — on failure the library just won't persist this change (the store logs it).
+    private void Persist() => _store.Save(_items);
 }

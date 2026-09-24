@@ -87,6 +87,40 @@ public class AttachTierTests
     }
 
     [Fact]
+    public void Renumbering_to_path_order_preserves_positions_and_follows_the_path()
+    {
+        var layout = RingLayout();
+        var graph = ComposedGraph.Build(layout);
+        var blockedGates = graph.Vertices
+            .Select((vertex, v) => (vertex, v))
+            .Where(x => x.vertex.Node.Kind == ParagonNodeKind.Gate && graph.Adjacency[x.v].Any(u =>
+                (x.vertex.Cell.BoardSlot, graph.Vertices[u].Cell.BoardSlot) is (1, 2) or (2, 1)))
+            .Select(x => x.vertex.Cell)
+            .ToList();
+        var target = graph.Vertices.First(v =>
+            v.Cell.BoardSlot == 2 && v.Node.Kind == ParagonNodeKind.Legendary).Cell;
+        var purchased = PlanSolver.Solve(graph, new PlanRequest { Targets = [target], ExcludeCells = blockedGates })
+            .PurchasedCells.ToHashSet();
+
+        var renumbering = LayoutRemap.ToPathAttachOrder(layout.Boards, graph, purchased);
+
+        renumbering.ShouldNotBeNull();
+        var renumbered = new ParagonLayout(renumbering.Boards);
+        // Every board keeps its physical position and rotation under its new slot number.
+        for (int old = 0; old < layout.Boards.Count; old++)
+        {
+            int now = renumbering.NewSlotByOld[old];
+            renumbered.Boards[now].Board.ShouldBe(layout.Boards[old].Board);
+            renumbered.Boards[now].RotationSteps.ShouldBe(layout.Boards[old].RotationSteps);
+            renumbered.BoardPositions[now].ShouldBe(layout.BoardPositions[old]);
+        }
+        // Slot numbers now ARE the path's attach tiers, so a second pass is a no-op.
+        var newGraph = ComposedGraph.Build(renumbered);
+        LayoutRemap.ToPathAttachOrder(renumbered.Boards, newGraph, purchased.Select(renumbering.Remap))
+            .ShouldBeNull();
+    }
+
+    [Fact]
     public void Straight_chains_keep_slot_order()
     {
         var layout = new ParagonLayout(

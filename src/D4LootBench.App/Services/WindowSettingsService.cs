@@ -1,5 +1,3 @@
-using System.IO;
-using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Windows;
 
@@ -7,12 +5,7 @@ namespace D4LootBench.App.Services;
 
 public sealed class WindowSettingsService
 {
-    private static readonly string SettingsPath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "D4LootBench", "window-settings.json");
-
-    private static readonly JsonSerializerOptions JsonOptions =
-        new() { WriteIndented = true, PropertyNameCaseInsensitive = true };
+    private readonly JsonFileStore<StoredSettings> _store;
 
     public WindowState State         { get; private set; } = WindowState.Normal;
     public double      Width         { get; private set; } = 1100;
@@ -23,9 +16,27 @@ public sealed class WindowSettingsService
     public double      RuleListWidth { get; set; } = 320;
     public bool        DarkMode      { get; set; }
 
-    public WindowSettingsService() => Load();
+    public WindowSettingsService(string? path = null)
+    {
+        _store = new JsonFileStore<StoredSettings>(path ?? JsonFileStore.AppDataPath("window-settings.json"));
+        Load();
+    }
 
+    /// <summary>Persists the window's placement and the panel settings. Never throws — it runs
+    /// from OnClosing, where an exception would abort shutdown.</summary>
     public void Save(Window window)
+    {
+        try
+        {
+            SaveCore(window);
+        }
+        catch (Exception ex)
+        {
+            ErrorLog.Write(ex, "Saving window settings");
+        }
+    }
+
+    private void SaveCore(Window window)
     {
         var state  = window.WindowState;
         var bounds = state == WindowState.Normal
@@ -50,31 +61,23 @@ public sealed class WindowSettingsService
             RuleListWidth,
             DarkMode);
 
-        Directory.CreateDirectory(Path.GetDirectoryName(SettingsPath)!);
-        File.WriteAllText(SettingsPath, JsonSerializer.Serialize(stored, JsonOptions));
+        _store.Save(stored);
     }
 
     private void Load()
     {
-        try
-        {
-            if (!File.Exists(SettingsPath)) return;
+        // A corrupt file is moved aside by the store — use defaults.
+        if (_store.Load() is not { } stored)
+            return;
 
-            var stored = JsonSerializer.Deserialize<StoredSettings>(
-                File.ReadAllText(SettingsPath), JsonOptions);
-
-            if (stored is null) return;
-
-            State         = stored.State;
-            Width         = stored.Width         > 0 ? stored.Width         : Width;
-            Height        = stored.Height        > 0 ? stored.Height        : Height;
-            Top           = stored.Top;
-            Left          = stored.Left;
-            AiPanelHeight = stored.AiPanelHeight > 0 ? stored.AiPanelHeight : AiPanelHeight;
-            RuleListWidth = stored.RuleListWidth > 0  ? stored.RuleListWidth : RuleListWidth;
-            DarkMode      = stored.DarkMode;
-        }
-        catch { /* corrupt file — use defaults */ }
+        State         = stored.State;
+        Width         = stored.Width         > 0 ? stored.Width         : Width;
+        Height        = stored.Height        > 0 ? stored.Height        : Height;
+        Top           = stored.Top;
+        Left          = stored.Left;
+        AiPanelHeight = stored.AiPanelHeight > 0 ? stored.AiPanelHeight : AiPanelHeight;
+        RuleListWidth = stored.RuleListWidth > 0  ? stored.RuleListWidth : RuleListWidth;
+        DarkMode      = stored.DarkMode;
     }
 
     private sealed record StoredSettings(

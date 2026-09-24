@@ -2,14 +2,14 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <RootNamespace>D4LootBench.Ai</RootNamespace>
-    <AssemblyName>D4LootBench.Ai</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\D4LootBench.Core\D4LootBench.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="D4LootBench.Ai.Tests" />
   </ItemGroup>
 
 </Project>

@@ -99,8 +99,9 @@ public static class GlyphOptimizer
                 candidateValue[v] = value;
         }
 
-        var dist = new int[graph.Vertices.Count];
-        var from = new int[graph.Vertices.Count];
+        var search = new TreeDijkstra(graph);
+        var dist = search.Dist;
+        var from = search.From;
         var valueByVertex = new double[graph.Vertices.Count];
         foreach (var (v, value) in candidateValue)
             valueByVertex[v] = value;
@@ -120,7 +121,7 @@ public static class GlyphOptimizer
         // violation here means no route to the socket fits under the caps.
         if (!tree.Contains(socketVertex))
         {
-            RunDijkstra(graph, tree, weights, blocked, dist, from, valueByVertex);
+            search.Run(tree, weights, blocked, valueByVertex);
             if (dist[socketVertex] >= Infinity)
                 return new GlyphGoalOutcome(goal, Total(), Met: false, added);
             if (limits.PathWouldViolate(socketVertex, from, tree))
@@ -130,7 +131,7 @@ public static class GlyphOptimizer
 
         while (Total() < goal.RequiredTotal - 1e-9)
         {
-            RunDijkstra(graph, tree, weights, blocked, dist, from, valueByVertex);
+            search.Run(tree, weights, blocked, valueByVertex);
 
             // Pick the best ratio; a candidate whose minimal-limited-node path would still
             // break a cap is rejected and the next-best tried (paths only change on absorb).
@@ -184,42 +185,6 @@ public static class GlyphOptimizer
                 limits.OnAbsorbed(v);
             }
             limits.BlockFullGroups(blocked, tree);
-        }
-    }
-
-    /// <summary>Multi-source Dijkstra; equally cheap routes prefer more in-radius source stat
-    /// (weights are all ≥1, so the tie-break can reroute but never change a path's cost).</summary>
-    private static void RunDijkstra(
-        ComposedGraph graph, HashSet<int> tree, int[] weights, bool[] blocked, int[] dist, int[] from,
-        double[] tieValue)
-    {
-        Array.Fill(dist, Infinity);
-        var pathValue = new double[dist.Length];
-        var queue = new PriorityQueue<int, (int Cost, double NegValue)>();
-        foreach (int v in tree)
-        {
-            dist[v] = 0;
-            from[v] = -1;
-            queue.Enqueue(v, (0, 0));
-        }
-        while (queue.TryDequeue(out int v, out var priority))
-        {
-            if (priority.Cost > dist[v])
-                continue;
-            foreach (int u in graph.Adjacency[v])
-            {
-                if (blocked[u])
-                    continue;
-                int next = priority.Cost + weights[u];
-                double value = pathValue[v] + tieValue[u];
-                if (next < dist[u] || (next == dist[u] && value > pathValue[u]))
-                {
-                    dist[u] = next;
-                    from[u] = v;
-                    pathValue[u] = value;
-                    queue.Enqueue(u, (next, -value));
-                }
-            }
         }
     }
 }

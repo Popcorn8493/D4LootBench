@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using D4LootBench.App.Services;
 using D4LootBench.App.ViewModels.Conditions;
 using D4LootBench.Core.Data;
 using D4LootBench.Core.Models;
@@ -11,6 +12,7 @@ namespace D4LootBench.App.ViewModels;
 public partial class VisualEditorViewModel : ObservableObject
 {
     private readonly IConditionViewModelFactory _conditionFactory;
+    private readonly IDialogService _dialogs;
 
     public ObservableCollection<FilterRuleViewModel> Rules { get; } = [];
 
@@ -31,9 +33,11 @@ public partial class VisualEditorViewModel : ObservableObject
 
     public string RuleCountDisplay => $"{Rules.Count} / {FilterRuleset.MaxRuleCount}";
 
-    public VisualEditorViewModel(IConditionViewModelFactory conditionFactory, FilterRuleset ruleset)
+    public VisualEditorViewModel(
+        IConditionViewModelFactory conditionFactory, FilterRuleset ruleset, IDialogService dialogs)
     {
         _conditionFactory = conditionFactory;
+        _dialogs          = dialogs;
         _filterName       = ruleset.Name;
         foreach (var rule in ruleset.Rules)
             Rules.Add(MakeRuleVm(rule));
@@ -101,7 +105,7 @@ public partial class VisualEditorViewModel : ObservableObject
         var duplicates = RedundancyAnalyzer.FindDuplicateRules(BuildRuleset());
         if (duplicates.Count == 0)
         {
-            System.Windows.MessageBox.Show(
+            _dialogs.ShowMessage(
                 "No duplicate rules found.", "Clean Up",
                 System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
             return;
@@ -109,7 +113,7 @@ public partial class VisualEditorViewModel : ObservableObject
 
         var lines = duplicates.Select(d =>
             $"• \"{Rules[d.Index].Name}\" (duplicate of \"{Rules[d.DuplicateOfIndex].Name}\")");
-        var confirm = System.Windows.MessageBox.Show(
+        var confirm = _dialogs.ShowMessage(
             $"Remove {duplicates.Count} duplicate rule(s)?\n\n{string.Join("\n", lines)}",
             "Clean Up",
             System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Question);
@@ -133,7 +137,7 @@ public partial class VisualEditorViewModel : ObservableObject
         var candidates = RedundancyAnalyzer.Analyze(BuildRuleset()).MergeCandidates;
         if (candidates.Count == 0)
         {
-            System.Windows.MessageBox.Show(
+            _dialogs.ShowMessage(
                 "No combinable rules found.\n\nRules can be combined when they are identical except for one item type, unique item, or any-of affix list.",
                 "Combine Rules",
                 System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
@@ -143,7 +147,7 @@ public partial class VisualEditorViewModel : ObservableObject
         var lines = candidates.Select(c =>
             $"• {string.Join(" + ", c.Indices.Select(i => $"\"{Rules[i].Name}\""))} → one rule with the lists combined");
         var freed = candidates.Sum(c => c.Indices.Count - 1);
-        var confirm = System.Windows.MessageBox.Show(
+        var confirm = _dialogs.ShowMessage(
             $"Combine {candidates.Count} group(s) of rules, freeing {freed} rule slot(s)?\n\n{string.Join("\n", lines)}",
             "Combine Rules",
             System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Question);

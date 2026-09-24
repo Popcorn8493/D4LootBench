@@ -1,6 +1,3 @@
-using System.IO;
-using System.Text.Json;
-
 namespace D4LootBench.App.Services;
 
 /// <summary>One priority slot of the user's own compare wish list (top = weighs most).</summary>
@@ -22,15 +19,12 @@ public sealed record StoredCompareReference(
 /// </summary>
 public sealed class CompareReferenceService
 {
-    private static readonly string DefaultPath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "D4LootBench", "compare-reference.json");
-
-    private readonly string _path;
+    private readonly JsonFileStore<StoredCompareReference> _store;
 
     public CompareReferenceService(string? path = null)
     {
-        _path = path ?? DefaultPath;
+        _store = new JsonFileStore<StoredCompareReference>(
+            path ?? JsonFileStore.AppDataPath("compare-reference.json"));
         Current = Load();
     }
 
@@ -39,30 +33,15 @@ public sealed class CompareReferenceService
     public void Save(StoredCompareReference reference)
     {
         Current = reference;
-        try
-        {
-            Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
-            File.WriteAllText(_path, JsonSerializer.Serialize(reference,
-                new JsonSerializerOptions { WriteIndented = true }));
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            // Best-effort — the reference just won't persist this change.
-        }
+        // Best-effort — on failure the reference just won't persist this change (the store logs it).
+        _store.Save(reference);
     }
 
     private StoredCompareReference Load()
     {
-        try
-        {
-            if (File.Exists(_path)
-                && JsonSerializer.Deserialize<StoredCompareReference>(File.ReadAllText(_path)) is { } stored)
-                return stored.Affixes is null ? stored with { Affixes = [] } : stored;
-        }
-        catch
-        {
-            // Corrupt file — start empty.
-        }
+        // A corrupt file is moved aside by the store — start empty.
+        if (_store.Load() is { } stored)
+            return stored.Affixes is null ? stored with { Affixes = [] } : stored;
         return StoredCompareReference.Empty;
     }
 }

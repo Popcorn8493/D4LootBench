@@ -104,6 +104,7 @@ public static class LayoutOptimizer
 
         (LayoutOptimizerResult Result, ArrangementScore Score)? best = null;
         List<string> bestNotes = [];
+        var profileCache = new Dictionary<string, BoardProfile>(StringComparer.OrdinalIgnoreCase);
         foreach (var fill in fills)
         {
             var notes = new List<string>();
@@ -124,7 +125,11 @@ public static class LayoutOptimizer
 
             // 3. Enumerate arrangements: position sets grown from the starter's single gate,
             //    boards permuted across positions, rotations picked per board by internal cost.
-            var profiles = slotBoards.Select(b => new BoardProfile(b, nodesBySnoId)).ToList();
+            var profiles = slotBoards
+                .Select(b => profileCache.TryGetValue(b.InternalName, out var cached)
+                    ? cached
+                    : profileCache[b.InternalName] = new BoardProfile(b, nodesBySnoId))
+                .ToList();
             var glyphSlots = placements.Select(p => p.BoardSlot).ToHashSet();
 
             var candidates = new List<(double PreScore, List<PlacedBoard> Boards, List<int> SlotByPosition)>();
@@ -148,9 +153,16 @@ public static class LayoutOptimizer
             // 4. Full evaluation of the best-ranked arrangements. Ranking: activated glyphs, then
             //    active threshold bonuses (slot order changes their requirements), then fewest
             //    points, then total stat delivered into glyph radii.
-            foreach (var candidate in candidates.OrderBy(c => c.PreScore).Take(rerank))
+            //    Evaluations are independent full solves — run them in parallel, then pick the
+            //    winner in pre-score order so ties resolve exactly as a sequential pass would.
+            var evaluations = candidates
+                .OrderBy(c => c.PreScore)
+                .Take(rerank)
+                .AsParallel().AsOrdered()
+                .Select(c => Evaluate(c.Boards, slotBoards, placements, request, radius, nodesBySnoId, data))
+                .ToList();
+            foreach (var evaluated in evaluations)
             {
-                var evaluated = Evaluate(candidate.Boards, slotBoards, placements, request, radius, nodesBySnoId, data);
                 if (evaluated is null)
                     continue;
                 var (result, score) = evaluated.Value;

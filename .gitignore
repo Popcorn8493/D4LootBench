@@ -3,14 +3,20 @@
 ##
 ## Get latest from `dotnet new gitignore`
 
+# ── Local-only files (not for the public repo) ──────────────────────────
 # Claude Code local settings (machine-specific permissions)
 .claude/
-
-# Private planning docs — not for public repo
+# Private planning docs
 docs/launch-plan.md
-
-# Dev tool configs — machine-specific, not for public repo
+# Dev tool configs (machine-specific)
 opencode.json
+# Paragon planner project saves / personal builds
+saves/
+# Personal filter exports; only the checked-in fixtures below are tracked
+json-filters/*.json
+!json-filters/All Conditions Test.json
+!json-filters/Raxx's Torment 6+ Filter.json
+!json-filters/Sleepy Smack v2.3.json
 
 # dotenv files
 .env
@@ -489,6 +495,3 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
-json-filters/Barb-BiS.json
-json-filters/ColdTrapDOK.json
-json-filters/test.json

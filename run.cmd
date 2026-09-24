@@ -8,4 +8,13 @@ tasklist /fi "imagename eq D4LootBench.exe" | find /i "D4LootBench.exe" >nul && 
     timeout /t 1 /nobreak >nul
 )
 dotnet build || (echo. & echo Build FAILED - app not started. & pause & exit /b 1)
-start "" "src\D4LootBench.App\bin\Debug\net10.0-windows\D4LootBench.exe"
+rem Ask MSBuild for the output folder instead of hardcoding the TFM (a stale folder from an
+rem older TFM would otherwise launch old code).
+set "OUTDIR="
+for /f "delims=" %%d in ('dotnet msbuild src\D4LootBench.App\D4LootBench.App.csproj -nologo -getProperty:TargetDir') do set "OUTDIR=%%d"
+if exist "%OUTDIR%D4LootBench.exe" goto :launch
+echo Could not find D4LootBench.exe under "%OUTDIR%".
+pause
+exit /b 1
+:launch
+start "" "%OUTDIR%D4LootBench.exe"

@@ -1,5 +1,3 @@
-using System.IO;
-using System.Text.Json;
 using System.Text.Json.Serialization;
 using D4LootBench.Ai;
 
@@ -7,48 +5,36 @@ namespace D4LootBench.App.Services;
 
 public sealed class LlmSettingsService
 {
-    private static readonly string _path = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "D4LootBench", "ai-settings.json");
+    private readonly JsonFileStore<StoredSettings> _store;
 
-    public LlmSettings Current { get; private set; } = Load();
+    public LlmSettingsService(string? path = null)
+    {
+        _store = new JsonFileStore<StoredSettings>(path ?? JsonFileStore.AppDataPath("ai-settings.json"));
+        Current = Load();
+    }
 
+    public LlmSettings Current { get; private set; }
+
+    /// <summary>Applies and persists the settings. Never throws — persistence is best-effort
+    /// (the store logs a failed write) and the new settings apply for this session regardless.</summary>
     public void Save(LlmSettings settings)
     {
         Current = settings;
-        Write(settings);
+        _store.Save(new StoredSettings(settings.Provider, settings.BaseUrl, settings.ModelName));
     }
 
-    private static LlmSettings Load()
+    private LlmSettings Load()
     {
-        try
+        // A corrupt file is moved aside by the store — fall through to defaults.
+        if (_store.Load() is not { } stored)
+            return new LlmSettings();
+        var defaults = new LlmSettings();
+        return new LlmSettings
         {
-            if (File.Exists(_path))
-            {
-                var stored = JsonSerializer.Deserialize<StoredSettings>(
-                    File.ReadAllText(_path),
-                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                if (stored is not null)
-                {
-                    var defaults = new LlmSettings();
-                    return new LlmSettings
-                    {
-                        Provider  = stored.Provider,
-                        BaseUrl   = string.IsNullOrEmpty(stored.BaseUrl)   ? defaults.BaseUrl   : stored.BaseUrl,
-                        ModelName = string.IsNullOrEmpty(stored.ModelName) ? defaults.ModelName : stored.ModelName,
-                    };
-                }
-            }
-        }
-        catch { /* corrupt file — fall through to defaults */ }
-        return new LlmSettings();
-    }
-
-    private static void Write(LlmSettings settings)
-    {
-        var stored = new StoredSettings(settings.Provider, settings.BaseUrl, settings.ModelName);
-        Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
-        File.WriteAllText(_path, JsonSerializer.Serialize(stored, new JsonSerializerOptions { WriteIndented = true }));
+            Provider  = stored.Provider,
+            BaseUrl   = string.IsNullOrEmpty(stored.BaseUrl)   ? defaults.BaseUrl   : stored.BaseUrl,
+            ModelName = string.IsNullOrEmpty(stored.ModelName) ? defaults.ModelName : stored.ModelName,
+        };
     }
 
     private sealed record StoredSettings(

@@ -7,6 +7,8 @@
     <Project Path="src/D4LootBench.PromptLab/D4LootBench.PromptLab.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/D4LootBench.Ai.Tests/D4LootBench.Ai.Tests.csproj" />
+    <Project Path="tests/D4LootBench.App.Tests/D4LootBench.App.Tests.csproj" />
     <Project Path="tests/D4LootBench.Core.Tests/D4LootBench.Core.Tests.csproj" />
     <Project Path="tests/D4LootBench.Paragon.Tests/D4LootBench.Paragon.Tests.csproj" />
   </Folder>

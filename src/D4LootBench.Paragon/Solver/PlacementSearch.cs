@@ -1,4 +1,6 @@
+using System.Collections.Concurrent;
 using System.Globalization;
+using System.Text;
 using D4LootBench.Paragon.Models;
 
 namespace D4LootBench.Paragon.Solver;
@@ -33,6 +35,18 @@ public sealed record PlacementPlan(
 }
 
 /// <summary>
+/// Memoized bare solves and pipeline evaluations, shareable across <see cref="PlacementSearch.FindPlans"/>
+/// passes over the same layout (e.g. the planner's glyph-level passes, whose bare solves coincide
+/// whenever the level radius does). Thread-safe.
+/// </summary>
+public sealed class PlacementSearchCache
+{
+    internal ConcurrentDictionary<string, PlanResult?> Solves { get; } = new(StringComparer.Ordinal);
+
+    internal ConcurrentDictionary<(PlacementPipeline Pipeline, string Key), PipelineResult?> Evaluations { get; } = new();
+}
+
+/// <summary>
 /// Searches SEQUENCES of placement changes — rotations, board swaps, leaf re-attachments, and
 /// glyph substitutions — instead of one change at a time, so the user lands on a final setup
 /// directly rather than applying and re-analyzing repeatedly. Beam search: every candidate
@@ -52,41 +66,63 @@ public static class PlacementSearch
         IReadOnlyList<ParagonGlyphDef> spareGlyphs,
         int beamWidth = 5, int depth = 4, int topN = 3,
         int evalsPerState = 9, int maxEvaluations = 220,
-        IReadOnlySet<int>? lockedBoardSlots = null, IReadOnlySet<int>? lockedGlyphSlots = null)
+        IReadOnlySet<int>? lockedBoardSlots = null, IReadOnlySet<int>? lockedGlyphSlots = null,
+        CancellationToken cancellationToken = default, PlacementSearchCache? cache = null)
     {
+        cache ??= new PlacementSearchCache();
         var baselineGraph = ComposedGraph.Build(layout);
-        var baseline = PlacementAnalyzer.EvaluatePipeline(baselineGraph, request, pipeline);
+        var probe = new State(layout, request, pipeline, [], [], null!);
+        var baseline = Evaluate(cache, probe, baselineGraph, solved: null);
         if (baseline is null)
             return [];
 
         int evaluations = 0;
-        var root = new State(layout, request, pipeline, [], [], baseline);
+        var root = probe with { Eval = baseline };
         var seen = new HashSet<string>(StringComparer.Ordinal) { KeyOf(root) };
         var frontier = new List<State> { root };
         var reached = new List<State>();
 
         for (int round = 0; round < depth && evaluations < maxEvaluations; round++)
         {
-            // Generate every state's moves in parallel (generation bare-solves each candidate),
-            // then dedup and pick a family-diverse selection sequentially.
+            cancellationToken.ThrowIfCancellationRequested();
+            // Generate moves in parallel (generation bare-solves each candidate) — flattened to
+            // per-slot work items across every frontier state, so even round 0's single state
+            // fans out — then dedup and pick a family-diverse selection per state sequentially.
             var generated = frontier
+                .SelectMany((state, index) => GenerationWork(
+                        state, spareBoards, spareGlyphs, lockedBoardSlots, lockedGlyphSlots, cache)
+                    .Select(work => (Index: index, Work: work)))
                 .AsParallel().AsOrdered()
-                .Select(state => GenerateMoves(
-                    state, spareBoards, spareGlyphs, lockedBoardSlots, lockedGlyphSlots).ToList())
+                .WithCancellation(cancellationToken)
+                .Select(item => (item.Index, Moves: item.Work().ToList()))
                 .ToList();
+            // Only moves actually sent for evaluation are marked seen — ones the diversity
+            // selection or the evaluation cap passed over stay reachable from later states.
             var toEvaluate = new List<Move>();
-            foreach (var moves in generated)
-                toEvaluate.AddRange(SelectDiverse(moves.Where(m => seen.Add(m.Key)), evalsPerState));
-            if (toEvaluate.Count > maxEvaluations - evaluations)
-                toEvaluate = toEvaluate.Take(maxEvaluations - evaluations).ToList();
+            int remaining = maxEvaluations - evaluations;
+            foreach (var group in generated.GroupBy(g => g.Index))
+            {
+                var fresh = group
+                    .SelectMany(g => g.Moves)
+                    .Where(m => !seen.Contains(m.Key))
+                    .DistinctBy(m => m.Key);
+                foreach (var move in SelectDiverse(fresh, evalsPerState))
+                {
+                    if (toEvaluate.Count >= remaining)
+                        break;
+                    if (seen.Add(move.Key))
+                        toEvaluate.Add(move);
+                }
+            }
             if (toEvaluate.Count == 0)
                 break;
             evaluations += toEvaluate.Count;
 
+            // The generation's bare solve is reused — the pipeline solves the same request.
             var children = toEvaluate
                 .AsParallel().AsOrdered()
-                .Select(m => (Move: m,
-                    Eval: PlacementAnalyzer.EvaluatePipeline(m.Graph, m.Next.Request, m.Next.Pipeline)))
+                .WithCancellation(cancellationToken)
+                .Select(m => (Move: m, Eval: Evaluate(cache, m.Next, m.Graph, m.Solve)))
                 .Where(x => x.Eval is not null)
                 .Select(x => x.Move.Next with { Eval = x.Eval! })
                 .ToList();
@@ -170,8 +206,11 @@ public static class PlacementSearch
     private enum MoveFamily { Rotation, Swap, Reattach, GlyphSwap }
 
     /// <summary>A proposed move: the successor state plus its bare-solve rank inputs.</summary>
-    private sealed record Move(
-        State Next, ComposedGraph Graph, MoveFamily Family, string Key, int BareMet, int BarePoints);
+    private sealed record Move(State Next, ComposedGraph Graph, MoveFamily Family, string Key, PlanResult Solve)
+    {
+        public int BareMet => Solve.GlyphOutcomes.Count(o => o.Met);
+        public int BarePoints => Solve.PointsSpent;
+    }
 
     /// <summary>Better states first: fewest limit breaks, most glyphs, most thresholds, most
     /// focused value, fewest points — the <see cref="PipelineResult.BeatsForSuggestion"/> axes.</summary>
@@ -226,185 +265,184 @@ public static class PlacementSearch
         return selected;
     }
 
-    private static IEnumerable<Move> GenerateMoves(
+    /// <summary>
+    /// Every move family's candidates for a state, split into independent per-slot work items
+    /// so generation parallelizes within a state as well as across the frontier.
+    /// </summary>
+    private static IEnumerable<Func<IEnumerable<Move>>> GenerationWork(
         State state, IReadOnlyList<ParagonBoardDef> spareBoards, IReadOnlyList<ParagonGlyphDef> spareGlyphs,
-        IReadOnlySet<int>? lockedBoardSlots, IReadOnlySet<int>? lockedGlyphSlots) =>
-        RotationMoves(state)
-            .Concat(SwapMoves(state, spareBoards, lockedBoardSlots))
-            .Concat(ReattachMoves(state))
-            .Concat(GlyphSwapMoves(state, spareGlyphs, lockedGlyphSlots));
-
-    // ── Move families ────────────────────────────────────────────────────
-
-    private static IEnumerable<Move> RotationMoves(State state)
+        IReadOnlySet<int>? lockedBoardSlots, IReadOnlySet<int>? lockedGlyphSlots, PlacementSearchCache cache)
     {
-        for (int slot = 1; slot < state.Layout.Boards.Count; slot++)
+        int count = state.Layout.Boards.Count;
+        for (int slot = 1; slot < count; slot++)
         {
-            var placed = state.Layout.Boards[slot];
-            for (int rotation = 0; rotation < 4; rotation++)
-            {
-                if (rotation == placed.RotationSteps)
-                    continue;
-                var boards = state.Layout.Boards.ToList();
-                boards[slot] = Placed(placed.Board, placed.ParentSlot, placed.AttachEdge, rotation);
-                if (TryBuild(boards) is not { } graph)
-                    continue;
-
-                var next = state with
-                {
-                    Layout = new ParagonLayout(boards),
-                    Request = RemapForRotation(state.Request, slot, placed, rotation),
-                };
-                if (TrySolve(graph, next.Request) is not { } solve)
-                    continue;
-
-                string name = placed.Board.Name ?? placed.Board.InternalName;
-                next = next with
-                {
-                    Changes = [.. state.Changes, new RotationChange(slot, rotation)],
-                    Steps = [.. state.Steps, $"Rotate slot {slot} ({name}) to {rotation * 90}°"],
-                };
-                yield return new Move(next, graph, MoveFamily.Rotation, KeyOf(next),
-                    solve.GlyphOutcomes.Count(o => o.Met), solve.PointsSpent);
-            }
+            int s = slot;
+            yield return () => RotationMoves(state, s, cache);
         }
-    }
 
-    private static IEnumerable<Move> SwapMoves(
-        State state, IReadOnlyList<ParagonBoardDef> spareBoards, IReadOnlySet<int>? lockedBoardSlots)
-    {
         var inLayout = state.Layout.Boards.Select(b => b.Board.InternalName)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
         var usable = spareBoards
             .DistinctBy(c => c.InternalName)
             .Where(c => !inLayout.Contains(c.InternalName))
             .ToList();
-
-        for (int slot = 1; slot < state.Layout.Boards.Count; slot++)
+        for (int slot = 1; slot < count; slot++)
         {
             if (lockedBoardSlots?.Contains(slot) == true)
                 continue; // a required board never swaps out (rotations/re-attachments still apply)
-            var placed = state.Layout.Boards[slot];
-            var slotGoals = state.Request.GlyphGoals.Where(g => g.Socket.BoardSlot == slot).ToList();
-            var rankGoals = slotGoals.Count > 0 ? slotGoals : state.Request.GlyphGoals;
-            // With goals, candidates rank by attainable glyph stat around their socket; without,
-            // by how much focused stat the whole board carries — so swaps still surface for
-            // builds planned purely on targets.
-            var ranked = (rankGoals.Count > 0
-                    ? usable.Select(c => (Board: c, Fit: rankGoals.Max(g =>
-                        PlacementAnalyzer.AttainableByAttribute(c, g.SourceAttribute, g.Radius))))
-                    : usable.Select(c => (Board: c, Fit: FocusFit(c, state.Pipeline.Focus))))
-                .Where(c => c.Fit > 0)
-                .OrderByDescending(c => c.Fit)
-                .Take(2);
+            int s = slot;
+            yield return () => SwapMoves(state, usable, s, cache);
+        }
 
-            foreach (var (candidate, _) in ranked)
+        if (count >= 3)
+        {
+            var parents = state.Layout.Boards.Skip(1).Select(b => b.ParentSlot!.Value).ToHashSet();
+            for (int slot = 1; slot < count; slot++)
             {
-                Move? best = null;
-                for (int rotation = 0; rotation < 4; rotation++)
-                {
-                    var boards = state.Layout.Boards.ToList();
-                    boards[slot] = Placed(candidate, placed.ParentSlot, placed.AttachEdge, rotation);
-                    if (TryBuild(boards) is not { } graph)
-                        continue;
+                if (parents.Contains(slot))
+                    continue; // moving a parent would drag its subtree along
+                int s = slot;
+                yield return () => ReattachMoves(state, s, cache);
+            }
+        }
 
-                    var newLegendaries = graph.Vertices
-                        .Where(v => v.Cell.BoardSlot == slot && v.Node.Kind == ParagonNodeKind.Legendary)
-                        .Select(v => v.Cell)
-                        .ToList();
-                    CellRef? newSocket = graph.Vertices
-                        .Where(v => v.Cell.BoardSlot == slot && v.Node.Kind == ParagonNodeKind.GlyphSocket)
-                        .Select(v => (CellRef?)v.Cell)
-                        .FirstOrDefault();
-                    var variantRequest = new PlanRequest
-                    {
-                        Targets = state.Request.Targets.Where(t => t.BoardSlot != slot)
-                            .Concat(newLegendaries).Distinct().ToList(),
-                        NodeRules = state.Request.NodeRules,
-                        AvoidCells = state.Request.AvoidCells.Where(c => c.BoardSlot != slot).ToList(),
-                        ExcludeCells = state.Request.ExcludeCells.Where(c => c.BoardSlot != slot).ToList(),
-                        GlyphGoals = state.Request.GlyphGoals
-                            .Where(g => g.Socket.BoardSlot != slot || newSocket is not null)
-                            .Select(g => g.Socket.BoardSlot == slot ? g with { Socket = newSocket!.Value } : g)
-                            .ToList(),
-                    };
-                    if (TrySolve(graph, variantRequest) is not { } solve)
-                        continue;
-
-                    string oldName = placed.Board.Name ?? placed.Board.InternalName;
-                    string newName = candidate.Name ?? candidate.InternalName;
-                    var next = state with
-                    {
-                        Layout = new ParagonLayout(boards),
-                        Request = variantRequest,
-                        Changes = [.. state.Changes, new BoardSwapChange(slot, candidate, rotation)],
-                        Steps = [.. state.Steps,
-                            $"Swap slot {slot} ({oldName}) for the unused board {newName} at {rotation * 90}° " +
-                            $"(the slot's targets move to {newName}'s legendary)"],
-                    };
-                    var move = new Move(next, graph, MoveFamily.Swap, KeyOf(next),
-                        solve.GlyphOutcomes.Count(o => o.Met), solve.PointsSpent);
-                    if (best is null || move.BareMet > best.BareMet
-                        || (move.BareMet == best.BareMet && move.BarePoints < best.BarePoints))
-                        best = move;
-                }
-                if (best is not null)
-                    yield return best;
+        if (state.Pipeline.SocketedGlyphs is { Count: > 0 } socketed && spareGlyphs.Count > 0)
+        {
+            // Substitutions leave the layout alone — one graph serves every one of them.
+            var graph = new Lazy<ComposedGraph>(() => ComposedGraph.Build(state.Layout));
+            foreach (var incumbent in socketed)
+            {
+                if (lockedGlyphSlots?.Contains(incumbent.BoardSlot) == true)
+                    continue; // a required glyph is never substituted away (re-socketing still applies)
+                yield return () => GlyphSwapMoves(state, incumbent, spareGlyphs, graph, cache);
             }
         }
     }
 
-    private static IEnumerable<Move> ReattachMoves(State state)
+    // ── Move families ────────────────────────────────────────────────────
+
+    private static IEnumerable<Move> RotationMoves(State state, int slot, PlacementSearchCache cache)
     {
-        if (state.Layout.Boards.Count < 3)
-            yield break;
-        var parents = state.Layout.Boards.Skip(1).Select(b => b.ParentSlot!.Value).ToHashSet();
-
-        for (int slot = 1; slot < state.Layout.Boards.Count; slot++)
+        var placed = state.Layout.Boards[slot];
+        for (int rotation = 0; rotation < 4; rotation++)
         {
-            if (parents.Contains(slot))
-                continue; // moving a parent would drag its subtree along
-            var placed = state.Layout.Boards[slot];
-            var candidates = new List<Move>();
+            if (rotation == placed.RotationSteps)
+                continue;
+            var boards = state.Layout.Boards.ToList();
+            boards[slot] = Placed(placed.Board, placed.ParentSlot, placed.AttachEdge, rotation);
+            if (TryBuild(boards) is not { } graph)
+                continue;
 
-            for (int parentSlot = 0; parentSlot < slot; parentSlot++)
+            var next = state with
             {
-                foreach (var edge in new[] { BoardEdge.Top, BoardEdge.Bottom, BoardEdge.Left, BoardEdge.Right })
+                Layout = new ParagonLayout(boards),
+                Request = PlacementAnalyzer.RemapForRotation(state.Request, slot, placed, rotation),
+            };
+            if (TrySolve(cache, next.Layout, graph, next.Request) is not { } solve)
+                continue;
+
+            string name = placed.Board.Name ?? placed.Board.InternalName;
+            next = next with
+            {
+                Changes = [.. state.Changes, new RotationChange(slot, rotation)],
+                Steps = [.. state.Steps, $"Rotate slot {slot} ({name}) to {rotation * 90}°"],
+            };
+            yield return new Move(next, graph, MoveFamily.Rotation, KeyOf(next), solve);
+        }
+    }
+
+    private static IEnumerable<Move> SwapMoves(
+        State state, IReadOnlyList<ParagonBoardDef> usable, int slot, PlacementSearchCache cache)
+    {
+        var placed = state.Layout.Boards[slot];
+        var slotGoals = state.Request.GlyphGoals.Where(g => g.Socket.BoardSlot == slot).ToList();
+        var rankGoals = slotGoals.Count > 0 ? slotGoals : state.Request.GlyphGoals;
+        // With goals, candidates rank by attainable glyph stat around their socket; without,
+        // by how much focused stat the whole board carries — so swaps still surface for
+        // builds planned purely on targets.
+        var ranked = (rankGoals.Count > 0
+                ? usable.Select(c => (Board: c, Fit: rankGoals.Max(g =>
+                    PlacementAnalyzer.AttainableByAttribute(c, g.SourceAttribute, g.Radius))))
+                : usable.Select(c => (Board: c, Fit: FocusFit(c, state.Pipeline.Focus))))
+            .Where(c => c.Fit > 0)
+            .OrderByDescending(c => c.Fit)
+            .Take(2);
+
+        foreach (var (candidate, _) in ranked)
+        {
+            Move? best = null;
+            for (int rotation = 0; rotation < 4; rotation++)
+            {
+                var boards = state.Layout.Boards.ToList();
+                boards[slot] = Placed(candidate, placed.ParentSlot, placed.AttachEdge, rotation);
+                if (TryBuild(boards) is not { } graph)
+                    continue;
+
+                var variantRequest = PlacementAnalyzer.RetargetSwappedSlot(graph, state.Request, slot);
+                if (TrySolve(cache, new ParagonLayout(boards), graph, variantRequest) is not { } solve)
+                    continue;
+
+                string oldName = placed.Board.Name ?? placed.Board.InternalName;
+                string newName = candidate.Name ?? candidate.InternalName;
+                var next = state with
                 {
-                    for (int rotation = 0; rotation < 4; rotation++)
+                    Layout = new ParagonLayout(boards),
+                    Request = variantRequest,
+                    Changes = [.. state.Changes, new BoardSwapChange(slot, candidate, rotation)],
+                    Steps = [.. state.Steps,
+                        $"Swap slot {slot} ({oldName}) for the unused board {newName} at {rotation * 90}° " +
+                        $"(the slot's targets move to {newName}'s legendary)"],
+                };
+                var move = new Move(next, graph, MoveFamily.Swap, KeyOf(next), solve);
+                if (best is null || move.BareMet > best.BareMet
+                    || (move.BareMet == best.BareMet && move.BarePoints < best.BarePoints))
+                    best = move;
+            }
+            if (best is not null)
+                yield return best;
+        }
+    }
+
+    private static IEnumerable<Move> ReattachMoves(State state, int slot, PlacementSearchCache cache)
+    {
+        var placed = state.Layout.Boards[slot];
+        var candidates = new List<Move>();
+
+        for (int parentSlot = 0; parentSlot < slot; parentSlot++)
+        {
+            foreach (var edge in new[] { BoardEdge.Top, BoardEdge.Bottom, BoardEdge.Left, BoardEdge.Right })
+            {
+                // Same parent + edge at another rotation is a rotation move, generated there.
+                if (parentSlot == placed.ParentSlot && edge == placed.AttachEdge)
+                    continue;
+                for (int rotation = 0; rotation < 4; rotation++)
+                {
+                    var boards = state.Layout.Boards.ToList();
+                    boards[slot] = Placed(placed.Board, parentSlot, edge, rotation);
+                    if (TryBuild(boards) is not { } graph)
+                        continue;
+
+                    var variantRequest = PlacementAnalyzer.RemapForRotation(state.Request, slot, placed, rotation);
+                    if (TrySolve(cache, new ParagonLayout(boards), graph, variantRequest) is not { } solve)
+                        continue;
+
+                    string name = placed.Board.Name ?? placed.Board.InternalName;
+                    var next = state with
                     {
-                        if (parentSlot == placed.ParentSlot && edge == placed.AttachEdge
-                            && rotation == placed.RotationSteps)
-                            continue;
-                        var boards = state.Layout.Boards.ToList();
-                        boards[slot] = Placed(placed.Board, parentSlot, edge, rotation);
-                        if (TryBuild(boards) is not { } graph)
-                            continue;
-
-                        var variantRequest = RemapForRotation(state.Request, slot, placed, rotation);
-                        if (TrySolve(graph, variantRequest) is not { } solve)
-                            continue;
-
-                        string name = placed.Board.Name ?? placed.Board.InternalName;
-                        var next = state with
-                        {
-                            Layout = new ParagonLayout(boards),
-                            Request = variantRequest,
-                            Changes = [.. state.Changes, new ReattachChange(slot, parentSlot, edge, rotation)],
-                            Steps = [.. state.Steps,
-                                $"Re-attach slot {slot} ({name}) to slot {parentSlot}'s {edge} edge at {rotation * 90}°"],
-                        };
-                        candidates.Add(new Move(next, graph, MoveFamily.Reattach, KeyOf(next),
-                            solve.GlyphOutcomes.Count(o => o.Met), solve.PointsSpent));
-                    }
+                        Layout = new ParagonLayout(boards),
+                        Request = variantRequest,
+                        Changes = [.. state.Changes, new ReattachChange(slot, parentSlot, edge, rotation)],
+                        Steps = [.. state.Steps,
+                            $"Re-attach slot {slot} ({name}) to slot {parentSlot}'s {edge} edge at {rotation * 90}°"],
+                    };
+                    candidates.Add(new Move(next, graph, MoveFamily.Reattach, KeyOf(next), solve));
                 }
             }
-            foreach (var move in candidates
-                         .OrderByDescending(c => c.BareMet)
-                         .ThenBy(c => c.BarePoints)
-                         .Take(2))
-                yield return move;
         }
+        return candidates
+            .OrderByDescending(c => c.BareMet)
+            .ThenBy(c => c.BarePoints)
+            .Take(2);
     }
 
     /// <summary>
@@ -417,82 +455,74 @@ public static class PlacementSearch
     /// independent of what the player has leveled.
     /// </summary>
     private static IEnumerable<Move> GlyphSwapMoves(
-        State state, IReadOnlyList<ParagonGlyphDef> spareGlyphs, IReadOnlySet<int>? lockedGlyphSlots)
+        State state, PipelineGlyph incumbent, IReadOnlyList<ParagonGlyphDef> spareGlyphs, Lazy<ComposedGraph> graph,
+        PlacementSearchCache cache)
     {
-        if (state.Pipeline.SocketedGlyphs is not { Count: > 0 } socketed || spareGlyphs.Count == 0)
-            yield break;
+        var socketed = state.Pipeline.SocketedGlyphs!;
         var socketedNames = socketed.Select(g => g.Glyph.InternalName)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
         var weights = state.Pipeline.Focus.Weights;
 
-        foreach (var incumbent in socketed)
+        var goal = state.Request.GlyphGoals.FirstOrDefault(g => g.Socket.BoardSlot == incumbent.BoardSlot);
+        var board = incumbent.BoardSlot < state.Layout.Boards.Count
+            ? state.Layout.Boards[incumbent.BoardSlot].Board
+            : null;
+        if (board is null)
+            yield break;
+
+        var feasible = spareGlyphs
+            .Where(g => !socketedNames.Contains(g.InternalName))
+            .Select(g => (Glyph: g, Source: GlyphInfo.PrimarySourceAttribute(g)))
+            .Where(g => g.Source is not null)
+            // With an activation goal, the new glyph must be activatable on this board.
+            .Where(g => goal is null || PlacementAnalyzer.AttainableByAttribute(
+                board, g.Source!, goal.Radius) >= goal.RequiredTotal - 1e-9)
+            .Select(g => (g.Glyph, g.Source, Scalar: GlyphInfo.BonusScalarAt(g.Glyph, incumbent.Level) ?? 0))
+            .Where(g => g.Scalar > 0)
+            .ToList();
+        var mapped = feasible
+            .Where(g => GlyphInfo.IsAttributeMapped(g.Glyph))
+            .OrderByDescending(g => g.Scalar * RelevanceOf(GlyphInfo.DestinationAttribute(g.Glyph), weights))
+            .Take(2);
+        var nodeBuff = feasible
+            .Where(g => !GlyphInfo.IsAttributeMapped(g.Glyph))
+            .OrderByDescending(g => g.Scalar)
+            .Take(1);
+
+        foreach (var (candidate, source, _) in mapped.Concat(nodeBuff))
         {
-            if (lockedGlyphSlots?.Contains(incumbent.BoardSlot) == true)
-                continue; // a required glyph is never substituted away (re-socketing still applies)
-            var goal = state.Request.GlyphGoals.FirstOrDefault(g => g.Socket.BoardSlot == incumbent.BoardSlot);
-            var board = incumbent.BoardSlot < state.Layout.Boards.Count
-                ? state.Layout.Boards[incumbent.BoardSlot].Board
-                : null;
-            if (board is null)
+            var newGlyphs = socketed
+                .Select(g => g.BoardSlot == incumbent.BoardSlot ? g with { Glyph = candidate } : g)
+                .ToList();
+            var next = state with
+            {
+                Request = new PlanRequest
+                {
+                    Targets = state.Request.Targets,
+                    NodeRules = state.Request.NodeRules,
+                    AvoidCells = state.Request.AvoidCells,
+                    ExcludeCells = state.Request.ExcludeCells,
+                    GlyphGoals = state.Request.GlyphGoals
+                        .Select(g => g.Socket.BoardSlot == incumbent.BoardSlot
+                            ? g with { SourceAttribute = source!, GlyphName = candidate.Name }
+                            : g)
+                        .ToList(),
+                },
+                Pipeline = state.Pipeline with { SocketedGlyphs = newGlyphs },
+            };
+            if (TrySolve(cache, next.Layout, graph.Value, next.Request) is not { } solve)
                 continue;
 
-            var feasible = spareGlyphs
-                .Where(g => !socketedNames.Contains(g.InternalName))
-                .Select(g => (Glyph: g, Source: GlyphInfo.PrimarySourceAttribute(g)))
-                .Where(g => g.Source is not null)
-                // With an activation goal, the new glyph must be activatable on this board.
-                .Where(g => goal is null || PlacementAnalyzer.AttainableByAttribute(
-                    board, g.Source!, goal.Radius) >= goal.RequiredTotal - 1e-9)
-                .Select(g => (g.Glyph, g.Source, Scalar: GlyphInfo.BonusScalarAt(g.Glyph, incumbent.Level) ?? 0))
-                .Where(g => g.Scalar > 0)
-                .ToList();
-            var mapped = feasible
-                .Where(g => GlyphInfo.IsAttributeMapped(g.Glyph))
-                .OrderByDescending(g => g.Scalar * RelevanceOf(GlyphInfo.DestinationAttribute(g.Glyph), weights))
-                .Take(2);
-            var nodeBuff = feasible
-                .Where(g => !GlyphInfo.IsAttributeMapped(g.Glyph))
-                .OrderByDescending(g => g.Scalar)
-                .Take(1);
-
-            foreach (var (candidate, source, _) in mapped.Concat(nodeBuff))
+            string boardName = board.Name ?? board.InternalName;
+            next = next with
             {
-                var newGlyphs = socketed
-                    .Select(g => g.BoardSlot == incumbent.BoardSlot ? g with { Glyph = candidate } : g)
-                    .ToList();
-                var newGoals = state.Request.GlyphGoals
-                    .Select(g => g.Socket.BoardSlot == incumbent.BoardSlot
-                        ? g with { SourceAttribute = source!, GlyphName = candidate.Name }
-                        : g)
-                    .ToList();
-                var next = state with
-                {
-                    Request = new PlanRequest
-                    {
-                        Targets = state.Request.Targets,
-                        NodeRules = state.Request.NodeRules,
-                        AvoidCells = state.Request.AvoidCells,
-                        ExcludeCells = state.Request.ExcludeCells,
-                        GlyphGoals = newGoals,
-                    },
-                    Pipeline = state.Pipeline with { SocketedGlyphs = newGlyphs },
-                };
-                var graph = ComposedGraph.Build(next.Layout);
-                if (TrySolve(graph, next.Request) is not { } solve)
-                    continue;
-
-                string boardName = board.Name ?? board.InternalName;
-                next = next with
-                {
-                    Changes = [.. state.Changes, new GlyphSwapChange(incumbent.BoardSlot, candidate)],
-                    Steps = [.. state.Steps,
-                        $"Socket {candidate.Name ?? candidate.InternalName} instead of " +
-                        $"{incumbent.Glyph.Name ?? incumbent.Glyph.InternalName} on slot {incumbent.BoardSlot} " +
-                        $"({boardName}) — judged at level {incumbent.Level}; level the glyph accordingly"],
-                };
-                yield return new Move(next, graph, MoveFamily.GlyphSwap, KeyOf(next),
-                    solve.GlyphOutcomes.Count(o => o.Met), solve.PointsSpent);
-            }
+                Changes = [.. state.Changes, new GlyphSwapChange(incumbent.BoardSlot, candidate)],
+                Steps = [.. state.Steps,
+                    $"Socket {candidate.Name ?? candidate.InternalName} instead of " +
+                    $"{incumbent.Glyph.Name ?? incumbent.Glyph.InternalName} on slot {incumbent.BoardSlot} " +
+                    $"({boardName}) — judged at level {incumbent.Level}; level the glyph accordingly"],
+            };
+            yield return new Move(next, graph.Value, MoveFamily.GlyphSwap, KeyOf(next), solve);
         }
     }
 
@@ -518,32 +548,49 @@ public static class PlacementSearch
         }
     }
 
-    private static PlanResult? TrySolve(ComposedGraph graph, PlanRequest request)
-    {
-        var solve = PlanSolver.Solve(graph, request);
-        return solve.Success ? solve : null;
-    }
+    /// <summary>A bare solve, memoized by layout + request — solves don't depend on glyphs.</summary>
+    private static PlanResult? TrySolve(
+        PlacementSearchCache cache, ParagonLayout layout, ComposedGraph graph, PlanRequest request) =>
+        cache.Solves.GetOrAdd(LayoutKey(layout) + "#" + RequestKey(request), _ =>
+        {
+            var solve = PlanSolver.Solve(graph, request);
+            return solve.Success ? solve : null;
+        });
 
-    /// <summary>Cells on a re-rotated board keep their identity but move with the rotation delta.</summary>
-    private static PlanRequest RemapForRotation(PlanRequest request, int slot, PlacedBoard placed, int rotation)
+    /// <summary>A full-pipeline evaluation, memoized by state + request under the state's pipeline.</summary>
+    private static PipelineResult? Evaluate(
+        PlacementSearchCache cache, State state, ComposedGraph graph, PlanResult? solved) =>
+        cache.Evaluations.GetOrAdd((state.Pipeline, KeyOf(state) + "#" + RequestKey(state.Request)),
+            _ => PlacementAnalyzer.EvaluatePipeline(graph, state.Request, state.Pipeline, solved));
+
+    private static string LayoutKey(ParagonLayout layout) =>
+        string.Join(";", layout.Boards.Select(b =>
+            $"{b.Board.InternalName}|{b.ParentSlot}|{b.AttachEdge}|{b.RotationSteps}"));
+
+    /// <summary>Everything in a request that can change a solve's outcome, in order.</summary>
+    private static string RequestKey(PlanRequest request)
     {
-        int delta = (rotation - placed.RotationSteps + 4) & 3;
-        int width = placed.Board.Width;
-        CellRef Remap(CellRef cell)
+        var key = new StringBuilder();
+        static void Cells(StringBuilder sb, IEnumerable<CellRef> cells)
         {
-            if (cell.BoardSlot != slot)
-                return cell;
-            var (x, y) = ParagonLayout.Rotate(cell.X, cell.Y, delta, width);
-            return cell with { X = x, Y = y };
+            foreach (var c in cells)
+                sb.Append(c.BoardSlot).Append(',').Append(c.X).Append(',').Append(c.Y).Append(' ');
+            sb.Append('|');
         }
-        return new PlanRequest
+        Cells(key, request.Targets);
+        Cells(key, request.AvoidCells);
+        Cells(key, request.ExcludeCells);
+        foreach (var rule in request.NodeRules)
+            key.Append(rule.GroupKey).Append(':').Append(rule.Mode).Append(':').Append(rule.Limit).Append(' ');
+        key.Append('|');
+        foreach (var goal in request.GlyphGoals)
         {
-            Targets = request.Targets.Select(Remap).ToList(),
-            NodeRules = request.NodeRules,
-            AvoidCells = request.AvoidCells.Select(Remap).ToList(),
-            ExcludeCells = request.ExcludeCells.Select(Remap).ToList(),
-            GlyphGoals = request.GlyphGoals.Select(g => g with { Socket = Remap(g.Socket) }).ToList(),
-        };
+            key.Append(goal.Socket.BoardSlot).Append(',').Append(goal.Socket.X).Append(',').Append(goal.Socket.Y)
+                .Append(':').Append(goal.SourceAttribute).Append(':')
+                .Append(goal.RequiredTotal.ToString("R", CultureInfo.InvariantCulture)).Append(':')
+                .Append(goal.Radius).Append(':').Append(goal.GlyphName).Append(' ');
+        }
+        return key.ToString();
     }
 
     /// <summary>How much focused stat the whole board carries — the swap ranking when no glyph

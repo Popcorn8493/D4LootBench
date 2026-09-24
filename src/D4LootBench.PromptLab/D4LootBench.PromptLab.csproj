@@ -3,10 +3,6 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <RootNamespace>D4LootBench.PromptLab</RootNamespace>
-    <AssemblyName>D4LootBench.PromptLab</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>

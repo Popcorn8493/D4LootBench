@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Controls;
 using D4LootBench.App.Services;
 using D4LootBench.App.Views.Help;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace D4LootBench.App.Views;
 
@@ -19,7 +20,8 @@ public partial class HelpWindow : Window
             ["BuildGuideImport"]    = new(() => new BuildGuideImportTopic()),
             ["AiSetup"]             = new(() => new AiSetupTopic()),
             ["CustomizingData"] = new(() => new CustomizingDataTopic(
-                                      async () => await GameDataHelper.ExtractAsync())),
+                                      async () => await GameDataHelper.ExtractAsync(
+                                          App.Services.GetRequiredService<IDialogService>()))),
             ["Troubleshooting"] = new(() => new TroubleshootingTopic()),
             ["FilterRules"]     = new(() => new FilterRulesTopic()),
             ["Attribution"]     = new(() => new AttributionTopic()),

@@ -213,33 +213,6 @@ public class PlanSolverTests
     }
 
     [Fact]
-    public void Glyph_placement_suggests_the_socket_that_actually_sees_the_purchased_stat()
-    {
-        var layout = new ParagonLayout(
-        [
-            new PlacedBoard { Board = Board("Paragon_Sorc_00") },
-            new PlacedBoard { Board = Board("Paragon_Sorc_05"), ParentSlot = 0, AttachEdge = BoardEdge.Top },
-        ]);
-        var graph = ComposedGraph.Build(layout);
-        var starterSocket = graph.Vertices.Single(v => v.Cell.BoardSlot == 0 && v.Node.Kind == ParagonNodeKind.GlyphSocket).Cell;
-        var attachedSocket = graph.Vertices.Single(v => v.Cell.BoardSlot == 1 && v.Node.Kind == ParagonNodeKind.GlyphSocket).Cell;
-
-        // Purchase everything around the attached board's socket, nothing around the starter's.
-        var purchased = graph.Vertices
-            .Where(v => v.Cell.BoardSlot == 1
-                        && Math.Abs(v.Cell.X - attachedSocket.X) + Math.Abs(v.Cell.Y - attachedSocket.Y) <= 5)
-            .Select(v => v.Cell)
-            .ToList();
-
-        var goal = new GlyphGoal(starterSocket, "Intelligence_Core", RequiredTotal: 40, Radius: 5, GlyphName: "Enchanter");
-        var suggestions = PlacementAnalyzer.SuggestGlyphPlacements(graph, layout, purchased, [goal]);
-
-        var suggestion = suggestions.ShouldHaveSingleItem();
-        suggestion.Description.ShouldContain("Enchanter");
-        suggestion.Description.ShouldContain("slot 1");
-    }
-
-    [Fact]
     public void Rotation_analysis_returns_only_genuine_improvements()
     {
         var layout = new ParagonLayout(

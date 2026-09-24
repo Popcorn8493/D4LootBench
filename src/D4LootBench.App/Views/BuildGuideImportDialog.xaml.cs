@@ -20,5 +20,6 @@ public partial class BuildGuideImportDialog : Window
         };
         DataContext = Vm;
         Vm.ImportSucceeded += () => DialogResult = true;
+        Closed += (_, _) => Vm.CancelPendingFetch();
     }
 }

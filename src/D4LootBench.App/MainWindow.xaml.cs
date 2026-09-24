@@ -6,6 +6,7 @@ using D4LootBench.App.Views;
 using D4LootBench.Core.Compare;
 using D4LootBench.Core.Data;
 using D4LootBench.Paragon.Solver;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace D4LootBench.App;
 
@@ -14,17 +15,20 @@ public partial class MainWindow
     private readonly MainWindowViewModel  _vm;
     private readonly WindowSettingsService _windowSettings;
     private readonly IFilterDataService _data;
+    private readonly IServiceProvider _services;
     private double _savedPanelHeight = 220;
     private HelpWindow? _helpWindow;
     private ParagonPlannerWindow? _paragonWindow;
 
     public MainWindow(
-        MainWindowViewModel vm, WindowSettingsService windowSettings, IFilterDataService data)
+        MainWindowViewModel vm, WindowSettingsService windowSettings, IFilterDataService data,
+        IServiceProvider services)
     {
         InitializeComponent();
         _vm             = vm;
         _windowSettings = windowSettings;
         _data           = data;
+        _services       = services;
         DataContext     = _vm;
         _vm.ShowRawEditorRequested += OnShowRawEditorRequested;
         _vm.ShowParagonPlannerRequested += OnShowParagonPlannerRequested;
@@ -122,19 +126,18 @@ public partial class MainWindow
     {
         if (_paragonWindow is null || !_paragonWindow.IsLoaded)
         {
+            var planner = _services.GetRequiredService<ParagonPlannerViewModel>();
+            // The planner stays Core-free: hand it the loaded filter's affix
+            // priorities as plain (name, weight) pairs, resolved on demand.
+            planner.GearPriorityProvider = () =>
+                _vm.Editor?.BuildRuleset() is { } ruleset
+                    ? GearPriorityExtractor.Extract(ruleset)
+                        .Select(p => new GearStatPriority(p.Name, p.Weight))
+                        .ToList()
+                    : [];
             _paragonWindow = new ParagonPlannerWindow
             {
-                DataContext = new ParagonPlannerViewModel
-                {
-                    // The planner stays Core-free: hand it the loaded filter's affix
-                    // priorities as plain (name, weight) pairs, resolved on demand.
-                    GearPriorityProvider = () =>
-                        _vm.Editor?.BuildRuleset() is { } ruleset
-                            ? GearPriorityExtractor.Extract(ruleset)
-                                .Select(p => new GearStatPriority(p.Name, p.Weight))
-                                .ToList()
-                            : [],
-                },
+                DataContext = planner,
                 Owner = this,
             };
             _paragonWindow.Closed += (_, _) => _paragonWindow = null;
@@ -170,7 +173,10 @@ public partial class MainWindow
             }
         }
 
-        new ItemCompareWindow(new ItemCompareViewModel(_data, reference, needs)) { Owner = this }.Show();
+        var compare = new ItemCompareViewModel(_data, reference, needs,
+            _services.GetRequiredService<SavedGearService>(),
+            _services.GetRequiredService<CompareReferenceService>());
+        new ItemCompareWindow(compare) { Owner = this }.Show();
     }
 
     private void OnOpenHelpRequested(string topic)

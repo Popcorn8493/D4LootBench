@@ -65,9 +65,8 @@ public static class PlanSolver
     public static PlanResult Solve(ComposedGraph graph, PlanRequest request)
     {
         var cellsByGroup = NodeGrouping.CellsByGroup(graph);
-        var displayByGroup = NodeGrouping.GroupsIn(graph)
-            .Concat(NodeGrouping.StatGroupsIn(graph))
-            .ToDictionary(g => g.Key, g => g.DisplayName);
+        // Display names are only needed when a note fires.
+        Dictionary<string, string>? displayByGroup = null;
         var (weights, blockedCells, limitRules) = BuildSteering(request, cellsByGroup);
 
         // Minimal rules: prefer the fewest group nodes WITHOUT disturbing point-optimality.
@@ -158,7 +157,13 @@ public static class PlanSolver
             GlyphOutcomes = outcomes,
         };
 
-        string Display(string groupKey) => displayByGroup.GetValueOrDefault(groupKey, groupKey);
+        string Display(string groupKey)
+        {
+            displayByGroup ??= NodeGrouping.GroupsIn(graph)
+                .Concat(NodeGrouping.StatGroupsIn(graph))
+                .ToDictionary(g => g.Key, g => g.DisplayName);
+            return displayByGroup.GetValueOrDefault(groupKey, groupKey);
+        }
     }
 
     /// <summary>Turns a request's rules and per-cell overrides into weights, blocks and limit rules.</summary>
@@ -199,9 +204,12 @@ public static class PlanSolver
         IReadOnlyDictionary<string, IReadOnlyList<CellRef>> cellsByGroup)
     {
         var violated = new List<(NodeRule, int)>();
+        if (limitRules.Count == 0)
+            return violated;
+        var purchasedSet = purchased as ISet<CellRef> ?? purchased.ToHashSet();
         foreach (var rule in limitRules)
         {
-            int count = cellsByGroup[rule.GroupKey].Count(purchased.Contains);
+            int count = cellsByGroup[rule.GroupKey].Count(purchasedSet.Contains);
             if (count > rule.Limit)
                 violated.Add((rule, count));
         }

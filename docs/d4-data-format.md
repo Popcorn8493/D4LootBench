@@ -26,8 +26,8 @@ Hash IDs are authoritative — display names are informational only and do not a
 
 ```json
 {
-  "formatVersion": 1,
-  "source": "LootBenchDataExtract build 3.0.3.72031",
+  "formatVersion": 5,
+  "source": "LootBenchDataExtract build 3.1.0.72698",
   "affixes": [ ... ],
   "skills": [ ... ],
   "itemTypes": [ ... ],
@@ -38,7 +38,7 @@ Hash IDs are authoritative — display names are informational only and do not a
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `formatVersion` | integer | Schema version; currently `1` |
+| `formatVersion` | integer | Data/schema version, bumped with each regeneration; currently `5`. Informational — the loader does not check it |
 | `source` | string | Informational — where this data was sourced from |
 | `affixes` | array | Affix entries (Required Affixes, Optional Affixes, Greater Affix conditions) |
 | `skills` | array | Skill entries (Codex of Power condition) |

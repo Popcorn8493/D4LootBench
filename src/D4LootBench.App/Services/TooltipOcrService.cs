@@ -33,20 +33,45 @@ public static class TooltipOcrService
             ?? throw new InvalidOperationException(
                 "Windows OCR isn't available — install a language pack with OCR support in Windows settings.");
 
-        var lines = await RecognizeAsync(engine, Preprocess(image));
+        // The pixel work (grayscale, stretch, upscale, PNG encode) takes noticeable time on a
+        // large snip — run it off the UI thread. A frozen bitmap is readable from any thread.
+        var source = Frozen(image);
+        var lines = await RecognizeAsync(engine, await Task.Run(() => EncodePng(Preprocess(source))));
         if (lines.Count == 0)
-            lines = await RecognizeAsync(engine, Scaled(image, ScaleFor(image, upscale: 1.0)));
+        {
+            lines = await RecognizeAsync(engine,
+                await Task.Run(() => EncodePng(Scaled(source, ScaleFor(source, upscale: 1.0)))));
+        }
         return lines;
     }
 
-    private static async Task<IReadOnlyList<OcrLineInfo>> RecognizeAsync(OcrEngine engine, BitmapSource image)
+    /// <summary>The image itself when freezable (clipboard bitmaps are), else a frozen copy.</summary>
+    private static BitmapSource Frozen(BitmapSource image)
+    {
+        if (image.IsFrozen)
+            return image;
+        if (image.CanFreeze)
+        {
+            image.Freeze();
+            return image;
+        }
+        var copy = new WriteableBitmap(image);
+        copy.Freeze();
+        return copy;
+    }
+
+    private static byte[] EncodePng(BitmapSource image)
     {
         using var stream = new MemoryStream();
         var encoder = new PngBitmapEncoder();
         encoder.Frames.Add(BitmapFrame.Create(image));
         encoder.Save(stream);
-        stream.Position = 0;
+        return stream.ToArray();
+    }
 
+    private static async Task<IReadOnlyList<OcrLineInfo>> RecognizeAsync(OcrEngine engine, byte[] png)
+    {
+        using var stream = new MemoryStream(png);
         var decoder = await WinRtBitmapDecoder.CreateAsync(stream.AsRandomAccessStream());
         using var bitmap = await decoder.GetSoftwareBitmapAsync();
         var result = await engine.RecognizeAsync(bitmap);

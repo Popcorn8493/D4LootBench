@@ -256,28 +256,12 @@ public static class PointParity
         var (graph, set, tree, valueOf) = state;
         var gatePair = GateCrossings.PairMap(graph);
 
-        bool StaysConnectedWithout(int candidate)
-        {
-            var seen = new HashSet<int> { graph.StartVertex };
-            var queue = new Queue<int>();
-            queue.Enqueue(graph.StartVertex);
-            while (queue.Count > 0)
-            {
-                int v = queue.Dequeue();
-                foreach (int u in graph.Adjacency[v])
-                {
-                    if (u != candidate && tree.Contains(u) && seen.Add(u))
-                        queue.Enqueue(u);
-                }
-            }
-            return seen.Count == tree.Count - 1;
-        }
-
         int removed = 0;
         while (removed < count)
         {
             int worst = -1;
             double worstValue = double.MaxValue;
+            var removable = TreeConnectivity.RemovableMask(graph, tree);
             foreach (int v in tree)
             {
                 var node = graph.Vertices[v].Node;
@@ -289,7 +273,7 @@ public static class PointParity
                     continue;
                 if (forbidden?.Invoke(v) == true)
                     continue;
-                if (!StaysConnectedWithout(v))
+                if (!removable[v])
                     continue;
                 double value = valueOf(v);
                 if (value < worstValue)

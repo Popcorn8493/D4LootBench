@@ -11,16 +11,16 @@
     <DockPanel Margin="12">
         <TextBlock DockPanel.Dock="Top" Margin="0,0,0,8" TextWrapping="Wrap"
                    Text="Each row feeds Additive (always-on), Situational (conditional), or neither — the defaults are guesses, so re-bucket or EDIT the 'Adds %' number where they're wrong (hover a row for why it landed where it did). Built-in bases (crit 50%, vulnerable 20%, overpower 50%) are pre-subtracted, but panel headlines also fold in multiplicative ×% sources: for the exact additive share of a stat, hover it in game, snip the tooltip ('You have +X% of this stat from items and Paragon'), and use Scan clipboard again — that line is precise and replaces the row." />
-        <CheckBox x:Name="SubtractParagon" DockPanel.Dock="Top" Margin="0,0,0,8"
-                  Checked="OnRecompute" Unchecked="OnRecompute">
-            <TextBlock x:Name="SubtractLabel" TextWrapping="Wrap" />
+        <CheckBox DockPanel.Dock="Top" Margin="0,0,0,8"
+                  IsChecked="{Binding SubtractParagon}" IsEnabled="{Binding CanSubtractParagon, Mode=OneTime}">
+            <TextBlock Text="{Binding SubtractLabel, Mode=OneTime}" TextWrapping="Wrap" />
         </CheckBox>
         <DockPanel DockPanel.Dock="Top" Margin="0,0,0,6" LastChildFill="True">
             <Button DockPanel.Dock="Left" Content="Add row" Padding="8,2" Margin="0,0,8,0" Click="OnAddRow"
                     ToolTip="Add a manual entry — type the stat, the +% it adds, and pick its field." />
-            <Button DockPanel.Dock="Left" Content="Scan clipboard again" Padding="8,2" Click="OnScanClipboard"
+            <Button DockPanel.Dock="Left" Content="Scan clipboard again" Padding="8,2" Command="{Binding ScanClipboardCommand}"
                     ToolTip="Snip another screenshot (Win+Shift+S) and read it in: the stats panel adds/updates its rows; a single stat's hover tooltip replaces that stat's row with the exact 'items and Paragon' value." />
-            <TextBlock x:Name="ScanStatus" Margin="10,0,0,0" VerticalAlignment="Center"
+            <TextBlock Text="{Binding ScanStatus}" Margin="10,0,0,0" VerticalAlignment="Center"
                        FontSize="11" Foreground="#888" TextTrimming="CharacterEllipsis" />
         </DockPanel>
         <DockPanel DockPanel.Dock="Bottom" Margin="0,10,0,0">
@@ -28,9 +28,9 @@
                 <Button Content="Apply" Width="80" Margin="8,0,8,0" IsDefault="True" Click="OnApply" />
                 <Button Content="Cancel" Width="80" IsCancel="True" />
             </StackPanel>
-            <TextBlock x:Name="Totals" FontWeight="SemiBold" TextWrapping="Wrap" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding TotalsText}" FontWeight="SemiBold" TextWrapping="Wrap" VerticalAlignment="Center" />
         </DockPanel>
-        <ListView x:Name="RowList" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+        <ListView x:Name="RowList" ItemsSource="{Binding Rows}" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
             <ListView.ItemContainerStyle>
                 <Style TargetType="ListViewItem">
                     <Setter Property="ToolTip" Value="{Binding Note}" />

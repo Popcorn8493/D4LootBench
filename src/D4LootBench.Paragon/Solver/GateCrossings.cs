@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using D4LootBench.Paragon.Models;
 
 namespace D4LootBench.Paragon.Solver;
@@ -14,8 +15,13 @@ namespace D4LootBench.Paragon.Solver;
 /// </summary>
 public static class GateCrossings
 {
-    /// <summary>Per-vertex partner map: the adjacent gate cell on ANOTHER board, or -1.</summary>
-    public static int[] PairMap(ComposedGraph graph)
+    private static readonly ConditionalWeakTable<ComposedGraph, int[]> PairMaps = new();
+
+    /// <summary>Per-vertex partner map: the adjacent gate cell on ANOTHER board, or -1.
+    /// Cached per graph (graphs are immutable) — treat the array as read-only.</summary>
+    public static int[] PairMap(ComposedGraph graph) => PairMaps.GetValue(graph, BuildPairMap);
+
+    private static int[] BuildPairMap(ComposedGraph graph)
     {
         var map = new int[graph.Vertices.Count];
         Array.Fill(map, -1);
@@ -40,21 +46,15 @@ public static class GateCrossings
     public static int FreeCredits(ComposedGraph graph, IReadOnlyCollection<CellRef> purchased)
     {
         var set = purchased as ISet<CellRef> ?? purchased.ToHashSet();
+        var pairs = PairMap(graph);
         int credits = 0;
-        for (int v = 0; v < graph.Vertices.Count; v++)
+        for (int v = 0; v < pairs.Length; v++)
         {
-            var vertex = graph.Vertices[v];
-            if (vertex.Node.Kind != ParagonNodeKind.Gate || !set.Contains(vertex.Cell))
-                continue;
-            foreach (int n in graph.Adjacency[v])
-            {
-                var other = graph.Vertices[n];
-                if (n > v // count each pair once
-                    && other.Node.Kind == ParagonNodeKind.Gate
-                    && other.Cell.BoardSlot != vertex.Cell.BoardSlot
-                    && set.Contains(other.Cell))
-                    credits++;
-            }
+            int n = pairs[v];
+            if (n > v // count each pair once
+                && set.Contains(graph.Vertices[v].Cell)
+                && set.Contains(graph.Vertices[n].Cell))
+                credits++;
         }
         return credits;
     }

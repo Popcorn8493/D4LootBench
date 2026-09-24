@@ -34,8 +34,18 @@ public partial class ParagonPlannerWindow : Window
     /// </summary>
     private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
     {
-        if (DataContext is not ParagonPlannerViewModel viewModel || viewModel.IsBusy)
+        if (DataContext is not ParagonPlannerViewModel viewModel)
             return;
+        if (viewModel.IsBusy)
+        {
+            // While busy, Esc is the only shortcut: it cancels a cancellable search.
+            if (e.Key == Key.Escape && viewModel.CanCancelBusy)
+            {
+                viewModel.CancelBusyCommand.Execute(null);
+                e.Handled = true;
+            }
+            return;
+        }
         // A focused text box keeps its own editing shortcuts (its local Ctrl+Z undo stack).
         bool inTextBox = Keyboard.FocusedElement is System.Windows.Controls.Primitives.TextBoxBase;
         ICommand? command = (e.Key, Keyboard.Modifiers) switch
@@ -55,6 +65,24 @@ public partial class ParagonPlannerWindow : Window
             return;
         e.Handled = true;
         command.Execute(null);
+    }
+
+    /// <summary>
+    /// Lazy node tooltips: the template carries a placeholder, and the real text is built only
+    /// when a tooltip actually opens — instead of formatting (and re-formatting on every summary
+    /// refresh) a description for each of the hundreds of cells on the canvas.
+    /// </summary>
+    private void Cell_ToolTipOpening(object sender, System.Windows.Controls.ToolTipEventArgs e)
+    {
+        if (sender is not FrameworkElement { DataContext: ParagonCellViewModel cell } element)
+            return;
+        string text = cell.ToolTipText;
+        if (text.Length == 0)
+        {
+            e.Handled = true; // nothing to show
+            return;
+        }
+        element.ToolTip = text;
     }
 
     /// <summary>Right-click on a node: an explicit menu instead of blind state cycling.</summary>

@@ -2,9 +2,8 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: ['**']
   pull_request:
-    branches: [main]
 
 jobs:
   build-and-test:
@@ -16,10 +15,44 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '10.0.x'
+          global-json-file: global.json
 
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('Directory.Packages.props', '**/*.csproj', 'Directory.Build.props', 'global.json') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      # CI=true (set by Actions) turns on TreatWarningsAsErrors via Directory.Build.props.
       - name: Build
         run: dotnet build --configuration Release
 
+      # xunit v3 on Microsoft.Testing.Platform (opted in via global.json): TRX comes from
+      # --report-xunit-trx rather than VSTest's --logger trx.
       - name: Test
-        run: dotnet test --configuration Release --no-build
+        run: dotnet test --configuration Release --no-build --report-xunit-trx --results-directory TestResults
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: TestResults
+          if-no-files-found: warn
+
+      - name: Publish smoke test
+        run: >
+          dotnet publish src/D4LootBench.App
+          --configuration Release
+          --runtime win-x64
+          --self-contained true
+          -p:PublishSingleFile=true
+          --output ./publish
+
+      - name: Upload exe
+        uses: actions/upload-artifact@v4
+        with:
+          name: D4LootBench-win-x64
+          path: publish/D4LootBench.exe
+          if-no-files-found: error

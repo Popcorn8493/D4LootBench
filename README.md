@@ -28,6 +28,29 @@ Single `.exe`, no installer, Windows only. Copy it anywhere and run it.
 - Export back to a share code to paste into D4
 - Raw JSON editor for bulk edits and power users
 - Optional AI assistant (Ollama) — describe a rule in plain English, get a filter rule back
+- **Paragon Planner** — plan paragon boards, glyphs, and point spending (see below)
+- **Compare Items** — score two drops against your filter or wish list, filled from a tooltip screenshot
+- Light and dark themes (toolbar **Dark** toggle)
+
+---
+
+## More Tools
+
+### Import from a build URL
+
+Besides pasting a gear table, **Import from Build Guide** accepts a guide URL:
+
+- **Mobalytics** build pages — per-slot affix priorities and target uniques
+- **Maxroll** guides / planner links — imports the guide author's own in-game loot filters directly
+- **d4builds.gg** build pages — gear and affixes from the published build
+
+### Paragon Planner
+
+The **Paragon** toolbar button opens a board planner: attach and rotate boards, socket glyphs, mark target nodes, and let the solver find the cheapest path. It can activate glyphs, respect node rules (avoid / exclude / limit), spend your remaining points on the stats you care about, and suggest better rotations, board swaps, and glyph placements. Import builds from Maxroll, Mobalytics, or d4builds.gg URLs, compare two builds side by side, and save your character (level, stats, glyph levels) so imported guides are fitted to your real progression.
+
+### Compare Items
+
+**Compare Items** scores two candidate drops against the loaded filter's affix priorities (or your own wish list). Copy an item tooltip screenshot to the clipboard (e.g. <kbd>Win+Shift+S</kbd>) and the item is filled in by OCR using the built-in Windows text recognizer. Items you care about can be saved to a gear library.
 
 ---
 
@@ -74,7 +97,7 @@ Then describe what you want in plain English, e.g. *"show all ancestral items wi
 
 > **Other models:** Non-coding general-purpose models (e.g. `llama3.2`) are not recommended. The assistant output is structured JSON that must match a strict schema — general models tested poorly and produced incorrect rules even with precise prompts. Use a coder model if at all possible. If you choose to experiment with other models, review every generated rule carefully before adding it to your filter.
 
-> Cloud providers (Anthropic, OpenAI) are not yet wired into the UI. The provider abstraction is in place and may be added based on community interest.
+> Hosted providers (Anthropic, OpenAI) are not implemented. The provider abstraction is in place and they may be added based on community interest.
 
 ---
 
@@ -98,17 +121,17 @@ See [docs/d4-data-format.md](docs/d4-data-format.md) for the full schema referen
 Re-export the filter from D4's in-game UI instead of using a code shared externally. Codes shared via community sites or older tools may have subtle encoding differences from the current game version.
 
 **AI assistant not responding**
-Verify Ollama is running (`ollama list` in a terminal). Confirm the **Base URL** in the AI panel matches your Ollama port — the default is `http://localhost:11434`.
+Verify Ollama is running (`ollama list` in a terminal). Confirm the **Base URL** in the AI panel matches your Ollama port — the default is `http://localhost:11434`. Requests time out after 5 minutes; if you see "timed out" rather than "unreachable", the model is running on CPU or still loading — try a smaller model.
 
 ---
 
 ## Building from Source
 
-Requires [.NET 10 SDK](https://dotnet.microsoft.com/download).
+Requires [.NET 10 SDK](https://dotnet.microsoft.com/download) (version pinned in `global.json`).
 
 ```powershell
 dotnet build                    # build the full solution
-dotnet test                     # run the test suite (88 tests)
+dotnet test                     # run the test suite (480+ tests)
 
 # produce a self-contained single-file exe
 dotnet publish src/D4LootBench.App -r win-x64 -p:PublishSingleFile=true --self-contained true
@@ -121,11 +144,11 @@ dotnet publish src/D4LootBench.App -r win-x64 -p:PublishSingleFile=true --self-c
 For those interested in the implementation:
 
 - **Custom protobuf codec** (~80 lines, 3 wire types) — reverse-engineered from D4's binary share code format; no Google.Protobuf dependency, handles unknown fields gracefully for patch resilience
-- **Clean three-library solution** — `D4LootBench.Core` (zero WPF dependency), `D4LootBench.Ai` (zero WPF dependency), `D4LootBench.App` (WPF shell)
+- **Layered solution** — `D4LootBench.Core`, `D4LootBench.Ai`, and `D4LootBench.Paragon` (paragon solver) are plain class libraries with zero WPF dependency; `D4LootBench.App` is the WPF shell
 - **MVVM** with CommunityToolkit.Mvvm source generators and Microsoft.Extensions.DependencyInjection
 - **`ILlmProvider` abstraction** over Ollama with clean extension points for additional providers
 - **Annotated `{id, name}` JSON format** — human-readable and LLM-interpretable while keeping hash IDs (SNO IDs) authoritative
-- **88 unit tests** covering codec round-trips, validation rules, annotated JSON serialization, and build guide parser coverage across all three formats
+- **480+ unit tests** covering codec round-trips and malformed-code hardening, validation rules, annotated JSON serialization, build guide parsers and URL importers, the AI rule pipeline, item comparison, and the paragon solver
 
 See [docs/filter-format.md](docs/filter-format.md) for the full protocol buffer format specification.
 

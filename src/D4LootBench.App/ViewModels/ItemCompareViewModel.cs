@@ -139,13 +139,13 @@ public partial class ItemCompareViewModel : ObservableObject
 
     public ItemCompareViewModel(
         IFilterDataService data, FilterRuleset? reference, IReadOnlyList<StatNeed> statNeeds,
-        SavedGearService? savedGear = null, CompareReferenceService? referenceStore = null)
+        SavedGearService savedGear, CompareReferenceService referenceStore)
     {
         _reference = reference;
         _statNeeds = statNeeds;
         _resolver = new NameResolver(data);
-        _savedGear = savedGear ?? new SavedGearService();
-        _referenceStore = referenceStore ?? new CompareReferenceService();
+        _savedGear = savedGear;
+        _referenceStore = referenceStore;
 
         _aggregateComponents = AggregateStats.All.ToDictionary(
             s => s.Id,
@@ -435,9 +435,10 @@ public partial class ItemCompareViewModel : ObservableObject
     [RelayCommand]
     private async Task ScanItem(CandidateItemViewModel item)
     {
-        if (!Clipboard.ContainsImage() || Clipboard.GetImage() is not { } image)
+        if (ClipboardHelper.TryGetImage() is not { } image)
         {
-            StatusText = "No screenshot on the clipboard — snip the item tooltip with Win+Shift+S first.";
+            StatusText = "No screenshot on the clipboard (or another app is holding it) — " +
+                         "snip the item tooltip with Win+Shift+S first.";
             return;
         }
 

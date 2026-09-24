@@ -9,11 +9,6 @@ public abstract record PlacementChange;
 /// <summary>Set the board in <see cref="Slot"/> to <see cref="RotationSteps"/> quarter-turns.</summary>
 public sealed record RotationChange(int Slot, int RotationSteps) : PlacementChange;
 
-public sealed record GlyphMove(CellRef FromSocket, CellRef ToSocket);
-
-/// <summary>Re-socket glyphs as one atomic permutation (moves may swap sockets pairwise).</summary>
-public sealed record GlyphReassignment(IReadOnlyList<GlyphMove> Moves) : PlacementChange;
-
 /// <summary>
 /// Replace the board in <see cref="Slot"/> with <see cref="NewBoard"/> at the given rotation.
 /// Targets on the old board are retargeted to the new board's legendary node(s) on apply.
@@ -95,16 +90,46 @@ public sealed record PipelineResult(int GlyphsActive, int ThresholdsMet, int Poi
 /// </summary>
 public static class PlacementAnalyzer
 {
+    /// <summary>
+    /// Every single-change suggestion family against ONE shared baseline evaluation (each
+    /// family would otherwise re-run the full baseline pipeline), with the families run in
+    /// parallel — the solver layer is stateless. Ordered: glyph re-socketing, the best three
+    /// rotations, board swaps, re-attachments.
+    /// </summary>
+    public static IReadOnlyList<PlacementSuggestion> SuggestAll(
+        ParagonLayout layout, PlanRequest request, PlanResult baseline,
+        IReadOnlyList<ParagonBoardDef> spareBoards, PlacementPipeline pipeline,
+        CancellationToken cancellationToken = default)
+    {
+        var graph = ComposedGraph.Build(layout);
+        var baselineEval = EvaluatePipeline(graph, request, pipeline, baseline);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var families = new Func<IReadOnlyList<PlacementSuggestion>>[]
+        {
+            () => SuggestGlyphAssignment(graph, request, baseline, pipeline, baselineEval),
+            () => SuggestRotations(layout, request, baseline, pipeline, baselineEval).Take(3).ToList(),
+            () => SuggestBoardSwaps(layout, request, baseline, spareBoards, pipeline: pipeline, baselineEval: baselineEval),
+            () => SuggestReattachments(layout, request, baseline, pipeline, baselineEval: baselineEval),
+        };
+        return families
+            .AsParallel().AsOrdered()
+            .WithCancellation(cancellationToken)
+            .SelectMany(family => family())
+            .ToList();
+    }
+
     public static IReadOnlyList<PlacementSuggestion> SuggestRotations(
-        ParagonLayout layout, PlanRequest request, PlanResult baseline, PlacementPipeline? pipeline = null)
+        ParagonLayout layout, PlanRequest request, PlanResult baseline, PlacementPipeline? pipeline = null,
+        PipelineResult? baselineEval = null)
     {
         var suggestions = new List<PlacementSuggestion>();
         int baselineMet = baseline.GlyphOutcomes.Count(o => o.Met);
         // Full-pipeline mode: candidates are judged by the finished build (solve + full spend
         // with the user's maximizer settings), not by the bare solve.
-        var baselineEval = pipeline is null
+        baselineEval = pipeline is null
             ? null
-            : EvaluatePipeline(ComposedGraph.Build(layout), request, pipeline, baseline);
+            : baselineEval ?? EvaluatePipeline(ComposedGraph.Build(layout), request, pipeline, baseline);
 
         for (int slot = 1; slot < layout.Boards.Count; slot++)
         {
@@ -133,25 +158,7 @@ public static class PlacementAnalyzer
                     continue; // rotation leaves no gate facing the parent — not placeable
                 }
 
-                // Cells on the rotated board keep their identity but move: apply the rotation delta.
-                int delta = (rotation - placed.RotationSteps + 4) & 3;
-                int width = placed.Board.Width;
-                CellRef Remap(CellRef cell)
-                {
-                    if (cell.BoardSlot != slot)
-                        return cell;
-                    var (x, y) = ParagonLayout.Rotate(cell.X, cell.Y, delta, width);
-                    return cell with { X = x, Y = y };
-                }
-
-                var variantRequest = new PlanRequest
-                {
-                    Targets = request.Targets.Select(Remap).ToList(),
-                    NodeRules = request.NodeRules,
-                    AvoidCells = request.AvoidCells.Select(Remap).ToList(),
-                    ExcludeCells = request.ExcludeCells.Select(Remap).ToList(),
-                    GlyphGoals = request.GlyphGoals.Select(g => g with { Socket = Remap(g.Socket) }).ToList(),
-                };
+                var variantRequest = RemapForRotation(request, slot, placed, rotation);
 
                 var variant = PlanSolver.Solve(variantGraph, variantRequest);
                 if (!variant.Success)
@@ -191,113 +198,6 @@ public static class PlacementAnalyzer
     }
 
     /// <summary>
-    /// With the purchase set fixed, finds the glyph→socket assignment that first maximizes the
-    /// number of activated glyphs, then the total stat seen — and describes the moves if that
-    /// beats where the glyphs currently sit.
-    /// </summary>
-    public static IReadOnlyList<PlacementSuggestion> SuggestGlyphPlacements(
-        ComposedGraph graph,
-        ParagonLayout layout,
-        IReadOnlyCollection<CellRef> purchased,
-        IReadOnlyList<GlyphGoal> goals)
-    {
-        if (goals.Count == 0)
-            return [];
-
-        var sockets = graph.Vertices
-            .Where(v => v.Node.Kind == ParagonNodeKind.GlyphSocket)
-            .Select(v => v.Cell)
-            .ToList();
-        if (sockets.Count < 2)
-            return [];
-
-        var purchasedSet = purchased as ISet<CellRef> ?? purchased.ToHashSet();
-        // totals[g][s]: how much of goal g's stat the purchase set provides around socket s.
-        var totals = new double[goals.Count][];
-        for (int g = 0; g < goals.Count; g++)
-        {
-            totals[g] = new double[sockets.Count];
-            for (int s = 0; s < sockets.Count; s++)
-                totals[g][s] = StatInRadius(graph, sockets[s], purchasedSet, goals[g].SourceAttribute, goals[g].Radius);
-        }
-
-        // Score of an assignment: activated glyph count first, then total stat.
-        (int Met, double Total) Score(int[] assignment)
-        {
-            int met = 0;
-            double total = 0;
-            for (int g = 0; g < goals.Count; g++)
-            {
-                double seen = totals[g][assignment[g]];
-                total += seen;
-                if (seen >= goals[g].RequiredTotal - 1e-9)
-                    met++;
-            }
-            return (met, total);
-        }
-
-        var current = new int[goals.Count];
-        for (int g = 0; g < goals.Count; g++)
-        {
-            current[g] = sockets.IndexOf(goals[g].Socket);
-            if (current[g] < 0)
-                return []; // a goal references a socket not in this layout — nothing sane to compare
-        }
-
-        int[]? best = null;
-        (int Met, double Total) bestScore = default;
-        var assignment = new int[goals.Count];
-        var used = new bool[sockets.Count];
-        void Search(int g)
-        {
-            if (g == goals.Count)
-            {
-                var score = Score(assignment);
-                if (best is null || score.Met > bestScore.Met || (score.Met == bestScore.Met && score.Total > bestScore.Total))
-                {
-                    best = (int[])assignment.Clone();
-                    bestScore = score;
-                }
-                return;
-            }
-            for (int s = 0; s < sockets.Count; s++)
-            {
-                if (used[s])
-                    continue;
-                used[s] = true;
-                assignment[g] = s;
-                Search(g + 1);
-                used[s] = false;
-            }
-        }
-        Search(0);
-
-        var currentScore = Score(current);
-        if (best is null || (bestScore.Met <= currentScore.Met && bestScore.Total <= currentScore.Total + 1e-9))
-            return [];
-
-        // One atomic suggestion — the moves may permute sockets, so they apply together.
-        var moves = new List<GlyphMove>();
-        var descriptions = new List<string>();
-        for (int g = 0; g < goals.Count; g++)
-        {
-            if (best[g] == current[g])
-                continue;
-            var goal = goals[g];
-            string glyph = goal.GlyphName ?? "glyph";
-            string stat = ParagonDisplay.FormatAttributeName(goal.SourceAttribute);
-            string from = BoardName(layout, sockets[current[g]].BoardSlot);
-            string to = BoardName(layout, sockets[best[g]].BoardSlot);
-            moves.Add(new GlyphMove(sockets[current[g]], sockets[best[g]]));
-            descriptions.Add($"Move {glyph} from {from} to the socket on {to}: " +
-                             $"{totals[g][best[g]]:0} {stat} in radius instead of {totals[g][current[g]]:0}.");
-        }
-        if (moves.Count == 0)
-            return [];
-        return [new PlacementSuggestion(string.Join(" ", descriptions), 0, new GlyphReassignment(moves))];
-    }
-
-    /// <summary>
     /// For each attached board, tests whether replacing it with one of the strongest unused
     /// candidates (ranked by attainable glyph stat around the candidate's socket) activates more
     /// glyph goals or saves points. Each swap is solved for real under every valid rotation, with
@@ -308,7 +208,7 @@ public static class PlacementAnalyzer
     public static IReadOnlyList<PlacementSuggestion> SuggestBoardSwaps(
         ParagonLayout layout, PlanRequest request, PlanResult baseline,
         IReadOnlyList<ParagonBoardDef> candidates, int maxCandidatesPerSlot = 3, int maxSuggestions = 3,
-        PlacementPipeline? pipeline = null)
+        PlacementPipeline? pipeline = null, PipelineResult? baselineEval = null)
     {
         if (request.GlyphGoals.Count == 0)
             return [];
@@ -323,9 +223,9 @@ public static class PlacementAnalyzer
             return [];
 
         int baselineMet = baseline.GlyphOutcomes.Count(o => o.Met);
-        var baselineEval = pipeline is null
+        baselineEval = pipeline is null
             ? null
-            : EvaluatePipeline(ComposedGraph.Build(layout), request, pipeline, baseline);
+            : baselineEval ?? EvaluatePipeline(ComposedGraph.Build(layout), request, pipeline, baseline);
         var suggestions = new List<(PlacementSuggestion Suggestion, int MetGain)>();
 
         for (int slot = 1; slot < layout.Boards.Count; slot++)
@@ -366,27 +266,7 @@ public static class PlacementAnalyzer
                         continue; // this rotation offers no gate toward the parent (or a child)
                     }
 
-                    var newLegendaries = graph.Vertices
-                        .Where(v => v.Cell.BoardSlot == slot && v.Node.Kind == ParagonNodeKind.Legendary)
-                        .Select(v => v.Cell)
-                        .ToList();
-                    CellRef? newSocket = graph.Vertices
-                        .Where(v => v.Cell.BoardSlot == slot && v.Node.Kind == ParagonNodeKind.GlyphSocket)
-                        .Select(v => (CellRef?)v.Cell)
-                        .FirstOrDefault();
-
-                    var variantRequest = new PlanRequest
-                    {
-                        Targets = request.Targets.Where(t => t.BoardSlot != slot)
-                            .Concat(newLegendaries).Distinct().ToList(),
-                        NodeRules = request.NodeRules,
-                        AvoidCells = request.AvoidCells.Where(c => c.BoardSlot != slot).ToList(),
-                        ExcludeCells = request.ExcludeCells.Where(c => c.BoardSlot != slot).ToList(),
-                        GlyphGoals = request.GlyphGoals
-                            .Where(g => g.Socket.BoardSlot != slot || newSocket is not null)
-                            .Select(g => g.Socket.BoardSlot == slot ? g with { Socket = newSocket!.Value } : g)
-                            .ToList(),
-                    };
+                    var variantRequest = RetargetSwappedSlot(graph, request, slot);
 
                     var variant = PlanSolver.Solve(graph, variantRequest);
                     if (!variant.Success)
@@ -451,15 +331,16 @@ public static class PlacementAnalyzer
     /// </summary>
     public static IReadOnlyList<PlacementSuggestion> SuggestReattachments(
         ParagonLayout layout, PlanRequest request, PlanResult baseline,
-        PlacementPipeline? pipeline = null, int maxPerSlot = 2, int maxSuggestions = 3)
+        PlacementPipeline? pipeline = null, int maxPerSlot = 2, int maxSuggestions = 3,
+        PipelineResult? baselineEval = null)
     {
         if (layout.Boards.Count < 3)
             return []; // with one attached board there is nowhere else to go
 
         int baselineMet = baseline.GlyphOutcomes.Count(o => o.Met);
-        var baselineEval = pipeline is null
+        baselineEval = pipeline is null
             ? null
-            : EvaluatePipeline(ComposedGraph.Build(layout), request, pipeline, baseline);
+            : baselineEval ?? EvaluatePipeline(ComposedGraph.Build(layout), request, pipeline, baseline);
         var parents = layout.Boards.Skip(1).Select(b => b.ParentSlot!.Value).ToHashSet();
         var suggestions = new List<(PlacementSuggestion Suggestion, int MetGain)>();
 
@@ -475,11 +356,11 @@ public static class PlacementAnalyzer
             {
                 foreach (var edge in new[] { BoardEdge.Top, BoardEdge.Bottom, BoardEdge.Left, BoardEdge.Right })
                 {
+                    // Same parent + edge at another rotation is a rotation — SuggestRotations' job.
+                    if (parentSlot == placed.ParentSlot && edge == placed.AttachEdge)
+                        continue;
                     for (int rotation = 0; rotation < 4; rotation++)
                     {
-                        if (parentSlot == placed.ParentSlot && edge == placed.AttachEdge
-                            && rotation == placed.RotationSteps)
-                            continue;
 
                         var boards = layout.Boards.ToList();
                         boards[slot] = new PlacedBoard
@@ -499,24 +380,7 @@ public static class PlacementAnalyzer
                             continue; // no gate toward the parent, or the position is occupied
                         }
 
-                        // The board keeps its cells; only the rotation delta moves them.
-                        int delta = (rotation - placed.RotationSteps + 4) & 3;
-                        int width = placed.Board.Width;
-                        CellRef Remap(CellRef cell)
-                        {
-                            if (cell.BoardSlot != slot)
-                                return cell;
-                            var (x, y) = ParagonLayout.Rotate(cell.X, cell.Y, delta, width);
-                            return cell with { X = x, Y = y };
-                        }
-                        var variantRequest = new PlanRequest
-                        {
-                            Targets = request.Targets.Select(Remap).ToList(),
-                            NodeRules = request.NodeRules,
-                            AvoidCells = request.AvoidCells.Select(Remap).ToList(),
-                            ExcludeCells = request.ExcludeCells.Select(Remap).ToList(),
-                            GlyphGoals = request.GlyphGoals.Select(g => g with { Socket = Remap(g.Socket) }).ToList(),
-                        };
+                        var variantRequest = RemapForRotation(request, slot, placed, rotation);
 
                         var variant = PlanSolver.Solve(graph, variantRequest);
                         if (!variant.Success)
@@ -578,11 +442,13 @@ public static class PlacementAnalyzer
     /// just moving glyphs would otherwise be absorbed silently and never shown to the user.
     /// </summary>
     public static IReadOnlyList<PlacementSuggestion> SuggestGlyphAssignment(
-        ComposedGraph graph, PlanRequest request, PlanResult baseline, PlacementPipeline pipeline)
+        ComposedGraph graph, PlanRequest request, PlanResult baseline, PlacementPipeline pipeline,
+        PipelineResult? baselineEval = null)
     {
         if (request.GlyphGoals.Count == 0)
             return [];
-        var optimized = EvaluatePipeline(graph, request, pipeline, baseline);
+        // The glyph-optimized pipeline IS the shared baseline evaluation.
+        var optimized = baselineEval ?? EvaluatePipeline(graph, request, pipeline, baseline);
         if (optimized is null || optimized.GlyphMoves.Count == 0)
             return [];
         var pinned = EvaluatePipeline(
@@ -603,6 +469,52 @@ public static class PlacementAnalyzer
                 new GlyphSlotReassignment(optimized.GlyphMoves)),
         ];
     }
+
+    // ── Shared layout-variant helpers (also used by PlacementSearch) ─────
+
+    /// <summary>Cells on a re-rotated board keep their identity but move with the rotation delta.</summary>
+    internal static PlanRequest RemapForRotation(PlanRequest request, int slot, PlacedBoard placed, int rotation)
+    {
+        var remap = LayoutRemap.ForRotation(slot, placed, rotation);
+        return new PlanRequest
+        {
+            Targets = request.Targets.Select(remap).ToList(),
+            NodeRules = request.NodeRules,
+            AvoidCells = request.AvoidCells.Select(remap).ToList(),
+            ExcludeCells = request.ExcludeCells.Select(remap).ToList(),
+            GlyphGoals = request.GlyphGoals.Select(g => g with { Socket = remap(g.Socket) }).ToList(),
+        };
+    }
+
+    /// <summary>
+    /// The request after a board swap in <paramref name="slot"/>: the slot's targets move to the
+    /// new board's legendary, its avoid/exclude marks drop (they named the old board's cells),
+    /// and its glyph goal follows the new socket (dropped when the new board has none).
+    /// </summary>
+    internal static PlanRequest RetargetSwappedSlot(ComposedGraph graph, PlanRequest request, int slot)
+    {
+        var newLegendaries = graph.Vertices
+            .Where(v => v.Cell.BoardSlot == slot && v.Node.Kind == ParagonNodeKind.Legendary)
+            .Select(v => v.Cell)
+            .ToList();
+        CellRef? newSocket = graph.Vertices
+            .Where(v => v.Cell.BoardSlot == slot && v.Node.Kind == ParagonNodeKind.GlyphSocket)
+            .Select(v => (CellRef?)v.Cell)
+            .FirstOrDefault();
+        return new PlanRequest
+        {
+            Targets = request.Targets.Where(t => t.BoardSlot != slot)
+                .Concat(newLegendaries).Distinct().ToList(),
+            NodeRules = request.NodeRules,
+            AvoidCells = request.AvoidCells.Where(c => c.BoardSlot != slot).ToList(),
+            ExcludeCells = request.ExcludeCells.Where(c => c.BoardSlot != slot).ToList(),
+            GlyphGoals = request.GlyphGoals
+                .Where(g => g.Socket.BoardSlot != slot || newSocket is not null)
+                .Select(g => g.Socket.BoardSlot == slot ? g with { Socket = newSocket!.Value } : g)
+                .ToList(),
+        };
+    }
+
 
     // ── Full-pipeline evaluation ─────────────────────────────────────────
 
@@ -696,7 +608,7 @@ public static class PlacementAnalyzer
         }
 
         return new PipelineResult(glyphsActive, thresholdsMet, GateCrossings.PointCost(graph, purchased),
-            FocusScoreOf(graph, purchased, pipeline.Focus, finalMultipliers))
+            FocusScoreOf(graph, purchased, focus, finalMultipliers))
         {
             GlyphMoves = glyphMoves,
             LimitBreaks = limitBreaks,
@@ -891,29 +803,5 @@ public static class PlacementAnalyzer
                 .Sum(a => a.Value!.Value);
         }
         return total;
-    }
-
-    private static double StatInRadius(
-        ComposedGraph graph, CellRef socket, ISet<CellRef> purchased, string attribute, int radius)
-    {
-        double total = 0;
-        foreach (var vertex in graph.Vertices)
-        {
-            var cell = vertex.Cell;
-            if (cell.BoardSlot != socket.BoardSlot || cell == socket || !purchased.Contains(cell))
-                continue;
-            if (Math.Abs(cell.X - socket.X) + Math.Abs(cell.Y - socket.Y) > radius)
-                continue;
-            total += vertex.Node.Attributes
-                .Where(a => !a.IsThresholdBonus && a.Attribute == attribute && a.Value is double)
-                .Sum(a => a.Value!.Value);
-        }
-        return total;
-    }
-
-    private static string BoardName(ParagonLayout layout, int slot)
-    {
-        var board = layout.Boards[slot].Board;
-        return $"slot {slot} ({board.Name ?? board.InternalName})";
     }
 }

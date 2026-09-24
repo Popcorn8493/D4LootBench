@@ -9,7 +9,7 @@ Allow users to describe a filter rule in plain English and have an LLM generate 
 - **Public release:** AI assistant is present but disabled until the user configures a provider in settings.
 - **No hardcoded API key** — the developer never pays for user traffic.
 - **Ollama** is the recommended free path; the app ships with a setup guide in the help section.
-- Cloud providers (Anthropic, OpenAI) were considered but not shipped in Phase 4A. The `ILlmProvider` abstraction is in place; cloud support may be added if there is user demand.
+- Hosted providers (Anthropic, OpenAI) are **not implemented** — only `OllamaProvider` and `MockLlmProvider` exist. The `ILlmProvider` abstraction is in place; hosted support may be added if there is user demand (it would also need API-key storage, which does not exist today).
 
 ---
 
@@ -22,20 +22,24 @@ A standalone class library with no WPF dependency. Referenced by `D4LootBench.Ap
 ```
 src/D4LootBench.Ai/
 ├── ILlmProvider.cs          # Core abstraction
-├── LlmSettings.cs           # Serializable config model
-├── RuleAssistant.cs         # Orchestrates prompt + provider + validation
+├── LlmSettings.cs           # Serializable config model (Provider, BaseUrl, ModelName)
+├── RuleAssistant.cs         # Orchestrates prompt + provider + name resolution + validation
+├── SystemPromptBuilder.cs   # Catalog-driven system prompt (names only, no hash IDs)
+├── NameResolver.cs          # Name → hash ID with fuzzy fallback
 └── Providers/
-    ├── OllamaProvider.cs    # HTTP to localhost (OpenAI-compatible endpoint)
-    ├── OpenAiProvider.cs    # HTTP to api.openai.com
-    └── AnthropicProvider.cs # Anthropic SDK with tool use
+    ├── OllamaProvider.cs    # Ollama native /api/chat with a JSON-Schema `format`
+    └── MockLlmProvider.cs   # Canned response — "Test Mode", zero network
 ```
+
+Not implemented: `OpenAiProvider`, `AnthropicProvider` (see Provider Notes).
 
 ### Core Interface
 
 ```csharp
 public interface ILlmProvider
 {
-    Task<FilterRule> GenerateRuleAsync(string userPrompt, CancellationToken ct = default);
+    // Raw text completion only; all domain parsing lives in RuleAssistant.
+    Task<LlmCompletion> GetCompletionAsync(string systemPrompt, string userPrompt, CancellationToken ct = default);
 }
 ```
 
@@ -44,34 +48,35 @@ public interface ILlmProvider
 ```csharp
 public sealed class LlmSettings
 {
-    public LlmProviderType Provider { get; set; } = LlmProviderType.Ollama;
-    public string BaseUrl { get; set; } = "http://localhost:11434";  // Ollama default
+    public LlmProviderType Provider { get; set; } = LlmProviderType.Mock;
+    public string BaseUrl   { get; set; } = "http://localhost:11434";  // Ollama default
     public string ModelName { get; set; } = "qwen2.5-coder:14b";
-    public string? ApiKey { get; set; }  // null for Ollama; encrypted via DPAPI before storage
+    public string? BatchFile { get; set; }  // PromptLab batch mode only
 }
 
-public enum LlmProviderType { Ollama, OpenAi, Anthropic }
+public enum LlmProviderType { Mock, Ollama }
 ```
 
-API keys are encrypted with `System.Security.Cryptography.ProtectedData` (Windows DPAPI) before being written to disk. Never stored in plain text.
+There is no API key: Ollama needs none, and no hosted provider is implemented. Settings persist as plain JSON in `%AppData%\D4LootBench\ai-settings.json`.
 
 ---
 
 ## Provider Notes
 
-### Ollama
-- API is OpenAI-compatible at `{BaseUrl}/v1/chat/completions`
+### Ollama (implemented)
+- Native chat API at `{BaseUrl}/api/chat` — body `{model, messages, format, stream: false, options: {temperature}}`, reply text at `message.content`
+- Structured output: `format` carries a JSON Schema (Ollama 0.5+ grammar-constrained generation). The OpenAI-compatible `/v1/chat/completions` endpoint ignores Ollama's `format` field, which is why the provider uses the native API
+- One shared `HttpClient` for all provider instances; per-request timeout of 5 minutes (CPU inference of a 14B model is slow) reported as "timed out", distinct from "unreachable" (connection failure) and caller cancellation
 - No auth header needed
 - Model list queryable at `{BaseUrl}/api/tags`
 - Recommended models: `qwen2.5-coder:14b` (11/11, 10 GB+ VRAM), `qwen2.5-coder:7b` (11/11, 6 GB+ VRAM); general-purpose models not recommended — poor structured output accuracy
-- JSON mode: pass `"format": "json"` in request body
 
-### OpenAI
+### OpenAI (not implemented — design notes)
 - Same HTTP shape as Ollama, different base URL and `Authorization: Bearer {key}` header
 - Use function calling / JSON response format for structured output
 - Recommended models: `gpt-4o-mini` (cost), `gpt-4o` (quality)
 
-### Anthropic
+### Anthropic (not implemented — design notes)
 - Different API shape; use the official Anthropic .NET SDK
 - Use **tool use** (function calling) to force structured `FilterRule` output — most reliable approach
 - Recommended model: `claude-haiku-4-5-20251001` (fast + cheap for this task size)
@@ -102,7 +107,7 @@ The UI presents this as actionable feedback, not a raw error.
 
 ## UI Integration (D4LootBench.App)
 
-- Settings tab: provider dropdown, base URL, model name, API key (masked input)
+- Settings: provider dropdown (Mock / Ollama), base URL, model name
 - "Test Connection" button — sends a trivial prompt and confirms a response
 - Chat panel (separate tab or side panel): text input + send button + response area
 - Generated rule is previewed before being added to the filter (user confirms or discards)
@@ -128,9 +133,7 @@ Do **not** hide the panel or block app startup on this check. Startup latency an
 
 ### LM Studio support
 
-LM Studio exposes an OpenAI-compatible `/v1/chat/completions` endpoint (default: `http://localhost:1234`). `OllamaProvider` already targets that same endpoint shape, so LM Studio likely works today by just changing the Base URL. The one difference is JSON mode: Ollama uses `"format": "json"` (its own field); LM Studio uses `"response_format": {"type": "json_object"}` (OpenAI-style). Unknown fields are typically ignored, so the Ollama field probably falls on the floor silently and the system prompt carries the weight.
-
-**Action:** test LM Studio manually before writing any code. If JSON output quality is acceptable without the correct mode field, update the help text only ("LM Studio users: set Base URL to `http://localhost:1234`"). If reliability is poor, add a lightweight `LmStudioProvider` that swaps `"format"` → `"response_format"` and introduce an `LmStudio` enum value — no other changes needed.
+LM Studio exposes only an OpenAI-compatible `/v1/chat/completions` endpoint (default: `http://localhost:1234`). `OllamaProvider` talks to Ollama's native `/api/chat`, so LM Studio does **not** work by changing the Base URL. Supporting it means a small `LmStudioProvider` posting to `/v1/chat/completions` with `"response_format": {"type": "json_schema", "json_schema": {"name": ..., "schema": ...}}` (reply at `choices[0].message.content`) plus an `LmStudio` enum value. Not implemented.
 
 ---
 

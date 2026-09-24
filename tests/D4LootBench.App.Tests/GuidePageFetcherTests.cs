@@ -1,0 +1,54 @@
+using D4LootBench.App.Services;
+using Shouldly;
+
+namespace D4LootBench.App.Tests;
+
+public sealed class GuidePageFetcherTests
+{
+    [Fact]
+    public void ParseCurlOutput_SplitsBodyAndStatus()
+    {
+        var (status, body) = GuidePageFetcher.ParseCurlOutput(
+            "<html>page</html>" + GuidePageFetcher.StatusMarker + "200>>");
+
+        status.ShouldBe(200);
+        body.ShouldBe("<html>page</html>");
+    }
+
+    [Fact]
+    public void ParseCurlOutput_ReportsErrorStatusWithTheBody()
+    {
+        var (status, body) = GuidePageFetcher.ParseCurlOutput(
+            "Just a moment..." + GuidePageFetcher.StatusMarker + "403>>");
+
+        status.ShouldBe(403);
+        body.ShouldBe("Just a moment...");
+    }
+
+    [Fact]
+    public void ParseCurlOutput_NoResponse_ReadsAsStatusZero()
+    {
+        // curl reports "000" when it never got an HTTP response (DNS/TLS failure, timeout).
+        GuidePageFetcher.ParseCurlOutput(GuidePageFetcher.StatusMarker + "000>>").Status.ShouldBe(0);
+    }
+
+    [Fact]
+    public void ParseCurlOutput_MissingMarker_ReturnsWholeOutputAsBodyWithStatusZero()
+    {
+        var (status, body) = GuidePageFetcher.ParseCurlOutput("partial output");
+
+        status.ShouldBe(0);
+        body.ShouldBe("partial output");
+    }
+
+    [Fact]
+    public void ParseCurlOutput_UsesTheLastMarker()
+    {
+        // A page quoting the marker text can't fool the parser — the write-out suffix is last.
+        string page = "before" + GuidePageFetcher.StatusMarker + "999>> after";
+        var (status, body) = GuidePageFetcher.ParseCurlOutput(page + GuidePageFetcher.StatusMarker + "200>>");
+
+        status.ShouldBe(200);
+        body.ShouldBe(page);
+    }
+}

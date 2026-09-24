@@ -79,6 +79,10 @@ public partial class BuildGuideImportViewModel(
         {
             SetError(ex.Message);
         }
+        catch (OperationCanceledException) when (_closing.IsCancellationRequested)
+        {
+            // The dialog closed mid-fetch — nobody is waiting for the result.
+        }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
         {
             SetError($"Couldn't fetch the page ({ex.Message}). Open the build in a browser, view the " +
@@ -97,7 +101,7 @@ public partial class BuildGuideImportViewModel(
         if (url.Contains("mobalytics.gg", StringComparison.OrdinalIgnoreCase))
         {
             SetProgress("Fetching the Mobalytics page…");
-            ImportMobalyticsHtml(await GuidePageFetcher.FetchPageAsync(url.Split('#')[0]));
+            ImportMobalyticsHtml(await FetchAsync(url.Split('#')[0]));
             return;
         }
         if (url.Contains("maxroll.gg", StringComparison.OrdinalIgnoreCase))
@@ -152,14 +156,14 @@ public partial class BuildGuideImportViewModel(
         if (!MaxrollPlannerImporter.TryParsePlannerUrl(url, out string plannerId))
         {
             SetProgress("Fetching the Maxroll page…");
-            string html = await GuidePageFetcher.FetchPageAsync(url.Split('#')[0]);
+            string html = await FetchAsync(url.Split('#')[0]);
             plannerId = MaxrollPlannerImporter.ExtractPlannerIds(html).FirstOrDefault()
                 ?? throw new BuildGuideImportException(
                     "No planner link found in the Maxroll page — is it a build guide?");
         }
 
         SetProgress("Fetching the Maxroll planner data…");
-        string json = await GuidePageFetcher.FetchPageAsync(
+        string json = await FetchAsync(
             string.Format(MaxrollPlannerImporter.ProfileApiFormat, plannerId));
         var (buildName, filters) = MaxrollPlannerImporter.ExtractLootFilters(json);
 
@@ -195,11 +199,11 @@ public partial class BuildGuideImportViewModel(
             }
             SetProgress("Resolving the d4builds.gg build…");
             buildId = D4BuildsGearImporter.ExtractBuildId(
-                await GuidePageFetcher.FetchPageAsync(string.Format(D4BuildsGearImporter.PageDataApiFormat, slug)));
+                await FetchAsync(string.Format(D4BuildsGearImporter.PageDataApiFormat, slug)));
         }
 
         SetProgress("Fetching the d4builds.gg build…");
-        string json = await GuidePageFetcher.FetchPageAsync(
+        string json = await FetchAsync(
             string.Format(D4BuildsGearImporter.BuildDocumentApiFormat, buildId));
         var variants = D4BuildsGearImporter.ExtractVariants(json);
 
@@ -227,6 +231,14 @@ public partial class BuildGuideImportViewModel(
     }
 
     private int Pick(IReadOnlyList<string> options) => PickOption?.Invoke(options) ?? 0;
+
+    /// <summary>Cancelled when the dialog closes, so an in-flight fetch (and its curl process) stops.</summary>
+    private readonly CancellationTokenSource _closing = new();
+
+    /// <summary>Called by the dialog on close: abandons any in-flight page fetch.</summary>
+    public void CancelPendingFetch() => _closing.Cancel();
+
+    private Task<string> FetchAsync(string url) => GuidePageFetcher.FetchPageAsync(url, _closing.Token);
 
     private void Succeed(FilterRuleset ruleset, IReadOnlyList<string> warnings)
     {

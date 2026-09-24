@@ -1,6 +1,3 @@
-using System.IO;
-using System.Text.Json;
-
 namespace D4LootBench.App.Services;
 
 /// <summary>
@@ -32,19 +29,15 @@ public sealed record SavedCharacter(
 /// </summary>
 public sealed class SavedCharacterService
 {
-    private static readonly string DefaultPath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "D4LootBench", "saved-characters.json");
+    private sealed record Library(string? Active, List<SavedCharacter>? Characters);
 
-    private sealed record Library(string? Active, List<SavedCharacter> Characters);
-
-    private readonly string _path;
+    private readonly JsonFileStore<Library> _store;
     private readonly List<SavedCharacter> _characters = [];
     private string? _activeName;
 
     public SavedCharacterService(string? path = null)
     {
-        _path = path ?? DefaultPath;
+        _store = new JsonFileStore<Library>(path ?? JsonFileStore.AppDataPath("saved-characters.json"));
         Load();
     }
 
@@ -90,30 +83,13 @@ public sealed class SavedCharacterService
 
     private void Load()
     {
-        try
-        {
-            if (!File.Exists(_path))
-                return;
-            var stored = JsonSerializer.Deserialize<Library>(File.ReadAllText(_path));
-            if (stored is null)
-                return;
-            _characters.AddRange(stored.Characters.Where(c => !string.IsNullOrWhiteSpace(c.Name)));
-            _activeName = stored.Active;
-        }
-        catch { /* corrupt file — start empty */ }
+        // A corrupt file is moved aside by the store — start empty.
+        if (_store.Load() is not { } stored)
+            return;
+        _characters.AddRange((stored.Characters ?? []).Where(c => !string.IsNullOrWhiteSpace(c?.Name)));
+        _activeName = stored.Active;
     }
 
-    private void Persist()
-    {
-        try
-        {
-            Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
-            File.WriteAllText(_path, JsonSerializer.Serialize(new Library(_activeName, _characters),
-                new JsonSerializerOptions { WriteIndented = true }));
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            // Best-effort — the library just won't persist this change.
-        }
-    }
+    // Best-effort — on failure the library just won't persist this change (the store logs it).
+    private void Persist() => _store.Save(new Library(_activeName, _characters));
 }

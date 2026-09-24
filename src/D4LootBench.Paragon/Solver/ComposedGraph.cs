@@ -19,15 +19,16 @@ public sealed class ComposedGraph
     private ComposedGraph(List<GraphVertex> vertices, List<int>[] adjacency, Dictionary<CellRef, int> vertexByCell, int startVertex)
     {
         Vertices = vertices;
-        Adjacency = adjacency;
+        Adjacency = Array.ConvertAll(adjacency, list => list.ToArray());
         _vertexByCell = vertexByCell;
         StartVertex = startVertex;
     }
 
     public IReadOnlyList<GraphVertex> Vertices { get; }
 
-    /// <summary>Neighbor vertex indices per vertex index.</summary>
-    public IReadOnlyList<IReadOnlyList<int>> Adjacency { get; }
+    /// <summary>Neighbor vertex indices per vertex index. Plain arrays so the solvers' hot
+    /// neighbor loops don't allocate an enumerator per visit. Treat as read-only.</summary>
+    public int[][] Adjacency { get; }
 
     /// <summary>The pre-granted start node on slot 0 (costs no point).</summary>
     public int StartVertex { get; }

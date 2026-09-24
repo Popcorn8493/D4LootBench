@@ -176,11 +176,16 @@ public partial class AiAssistantViewModel : ObservableObject
 
     private bool CanRefreshModels() => !IsRefreshingModels;
 
+    /// <summary>Shared across calls (a client per request leaks sockets into TIME_WAIT); the
+    /// short per-request timeout rides on a linked token instead of the client.</summary>
+    private static readonly HttpClient OllamaHttp = new();
+
     private async Task<IEnumerable<string>> FetchOllamaModels(CancellationToken ct)
     {
-        using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
-        var response = await http.GetFromJsonAsync<OllamaTagsResponse>(
-            $"{BaseUrl.TrimEnd('/')}/api/tags", ct);
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        timeout.CancelAfter(TimeSpan.FromSeconds(5));
+        var response = await OllamaHttp.GetFromJsonAsync<OllamaTagsResponse>(
+            $"{BaseUrl.TrimEnd('/')}/api/tags", timeout.Token);
         return response?.Models?.Select(m => m.Name) ?? [];
     }
 

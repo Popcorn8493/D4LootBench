@@ -66,7 +66,8 @@ public class PlacementSearchTests
             .ToList();
         var plans = PlacementSearch.FindPlans(
             layout, request, pipeline, spareBoards, spareGlyphs: [],
-            beamWidth: 2, depth: 2, topN: 3, evalsPerState: 6, maxEvaluations: 20);
+            beamWidth: 2, depth: 2, topN: 3, evalsPerState: 6, maxEvaluations: 20,
+            cancellationToken: TestContext.Current.CancellationToken);
 
         // Sanity: the un-perturbed layout genuinely beats the perturbed one at full spend, so
         // the search has an improvement to find (the slot-1 rotation at minimum).
@@ -107,7 +108,8 @@ public class PlacementSearchTests
         // must still obey the plan invariants; typically the author's layout has little slack.
         var plans = PlacementSearch.FindPlans(
             layout, request, pipeline, spareBoards: [], spareGlyphs: [],
-            beamWidth: 1, depth: 1, topN: 3, evalsPerState: 3, maxEvaluations: 3);
+            beamWidth: 1, depth: 1, topN: 3, evalsPerState: 3, maxEvaluations: 3,
+            cancellationToken: TestContext.Current.CancellationToken);
 
         foreach (var plan in plans)
             plan.Result.BeatsForSuggestion(plan.Baseline).ShouldBeTrue();
@@ -131,7 +133,8 @@ public class PlacementSearchTests
         var plans = PlacementSearch.FindPlans(
             layout, request, pipeline, spareBoards, spareGlyphs,
             beamWidth: 2, depth: 2, topN: 3, evalsPerState: 6, maxEvaluations: 20,
-            lockedBoardSlots: allSlots, lockedGlyphSlots: allSlots);
+            lockedBoardSlots: allSlots, lockedGlyphSlots: allSlots,
+            cancellationToken: TestContext.Current.CancellationToken);
 
         foreach (var plan in plans)
         {
@@ -168,7 +171,8 @@ public class PlacementSearchTests
 
         var plans = PlacementSearch.FindPlans(
             layout, request, pipeline, spareBoards: [], spareGlyphs,
-            beamWidth: 2, depth: 1, topN: 3, evalsPerState: 6, maxEvaluations: 12);
+            beamWidth: 2, depth: 1, topN: 3, evalsPerState: 6, maxEvaluations: 12,
+            cancellationToken: TestContext.Current.CancellationToken);
 
         foreach (var plan in plans)
         {

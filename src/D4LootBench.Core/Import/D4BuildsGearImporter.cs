@@ -29,9 +29,7 @@ public static partial class D4BuildsGearImporter
     /// Firestore REST endpoint for a build document; {0} is the build's uuid. Project id and API
     /// key are the site's public web-app config, embedded in every page it serves.
     /// </summary>
-    public const string BuildDocumentApiFormat =
-        "https://firestore.googleapis.com/v1/projects/d4builds-a3254/databases/(default)/documents/builds/{0}"
-        + "?key=AIzaSyDiFjyn-CH9a80pzfcwMd_AH-zSstNmjDc";
+    public const string BuildDocumentApiFormat = Shared.D4BuildsEndpoints.BuildDocumentApiFormat;
 
     /// <summary>Gear slots in display order; unknown future slots append after these.</summary>
     private static readonly string[] SlotOrder =
@@ -46,7 +44,7 @@ public static partial class D4BuildsGearImporter
     /// Gatsby page-data endpoint for a curated build's pretty-slug page; {0} is the slug. The
     /// page is prerendered and its <c>result.pageContext.seoId</c> is the build document's uuid.
     /// </summary>
-    public const string PageDataApiFormat = "https://d4builds.gg/page-data/builds/{0}/page-data.json";
+    public const string PageDataApiFormat = Shared.D4BuildsEndpoints.PageDataApiFormat;
 
     public static bool TryParseBuildUrl(string url, out string buildId)
     {

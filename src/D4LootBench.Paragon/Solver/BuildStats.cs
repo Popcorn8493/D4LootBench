@@ -31,6 +31,10 @@ public sealed record BuildStatsReport(
 /// </summary>
 public static class BuildStats
 {
+    /// <summary>Threshold definitions indexed by sno id, built once per data set.</summary>
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<
+        ParagonData, Dictionary<string, ParagonThresholdDef>> ThresholdsBySnoId = new();
+
     /// <summary>
     /// The order the purchased path first enters each board — the game's attachment order.
     /// BFS from the start over purchased cells; boards the path never enters queue up after
@@ -108,7 +112,8 @@ public static class BuildStats
         IReadOnlyDictionary<CellRef, double>? cellMultipliers = null,
         IReadOnlyCollection<CellRef>? evaluate = null)
     {
-        var thresholdsBySnoId = data.Thresholds.ToDictionary(t => t.SnoId, StringComparer.OrdinalIgnoreCase);
+        var thresholdsBySnoId = ThresholdsBySnoId.GetValue(data,
+            d => d.Thresholds.ToDictionary(t => t.SnoId, StringComparer.OrdinalIgnoreCase));
         var purchasedSet = purchased as ISet<CellRef> ?? purchased.ToHashSet();
         var evaluateSet = evaluate is null ? null : evaluate as ISet<CellRef> ?? evaluate.ToHashSet();
         var tiers = EffectiveAttachTiers(graph, purchasedSet);
@@ -205,15 +210,20 @@ public static class BuildStats
         // "Willpower_Total" counts every source; paragon grants "_Core", the rest is the offset.
         double Have(string requirementAttribute)
         {
-            string paragonKey = requirementAttribute.EndsWith("_Total", StringComparison.Ordinal)
-                ? requirementAttribute[..^"_Total".Length] + "_Core"
-                : requirementAttribute;
+            string paragonKey = ParagonKeyFor(requirementAttribute);
             double have = totals.GetValueOrDefault(paragonKey) + totals.GetValueOrDefault(requirementAttribute);
             return requirementAttribute.EndsWith("_Total", StringComparison.Ordinal)
                 ? have + nonParagonStats.For(requirementAttribute)
                 : have;
         }
     }
+
+    /// <summary>The attribute paragon nodes grant toward a requirement: "Strength_Total" is fed
+    /// by "Strength_Core" nodes; any other attribute maps to itself.</summary>
+    public static string ParagonKeyFor(string requirementAttribute) =>
+        requirementAttribute.EndsWith("_Total", StringComparison.Ordinal)
+            ? requirementAttribute[..^"_Total".Length] + "_Core"
+            : requirementAttribute;
 
     /// <summary>The requirement for a board at the given attachment slot; later slots cost more.</summary>
     public static double RequirementAt(ThresholdRequirement requirement, int boardSlot)

@@ -2,14 +2,15 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <RootNamespace>D4LootBench.Core</RootNamespace>
-    <AssemblyName>D4LootBench.Core</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>
     <EmbeddedResource Include="Data\d4-data.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- d4builds.gg endpoints, shared with D4LootBench.Paragon (which doesn't reference Core). -->
+    <Compile Include="..\Shared\D4BuildsEndpoints.cs" Link="Shared\D4BuildsEndpoints.cs" />
   </ItemGroup>
 
 </Project>

@@ -1,6 +1,3 @@
-using System.IO;
-using System.Text.Json;
-
 namespace D4LootBench.App.Services;
 
 /// <summary>
@@ -11,13 +8,15 @@ public sealed class RecentProjectsService
 {
     private const int MaxEntries = 10;
 
-    private static readonly string SettingsPath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "D4LootBench", "recent-paragon-projects.json");
-
+    private readonly JsonFileStore<List<string>> _store;
     private readonly List<string> _paths = [];
 
-    public RecentProjectsService() => Load();
+    public RecentProjectsService(string? path = null)
+    {
+        _store = new JsonFileStore<List<string>>(
+            path ?? JsonFileStore.AppDataPath("recent-paragon-projects.json"), JsonFileStore.Compact);
+        Load();
+    }
 
     public IReadOnlyList<string> Paths => _paths;
 
@@ -40,27 +39,11 @@ public sealed class RecentProjectsService
 
     private void Load()
     {
-        try
-        {
-            if (!File.Exists(SettingsPath))
-                return;
-            var stored = JsonSerializer.Deserialize<List<string>>(File.ReadAllText(SettingsPath));
-            if (stored is not null)
-                _paths.AddRange(stored.Where(p => !string.IsNullOrWhiteSpace(p)).Take(MaxEntries));
-        }
-        catch { /* corrupt file — start empty */ }
+        // A corrupt file is moved aside by the store — start empty.
+        if (_store.Load() is { } stored)
+            _paths.AddRange(stored.Where(p => !string.IsNullOrWhiteSpace(p)).Take(MaxEntries));
     }
 
-    private void Save()
-    {
-        try
-        {
-            Directory.CreateDirectory(Path.GetDirectoryName(SettingsPath)!);
-            File.WriteAllText(SettingsPath, JsonSerializer.Serialize(_paths));
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            // Best-effort — the menu just won't persist this change.
-        }
-    }
+    // Best-effort — on failure the menu just won't persist this change (the store logs it).
+    private void Save() => _store.Save(_paths);
 }

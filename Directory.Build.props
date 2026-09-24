@@ -1,0 +1,24 @@
+<Project>
+
+  <!-- Shared by every project in the repo. Target frameworks stay per project. -->
+  <PropertyGroup>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <!-- Local/dev default; release.yml overrides with -p:Version=<tag without the leading v>. -->
+    <Version>0.0.0-dev</Version>
+    <Product>D4LootBench</Product>
+  </PropertyGroup>
+
+  <!-- CI keeps the 0-warning bar honest. GitHub Actions sets CI=true in the environment. -->
+  <PropertyGroup Condition="'$(ContinuousIntegrationBuild)' == 'true' Or '$(CI)' == 'true'">
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="$(MSBuildProjectName.EndsWith('.Tests'))">
+    <IsPackable>false</IsPackable>
+    <!-- xunit v3 runs on Microsoft.Testing.Platform (global.json opts dotnet test in). MTP exits 8
+         when a filter matches nothing in a project — expected for a solution-wide filtered run. -->
+    <TestingPlatformCommandLineArguments>$(TestingPlatformCommandLineArguments) --ignore-exit-code 8</TestingPlatformCommandLineArguments>
+  </PropertyGroup>
+
+</Project>

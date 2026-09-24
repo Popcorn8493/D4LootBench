@@ -19,8 +19,17 @@ internal static class ServiceConfiguration
         services.AddSingleton<IFilterValidator, FilterValidator>();
         services.AddSingleton<IConditionViewModelFactory, ConditionViewModelFactory>();
 
-        services.AddSingleton<LlmSettingsService>();
-        services.AddSingleton<WindowSettingsService>();
+        services.AddSingleton<IDialogService, DialogService>();
+
+        // Settings and libraries: one instance per app, so every window sees the same state
+        // and each file has a single writer. Factories pick the default %AppData% paths.
+        services.AddSingleton(_ => new LlmSettingsService());
+        services.AddSingleton(_ => new WindowSettingsService());
+        services.AddSingleton(_ => new RecentProjectsService());
+        services.AddSingleton(_ => new SavedCharacterService());
+        services.AddSingleton(_ => new SavedGearService());
+        services.AddSingleton(_ => new CompareReferenceService());
+
         services.AddSingleton<SystemPromptBuilder>();
         services.AddSingleton<NameResolver>();
         services.AddSingleton<ILlmProvider, SettingsAwareLlmProvider>();
@@ -29,6 +38,7 @@ internal static class ServiceConfiguration
         services.AddSingleton<BuildGuideFilterGenerator>();
 
         services.AddTransient<MainWindowViewModel>();
+        services.AddTransient<ParagonPlannerViewModel>();
         services.AddTransient<MainWindow>();
 
         return services.BuildServiceProvider();

@@ -774,8 +774,10 @@
                     </TabItem>
 
                     <TabItem Header="Rules">
-                        <ScrollViewer VerticalScrollBarVisibility="Auto">
-                            <StackPanel Margin="10,8">
+                        <!-- The list owns the scrolling so its panel can virtualize (a layout has
+                             ~50+ rule rows, each a combo + text box); the help and filter stay put. -->
+                        <DockPanel Margin="10,8,0,8">
+                            <StackPanel DockPanel.Dock="Top" Margin="0,0,10,0">
                                 <TextBlock FontSize="11" Foreground="{DynamicResource App.TextFaintBrush}" TextWrapping="Wrap" Margin="0,0,0,6"
                                            Text="Right-click a node on the board for its menu: mark as target, avoid (orange), or off-limits (red — never pathed through or bought). Normal and magic nodes group by stat; each rare/legendary node is its own group. The 'Any:' rows at the bottom cover every node granting that stat regardless of kind — limit 'Any: Hitpoints Max Bonus' to cap max-life nodes overall. Limit takes at most N; Minimal also prefers the FEWEST the optimal path allows (1 beats 2 at equal cost)." />
                                 <DockPanel Margin="0,0,0,6">
@@ -783,44 +785,60 @@
                                     <TextBox Text="{Binding RuleFilter, UpdateSourceTrigger=PropertyChanged}" FontSize="11"
                                              ToolTip="Show only rule rows whose name matches — try 'life', 'hitpoints', or 'Any:'" />
                                 </DockPanel>
-                                <ItemsControl ItemsSource="{Binding NodeRulesView}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate DataType="{x:Type vm:NodeRuleViewModel}">
-                                            <Grid Margin="0,0,0,3">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="*" />
-                                                    <ColumnDefinition Width="Auto" />
-                                                    <ColumnDefinition Width="Auto" />
-                                                    <ColumnDefinition Width="Auto" />
-                                                </Grid.ColumnDefinitions>
-                                                <TextBlock Text="{Binding DisplayName}" VerticalAlignment="Center" FontSize="11"
-                                                           TextTrimming="CharacterEllipsis" ToolTip="{Binding DisplayName}" />
-                                                <TextBlock Grid.Column="1" Text="{Binding UsedText}" VerticalAlignment="Center"
-                                                           FontSize="10" Margin="4,0,0,0"
-                                                           ToolTip="Nodes of this group in the current allocation">
-                                                    <TextBlock.Style>
-                                                        <Style TargetType="TextBlock">
-                                                            <Setter Property="Foreground" Value="#4A9E4A" />
-                                                            <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding IsOverLimit}" Value="True">
-                                                                    <Setter Property="Foreground" Value="{DynamicResource App.ErrorBrush}" />
-                                                                    <Setter Property="FontWeight" Value="SemiBold" />
-                                                                </DataTrigger>
-                                                            </Style.Triggers>
-                                                        </Style>
-                                                    </TextBlock.Style>
-                                                </TextBlock>
-                                                <ComboBox Grid.Column="2" ItemsSource="{Binding Modes}" SelectedItem="{Binding Mode}"
-                                                          Width="94" FontSize="11" Margin="4,0,0,0" />
-                                                <TextBox Grid.Column="3" Text="{Binding Limit}" Width="30" FontSize="11" Margin="4,0,0,0"
-                                                         Visibility="{Binding IsLimit, Converter={StaticResource BoolToVis}}"
-                                                         ToolTip="Take at most this many nodes of the group" />
-                                            </Grid>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
                             </StackPanel>
-                        </ScrollViewer>
+                            <ItemsControl ItemsSource="{Binding NodeRulesView}"
+                                          VirtualizingPanel.IsVirtualizing="True"
+                                          VirtualizingPanel.ScrollUnit="Pixel"
+                                          ScrollViewer.CanContentScroll="True">
+                                <ItemsControl.Template>
+                                    <ControlTemplate TargetType="ItemsControl">
+                                        <ScrollViewer VerticalScrollBarVisibility="Auto" CanContentScroll="True"
+                                                      Focusable="False" Padding="0,0,10,0">
+                                            <ItemsPresenter />
+                                        </ScrollViewer>
+                                    </ControlTemplate>
+                                </ItemsControl.Template>
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <VirtualizingStackPanel />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type vm:NodeRuleViewModel}">
+                                        <Grid Margin="0,0,0,3">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Text="{Binding DisplayName}" VerticalAlignment="Center" FontSize="11"
+                                                       TextTrimming="CharacterEllipsis" ToolTip="{Binding DisplayName}" />
+                                            <TextBlock Grid.Column="1" Text="{Binding UsedText}" VerticalAlignment="Center"
+                                                       FontSize="10" Margin="4,0,0,0"
+                                                       ToolTip="Nodes of this group in the current allocation">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Foreground" Value="#4A9E4A" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsOverLimit}" Value="True">
+                                                                <Setter Property="Foreground" Value="{DynamicResource App.ErrorBrush}" />
+                                                                <Setter Property="FontWeight" Value="SemiBold" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                            <ComboBox Grid.Column="2" ItemsSource="{Binding Modes}" SelectedItem="{Binding Mode}"
+                                                      Width="94" FontSize="11" Margin="4,0,0,0" />
+                                            <TextBox Grid.Column="3" Text="{Binding Limit}" Width="30" FontSize="11" Margin="4,0,0,0"
+                                                     Visibility="{Binding IsLimit, Converter={StaticResource BoolToVis}}"
+                                                     ToolTip="Take at most this many nodes of the group" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </DockPanel>
                     </TabItem>
                 </TabControl>
             </DockPanel>
@@ -910,7 +928,8 @@
                                 CommandParameter="{Binding}"
                                 MouseRightButtonUp="Cell_MouseRightButtonUp"
                                 Background="Transparent" BorderThickness="0" Cursor="Hand"
-                                ToolTip="{Binding ToolTipText}" ToolTipService.InitialShowDelay="150">
+                                ToolTip=" " ToolTipOpening="Cell_ToolTipOpening"
+                                ToolTipService.InitialShowDelay="150">
                             <Button.Template>
                                 <ControlTemplate TargetType="Button">
                                     <Grid Background="Transparent">
@@ -923,26 +942,19 @@
                                         <!-- Hover feedback -->
                                         <Ellipse x:Name="HoverRing" Width="24" Height="24" StrokeThickness="1.5"
                                                  Stroke="#88FFFFFF" Visibility="Collapsed" />
-                                        <!-- Purchased-path ring -->
-                                        <Ellipse Width="24" Height="24" StrokeThickness="2.5" Stroke="#7CCB5A"
-                                                 Visibility="{Binding IsPurchased, Converter={StaticResource BoolToVis}}" />
-                                        <!-- Just added by Spend Remaining Points / Re-analyze -->
-                                        <Ellipse Width="24" Height="24" StrokeThickness="2.5" Stroke="#4FC3F7"
-                                                 Visibility="{Binding IsNewlyAdded, Converter={StaticResource BoolToVis}}" />
-                                        <!-- Removed by the last action — refund this one in game -->
-                                        <Ellipse Width="24" Height="24" StrokeThickness="2.5" Stroke="#E27D7D"
-                                                 StrokeDashArray="2.2 1.4"
-                                                 Visibility="{Binding IsRemoved, Converter={StaticResource BoolToVis}}" />
+                                        <!-- Path ring, one element for three states (triggers below, later
+                                             wins): purchased (green), just added by the last action (cyan —
+                                             always also purchased), removed by it (dashed red — refund in game) -->
+                                        <Ellipse x:Name="PathRing" Width="24" Height="24" StrokeThickness="2.5"
+                                                 Visibility="Collapsed" />
                                         <!-- Target ring -->
                                         <Ellipse Width="24" Height="24" StrokeThickness="2" Stroke="White"
                                                  Visibility="{Binding IsTarget, Converter={StaticResource BoolToVis}}" />
-                                        <!-- Avoid / exclude rings (right-click to cycle) -->
-                                        <Ellipse Width="24" Height="24" StrokeThickness="2" Stroke="#E8A33D" StrokeDashArray="1.6 1.6"
-                                                 Visibility="{Binding IsAvoided, Converter={StaticResource BoolToVis}}" />
-                                        <Grid Visibility="{Binding IsExcluded, Converter={StaticResource BoolToVis}}">
-                                            <Ellipse Width="24" Height="24" StrokeThickness="2" Stroke="#C0392B" />
-                                            <Path Stroke="#C0392B" StrokeThickness="2" Data="M 5,5 L 21,21 M 21,5 L 5,21" />
-                                        </Grid>
+                                        <!-- Avoid / exclude ring (right-click menu) — the two are exclusive -->
+                                        <Ellipse x:Name="ConstraintRing" Width="24" Height="24" StrokeThickness="2"
+                                                 Visibility="Collapsed" />
+                                        <Path x:Name="ExcludeCross" Stroke="#C0392B" StrokeThickness="2"
+                                              Data="M 5,5 L 21,21 M 21,5 L 5,21" Visibility="Collapsed" />
                                         <!-- Node shape -->
                                         <Border x:Name="Shape" Width="14" Height="14"
                                                 HorizontalAlignment="Center" VerticalAlignment="Center"
@@ -952,6 +964,29 @@
                                         <Trigger Property="IsMouseOver" Value="True">
                                             <Setter TargetName="HoverRing" Property="Visibility" Value="Visible" />
                                         </Trigger>
+                                        <DataTrigger Binding="{Binding IsPurchased}" Value="True">
+                                            <Setter TargetName="PathRing" Property="Visibility" Value="Visible" />
+                                            <Setter TargetName="PathRing" Property="Stroke" Value="#7CCB5A" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsNewlyAdded}" Value="True">
+                                            <Setter TargetName="PathRing" Property="Visibility" Value="Visible" />
+                                            <Setter TargetName="PathRing" Property="Stroke" Value="#4FC3F7" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsRemoved}" Value="True">
+                                            <Setter TargetName="PathRing" Property="Visibility" Value="Visible" />
+                                            <Setter TargetName="PathRing" Property="Stroke" Value="#E27D7D" />
+                                            <Setter TargetName="PathRing" Property="StrokeDashArray" Value="2.2 1.4" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsAvoided}" Value="True">
+                                            <Setter TargetName="ConstraintRing" Property="Visibility" Value="Visible" />
+                                            <Setter TargetName="ConstraintRing" Property="Stroke" Value="#E8A33D" />
+                                            <Setter TargetName="ConstraintRing" Property="StrokeDashArray" Value="1.6 1.6" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsExcluded}" Value="True">
+                                            <Setter TargetName="ConstraintRing" Property="Visibility" Value="Visible" />
+                                            <Setter TargetName="ConstraintRing" Property="Stroke" Value="#C0392B" />
+                                            <Setter TargetName="ExcludeCross" Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
                                         <DataTrigger Binding="{Binding Kind}" Value="Normal">
                                             <Setter TargetName="Shape" Property="Background" Value="{StaticResource NormalNodeBrush}" />
                                             <Setter TargetName="Shape" Property="CornerRadius" Value="7" />
@@ -1204,6 +1239,9 @@
                                  Foreground="#7CCB5A" />
                     <TextBlock Text="{Binding StatusText}" Foreground="#DDD" FontSize="12" Margin="10,0,0,0"
                                VerticalAlignment="Center" MaxWidth="380" TextTrimming="CharacterEllipsis" />
+                    <Button Content="Cancel" Command="{Binding CancelBusyCommand}" Margin="12,0,0,0"
+                            Padding="10,2" VerticalAlignment="Center" ToolTip="Stop the running search (Esc)"
+                            Visibility="{Binding CanCancelBusy, Converter={StaticResource BoolToVis}}" />
                 </StackPanel>
             </Border>
         </Border>

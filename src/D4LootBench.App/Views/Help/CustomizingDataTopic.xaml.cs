@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Navigation;
+using D4LootBench.App.Services;
 
 namespace D4LootBench.App.Views.Help;
 
@@ -21,6 +22,16 @@ public partial class CustomizingDataTopic : UserControl
         try
         {
             await _extractAction();
+        }
+        catch (Exception ex)
+        {
+            // async void: an escaping exception would reach the dispatcher as a crash.
+            ErrorLog.Write(ex, "Extracting game data");
+            string message = $"Extracting the game data failed:\n\n{ex.Message}";
+            if (Window.GetWindow(this) is { } owner)
+                MessageBox.Show(owner, message, "Extract Failed", MessageBoxButton.OK, MessageBoxImage.Error);
+            else
+                MessageBox.Show(message, "Extract Failed", MessageBoxButton.OK, MessageBoxImage.Error);
         }
         finally
         {
