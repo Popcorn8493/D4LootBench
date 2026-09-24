@@ -254,7 +254,9 @@ public partial class ParagonPlannerViewModel
             .Select(r => new ParagonProjectRule(r.Group.Key, r.Mode, r.Limit))
             .ToList(),
         FocusStats = FocusStats.Where(f => f.IsSelected).Select(f => f.Attribute).ToList(),
-        References = _references.Select(r => new ParagonProjectReference(r.Source, r.Emphasis)).ToList(),
+        References = _references
+            .Select(r => new ParagonProjectReference(r.Source, r.Emphasis) { SkillText = r.SkillText })
+            .ToList(),
         FocusWeights = FocusStats
             .Where(f => f.IsSelected && Math.Abs(f.Weight - 1.0) > 1e-9)
             .ToDictionary(f => f.Attribute, f => f.Weight),
@@ -369,7 +371,7 @@ public partial class ParagonPlannerViewModel
         // summary — the focus selections above are the saved state, possibly hand-tuned after
         // the references were applied, and must not be overwritten by a re-derivation.
         _references.Clear();
-        _references.AddRange(project.References.Select(r => (r.Source, r.Emphasis)));
+        _references.AddRange(project.References.Select(r => (r.Source, r.Emphasis, r.SkillText)));
         if (_references.Count > 0)
         {
             ApplyReferencePriorities(assignFocus: false);

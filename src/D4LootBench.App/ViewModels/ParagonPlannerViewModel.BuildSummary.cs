@@ -250,10 +250,18 @@ public partial class ParagonPlannerViewModel
             .Where(c => c.IsPurchased && c.Node.Kind == ParagonNodeKind.Legendary)
             .Select(c => c.Node)
             .ToList();
+        var legendaryContext = CurrentLegendaryContext();
         foreach (var node in legendaryNodes)
         {
-            if (LegendaryNodeInfo.HeadlineMultiplierPercent(node) is double percent)
-                detail.Add($"{node.Name ?? node.InternalName} (legendary node) {percent:0.#}%[x] — conditional, not in the expected range.");
+            if (LegendaryNodeInfo.HeadlineMultiplierPercent(node) is not double percent)
+                continue;
+            string applies = LegendaryRelevance.Of(node, legendaryContext) switch
+            {
+                >= 1 => "your build meets its condition — placement judging counts it",
+                > 0 => "no specific condition — placement judging counts it at half",
+                _ => "condition not detected in your focus stats/skills — placement judging ignores it",
+            };
+            detail.Add($"{node.Name ?? node.InternalName} (legendary node) {percent:0.#}%[x] — {applies}.");
         }
         if (legendaryNodes.Count > 1 && LegendaryNodeInfo.HeadlineProduct(legendaryNodes) is var product and > 1)
             detail.Add($"Legendary node ×% combined ×{product:0.00} if every condition holds at once.");

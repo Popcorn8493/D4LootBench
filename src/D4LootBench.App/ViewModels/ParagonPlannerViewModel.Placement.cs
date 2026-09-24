@@ -57,7 +57,10 @@ public partial class ParagonPlannerViewModel
             TotalPoints,
             CurrentMaximizeFocus(),
             new ThresholdContext(ParagonDatabase.Data, SelectedClass, SheetStatOffsets()),
-            socketedGlyphs);
+            socketedGlyphs)
+        {
+            Legendary = CurrentLegendaryContext(),
+        };
         var (busy, cancellationToken) = BeginCancellableBusy();
         using var _ = busy;
         SetStatus("Analyzing rotations, re-attachments, glyph placements, and board swaps at full point spend…");
@@ -130,7 +133,10 @@ public partial class ParagonPlannerViewModel
             TotalPoints,
             CurrentMaximizeFocus(),
             new ThresholdContext(ParagonDatabase.Data, SelectedClass, SheetStatOffsets()),
-            socketedGlyphs);
+            socketedGlyphs)
+        {
+            Legendary = CurrentLegendaryContext(),
+        };
 
         // Locks from the Glyphs tab: required boards never swap out, required glyphs are never
         // substituted away (both may still rotate/re-attach/re-socket — they stay in the build).

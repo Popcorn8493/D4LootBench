@@ -48,6 +48,11 @@ public sealed record PlacementPipeline(
     /// <summary>Off pins glyphs to their current sockets — used to measure what re-socketing
     /// alone is worth on the current layout.</summary>
     public bool OptimizeGlyphAssignment { get; init; } = true;
+
+    /// <summary>What the build is known to do; when set, legendary nodes whose condition it
+    /// meets multiply the judged focus value (<see cref="LegendaryRelevance"/>). Null = legendary
+    /// powers are ignored, as before.</summary>
+    public LegendaryContext? Legendary { get; init; }
 }
 
 /// <summary>A candidate's end state after solve + full spend. <see cref="GlyphMoves"/> lists the
@@ -65,9 +70,18 @@ public sealed record PipelineResult(int GlyphsActive, int ThresholdsMet, int Poi
     /// bonuses and glyph node buffs included); null when no ThresholdContext was supplied.</summary>
     public IReadOnlyDictionary<string, double>? StatTotals { get; init; }
 
+    /// <summary>∏(1 + relevance × headline ×%) over the build's legendary nodes whose condition
+    /// the build meets (<see cref="LegendaryRelevance.Factor"/>); 1 without a legendary context.</summary>
+    public double LegendaryFactor { get; init; } = 1.0;
+
+    /// <summary>The judged value: focused stat value × the applicable legendary multipliers —
+    /// a board's legendary power multiplies everything the build does.</summary>
+    public double EffectiveScore => FocusScore * LegendaryFactor;
+
     /// <summary>Worth suggesting over the baseline: never at the cost of a Limit rule; then more
-    /// glyphs, more thresholds, clearly more focused stat value (>2%, to keep greedy-spend noise
-    /// from spamming suggestions), or the same build for fewer points.</summary>
+    /// glyphs, more thresholds, clearly more effective value (focused stats × applicable
+    /// legendary multipliers, >2% to keep greedy-spend noise from spamming suggestions), or the
+    /// same build for fewer points.</summary>
     public bool BeatsForSuggestion(PipelineResult baseline)
     {
         if (LimitBreaks != baseline.LimitBreaks)
@@ -76,8 +90,8 @@ public sealed record PipelineResult(int GlyphsActive, int ThresholdsMet, int Poi
             || (GlyphsActive == baseline.GlyphsActive
                 && (ThresholdsMet > baseline.ThresholdsMet
                     || (ThresholdsMet == baseline.ThresholdsMet
-                        && (FocusScore > baseline.FocusScore * 1.02 + 1e-9
-                            || (FocusScore >= baseline.FocusScore - 1e-9 && PointsUsed < baseline.PointsUsed)))));
+                        && (EffectiveScore > baseline.EffectiveScore * 1.02 + 1e-9
+                            || (EffectiveScore >= baseline.EffectiveScore - 1e-9 && PointsUsed < baseline.PointsUsed)))));
     }
 }
 
@@ -240,7 +254,9 @@ public static class PlacementAnalyzer
                     AttainableByAttribute(c, g.SourceAttribute, g.Radius))))
                 .Where(c => c.Fit > 0)
                 .OrderByDescending(c => c.Fit)
-                .Take(maxCandidatesPerSlot);
+                .Take(maxCandidatesPerSlot)
+                .Concat(LegendaryCandidate(usable, pipeline?.Legendary))
+                .DistinctBy(c => c.Board.InternalName);
 
             foreach (var (candidate, _) in ranked)
             {
@@ -613,6 +629,7 @@ public static class PlacementAnalyzer
             GlyphMoves = glyphMoves,
             LimitBreaks = limitBreaks,
             StatTotals = statTotals,
+            LegendaryFactor = LegendaryRelevance.Factor(graph, purchased, pipeline.Legendary),
         };
     }
 
@@ -770,9 +787,30 @@ public static class PlacementAnalyzer
             parts.Add($"{variant.ThresholdsMet} threshold bonus(es) instead of {baseline.ThresholdsMet}");
         if (baseline.FocusScore > 1e-9 && Math.Abs(variant.FocusScore - baseline.FocusScore) > baseline.FocusScore * 0.005)
             parts.Add($"{(variant.FocusScore - baseline.FocusScore) / baseline.FocusScore:+0.#%;-0.#%} focused stat value");
+        if (Math.Abs(variant.LegendaryFactor - baseline.LegendaryFactor) > 1e-6)
+            parts.Add($"applicable legendary node ×{baseline.LegendaryFactor:0.00} → ×{variant.LegendaryFactor:0.00}");
         if (variant.PointsUsed != baseline.PointsUsed)
             parts.Add($"{baseline.PointsUsed} → {variant.PointsUsed} points");
         return parts.Count > 0 ? "at full spend " + string.Join(", ", parts) : "equivalent at full spend";
+    }
+
+    /// <summary>
+    /// The unused board whose legendary the build most clearly uses (relevance × headline ×%),
+    /// as an extra swap candidate — glyph/focus fit alone never surfaces a board worth taking
+    /// for its legendary power. Empty without a legendary context or a positive match.
+    /// </summary>
+    internal static IEnumerable<(ParagonBoardDef Board, double Fit)> LegendaryCandidate(
+        IEnumerable<ParagonBoardDef> usable, LegendaryContext? context)
+    {
+        if (context is null)
+            yield break;
+        var best = usable
+            .Select(b => (Board: b, Value: LegendaryRelevance.BoardValue(b, context)))
+            .Where(b => b.Value >= 1)
+            .OrderByDescending(b => b.Value)
+            .FirstOrDefault();
+        if (best.Board is not null)
+            yield return (best.Board, best.Value);
     }
 
     /// <summary>The candidate board's total of the attribute within radius of its own socket.

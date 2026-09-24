@@ -222,7 +222,7 @@ public static class PlacementSearch
         if (c != 0) return c;
         c = b.Eval.ThresholdsMet.CompareTo(a.Eval.ThresholdsMet);
         if (c != 0) return c;
-        c = b.Eval.FocusScore.CompareTo(a.Eval.FocusScore);
+        c = b.Eval.EffectiveScore.CompareTo(a.Eval.EffectiveScore);
         if (c != 0) return c;
         return a.Eval.PointsUsed.CompareTo(b.Eval.PointsUsed);
     });
@@ -366,7 +366,9 @@ public static class PlacementSearch
                 : usable.Select(c => (Board: c, Fit: FocusFit(c, state.Pipeline.Focus))))
             .Where(c => c.Fit > 0)
             .OrderByDescending(c => c.Fit)
-            .Take(2);
+            .Take(2)
+            .Concat(PlacementAnalyzer.LegendaryCandidate(usable, state.Pipeline.Legendary))
+            .DistinctBy(c => c.Board.InternalName);
 
         foreach (var (candidate, _) in ranked)
         {
@@ -629,6 +631,8 @@ public static class PlacementSearch
         };
         if (baseline.FocusScore > 1e-9)
             parts.Add($"focused value {(result.FocusScore - baseline.FocusScore) / baseline.FocusScore:+0.#%;-0.#%;+0%}");
+        if (Math.Abs(result.LegendaryFactor - baseline.LegendaryFactor) > 1e-6)
+            parts.Add($"applicable legendary ×{baseline.LegendaryFactor:0.00}→×{result.LegendaryFactor:0.00}");
         if (result.LimitBreaks != baseline.LimitBreaks)
             parts.Add($"limit breaks {baseline.LimitBreaks}→{result.LimitBreaks}");
         return "at full spend: " + string.Join(", ", parts);

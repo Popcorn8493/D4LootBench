@@ -24,7 +24,12 @@ public sealed record ParagonProjectRule(string GroupKey, NodeRuleMode Mode, int 
 /// loaded loot filter), stored with its full per-attribute emphasis so the consensus can be
 /// re-combined — and extended with further references — after reopening the project.
 /// </summary>
-public sealed record ParagonProjectReference(string Source, IReadOnlyList<ReferenceEmphasis> Emphasis);
+public sealed record ParagonProjectReference(string Source, IReadOnlyList<ReferenceEmphasis> Emphasis)
+{
+    /// <summary>A skill reference's bar-skill names + descriptions and tree slugs — what tells
+    /// the placement judge which legendary node conditions the build meets. Null for others.</summary>
+    public string? SkillText { get; init; }
+}
 
 /// <summary>
 /// A saved paragon planner session: layout, targets, per-cell constraints, the solved purchase

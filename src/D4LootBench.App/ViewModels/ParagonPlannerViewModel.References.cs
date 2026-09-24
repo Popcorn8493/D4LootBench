@@ -24,7 +24,14 @@ public partial class ParagonPlannerViewModel
     private string _referenceSummary = "";
 
     /// <summary>References the priorities derive from; saved with the project and restored on load.</summary>
-    private readonly List<(string Source, IReadOnlyList<ReferenceEmphasis> Emphasis)> _references = [];
+    private readonly List<(string Source, IReadOnlyList<ReferenceEmphasis> Emphasis, string? SkillText)> _references = [];
+
+    /// <summary>What the build is known to do — class resource, focus stats, and any skill
+    /// reference's text — so placement judging credits only the legendary node conditions the
+    /// build actually meets.</summary>
+    private LegendaryContext CurrentLegendaryContext() =>
+        LegendaryContext.From(CurrentMaximizeFocus(),
+            _references.Select(r => r.SkillText).OfType<string>());
 
     /// <summary>The reference list rendered in the Optimize tab, one removable row per reference.</summary>
     public ObservableCollection<ReferenceListItem> ReferenceItems { get; } = [];
@@ -32,7 +39,7 @@ public partial class ParagonPlannerViewModel
     private void RefreshReferenceItems()
     {
         ReferenceItems.Clear();
-        foreach (var (source, emphasis) in _references)
+        foreach (var (source, emphasis, _) in _references)
         {
             string detail = "Votes for: " + string.Join(", ", emphasis
                 .OrderByDescending(e => e.Score)
@@ -62,16 +69,16 @@ public partial class ParagonPlannerViewModel
 
     /// <summary>Sources compare without their trailing count suffix, so "Loaded filter (19 affix(es))"
     /// updates "Loaded filter (12 affix(es))" and a re-imported variant refreshes its old emphasis.</summary>
-    private void AddOrReplaceReference(string source, IReadOnlyList<ReferenceEmphasis> emphasis)
+    private void AddOrReplaceReference(string source, IReadOnlyList<ReferenceEmphasis> emphasis, string? skillText = null)
     {
         static string KeyOf(string s) => System.Text.RegularExpressions.Regex
             .Replace(s, @"\s*\([^()]*\d+ (?:nodes|skills|affix\(es\))[^()]*\)$", "").Trim();
         string key = KeyOf(source);
         int existing = _references.FindIndex(r => KeyOf(r.Source).Equals(key, StringComparison.OrdinalIgnoreCase));
         if (existing >= 0)
-            _references[existing] = (source, emphasis);
+            _references[existing] = (source, emphasis, skillText);
         else
-            _references.Add((source, emphasis));
+            _references.Add((source, emphasis, skillText));
     }
 
     /// <summary>
@@ -117,7 +124,9 @@ public partial class ParagonPlannerViewModel
                 {
                     AddOrReplaceReference(
                         $"{import.Source} skills ({skills.ActiveSkills.Count} skills, {skillResult.PrimaryDamageType.ToLowerInvariant()})",
-                        skillResult.Emphasis);
+                        skillResult.Emphasis,
+                        string.Join(" ", skills.ActiveSkills.Select(s => $"{s.Name} {s.Description}")
+                            .Concat(skills.TreeRanks.Keys)));
                     skillNotes.Add($"{string.Join(", ", skillResult.ActiveSkillNames)} " +
                                    $"({skillResult.PrimaryDamageType.ToLowerInvariant()} damage)");
                 }
